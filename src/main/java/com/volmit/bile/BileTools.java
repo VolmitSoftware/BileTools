@@ -49,7 +49,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 			{
 				onTick();
 			}
-		}, 10, 20);
+		}, 10, 0);
 	}
 
 	@Override
