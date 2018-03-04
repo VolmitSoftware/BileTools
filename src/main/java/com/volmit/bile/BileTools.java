@@ -20,6 +20,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 {
 	public static BileTools bile;
 	private HashMap<File, Long> mod;
+	private HashMap<File, Long> las;
 	private File folder;
 	private String tag;
 	private Sound sx;
@@ -30,6 +31,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 		bile = this;
 		tag = ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY;
 		mod = new HashMap<File, Long>();
+		las = new HashMap<File, Long>();
 		folder = getDataFolder().getParentFile();
 		getCommand("bile").setExecutor(this);
 
@@ -47,7 +49,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 			{
 				onTick();
 			}
-		}, 10, 0);
+		}, 10, 20);
 	}
 
 	@Override
@@ -65,21 +67,23 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 				if(!mod.containsKey(i))
 				{
 					getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
-					mod.put(i, i.lastModified() + i.length());
+					mod.put(i, i.length());
+					las.put(i, i.lastModified());
 				}
 
-				if(mod.get(i) != i.lastModified() + i.length())
+				if(mod.get(i) != i.length() || las.get(i) != i.lastModified())
 				{
-					getLogger().log(Level.INFO, "File change detected: " + i.getName());
+					mod.put(i, i.length());
+					las.put(i, i.lastModified());
 
 					for(Plugin j : Bukkit.getServer().getPluginManager().getPlugins())
 					{
 						if(PluginUtil.getPluginFileName(j.getName()).equals(i.getName()))
 						{
+							getLogger().log(Level.INFO, "File change detected: " + i.getName());
 							getLogger().log(Level.INFO, "Identified Plugin: " + j.getName() + " <-> " + i.getName());
 							getLogger().log(Level.INFO, "Reloading: " + j.getName());
 							PluginUtil.reload(j);
-							mod.put(i, i.lastModified() + i.length());
 
 							for(Player k : Bukkit.getOnlinePlayers())
 							{
