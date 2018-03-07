@@ -24,10 +24,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 	private File folder;
 	private String tag;
 	private Sound sx;
+	private int cd = 10;
 
 	@Override
 	public void onEnable()
 	{
+		cd = 10;
 		bile = this;
 		tag = ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY;
 		mod = new HashMap<File, Long>();
@@ -60,6 +62,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 
 	public void onTick()
 	{
+		if(cd > 0)
+		{
+			cd--;
+		}
+
 		for(File i : folder.listFiles())
 		{
 			if(i.getName().toLowerCase().endsWith(".jar") && i.isFile())
@@ -69,6 +76,19 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 					getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
 					mod.put(i, i.length());
 					las.put(i, i.lastModified());
+
+					if(cd == 0)
+					{
+						PluginUtil.load(i.getName().replace(".jar", ""));
+						for(Player k : Bukkit.getOnlinePlayers())
+						{
+							if(k.hasPermission("bile.use"))
+							{
+								k.sendMessage(tag + "Hot Dropped " + ChatColor.WHITE + i.getName());
+								k.playSound(k.getLocation(), sx, 1f, 1.9f);
+							}
+						}
+					}
 				}
 
 				if(mod.get(i) != i.length() || las.get(i) != i.lastModified())
