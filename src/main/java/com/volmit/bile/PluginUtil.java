@@ -376,7 +376,6 @@ public class PluginUtil
 	 */
 	public static void load(String name)
 	{
-
 		Plugin target = null;
 
 		File pluginDir = new File("plugins");

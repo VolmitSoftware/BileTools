@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>BileTools</artifactId>
-	<version>1.2</version>
+	<version>1.3</version>
 	<name>BileTools</name>
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -29,6 +29,7 @@
 				<version>2.3.1</version>
 				<configuration>
 					<finalName>${project.name}</finalName>
+					<outputDirectory>C:\Users\cyberpwn\Documents\development\servers\dynamic\plugins</outputDirectory>
 				</configuration>
 			</plugin>
 		</plugins>
