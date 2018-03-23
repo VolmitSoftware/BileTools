@@ -332,6 +332,7 @@ public class BileUtils
 
 	public static void backup(Plugin p) throws IOException
 	{
+		System.out.println("Backed up " + p.getName() + " " + p.getDescription().getVersion());
 		copy(getPluginFile(p), new File(getBackupLocation(p), p.getDescription().getVersion() + ".jar"));
 	}
 

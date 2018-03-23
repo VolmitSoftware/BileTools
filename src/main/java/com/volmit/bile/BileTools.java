@@ -1,6 +1,7 @@
 package com.volmit.bile;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +71,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 		las.put(f, f.lastModified());
 	}
 
+	@SuppressWarnings("deprecation")
 	public void onTick()
 	{
 		if(cd > 0)
@@ -85,20 +87,27 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 				{
 					getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
 
-					try
+					Bukkit.getScheduler().scheduleAsyncDelayedTask(bile, new Runnable()
 					{
-						Plugin pp = BileUtils.getPlugin(i);
-
-						if(pp != null)
+						@Override
+						public void run()
 						{
-							BileUtils.backup(pp);
+							Plugin pp = BileUtils.getPlugin(i);
+
+							if(pp != null)
+							{
+								try
+								{
+									BileUtils.backup(pp);
+								}
+
+								catch(IOException e)
+								{
+									e.printStackTrace();
+								}
+							}
 						}
-					}
-
-					catch(Throwable e)
-					{
-
-					}
+					});
 
 					mod.put(i, i.length());
 					las.put(i, i.lastModified());
