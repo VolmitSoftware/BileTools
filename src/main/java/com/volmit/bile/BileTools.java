@@ -26,6 +26,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 	private HashMap<File, Long> mod;
 	private HashMap<File, Long> las;
 	private File folder;
+	private File backoff;
 	private String tag;
 	private Sound sx;
 	private int cd = 10;
@@ -39,7 +40,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 		mod = new HashMap<File, Long>();
 		las = new HashMap<File, Long>();
 		folder = getDataFolder().getParentFile();
+		backoff = new File(getDataFolder(), "backoff");
+		backoff.mkdirs();
 		getCommand("bile").setExecutor(this);
+		Bukkit.getPluginManager().registerEvents(this, this);
 
 		for(Sound f : Sound.values())
 		{
@@ -57,6 +61,24 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 				onTick();
 			}
 		}, 10, 0);
+	}
+
+	public boolean isBackoff(Player p)
+	{
+		return new File(backoff, p.getUniqueId().toString()).exists();
+	}
+
+	public void toggleBackoff(Player p)
+	{
+		if(new File(backoff, p.getUniqueId().toString()).exists())
+		{
+			new File(backoff, p.getUniqueId().toString()).delete();
+		}
+
+		else
+		{
+			new File(backoff, p.getUniqueId().toString()).mkdirs();
+		}
 	}
 
 	@Override
@@ -209,6 +231,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 
 			if(args.length == 0)
 			{
+				sender.sendMessage(tag + "/// - Ingame dev mode toggle");
 				sender.sendMessage(tag + "/bile load <plugin>");
 				sender.sendMessage(tag + "/bile unload <plugin>");
 				sender.sendMessage(tag + "/bile reload <plugin>");
