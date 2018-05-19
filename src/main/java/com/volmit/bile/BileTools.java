@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -28,20 +30,195 @@ import com.volmit.volume.cluster.DataCluster;
 import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.YAMLClusterPort;
 
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import net.md_5.bungee.api.ChatColor;
 
 public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 {
 	private SlaveBileServer srv;
 	public static BileTools bile;
-	private HashMap<File, Long> mod;
-	private HashMap<File, Long> las;
+	private static HashMap<File, Long> mod;
+	private static HashMap<File, Long> las;
 	private File folder;
 	private File backoff;
 	public String tag;
 	private Sound sx;
 	private int cd = 10;
 	public static DataCluster cfg;
+
+	public static void l(String s)
+	{
+		System.out.println("[Bile]: " + s);
+	}
+
+	public static void play()
+	{
+		try
+		{
+			MediaPlayer mp = new MediaPlayer(new Media(BileTools.class.getResource("/done.wav").toURI().toString()));
+			mp.play();
+		}
+
+		catch(Exception exc)
+		{
+			exc.printStackTrace(System.out);
+		}
+	}
+
+	@SuppressWarnings("restriction")
+	public static void main(String[] a)
+	{
+		l("Init Standalone");
+		File ff = new File("plugins");
+		File fb = new File(ff, "BileTools");
+		fb.mkdirs();
+		l("===========================================");
+		l("Plugins Folder: " + ff.getAbsolutePath());
+		l("Bile Folder: " + fb.getAbsolutePath());
+		File cf = new File(fb, "config.yml");
+		l("Init Ghost Plugin");
+		l("Load config: " + cf.getAbsolutePath());
+		l("Start Pool");
+		ExecutorService svc = Executors.newWorkStealingPool(8);
+		l("Init FX");
+		com.sun.javafx.application.PlatformImpl.startup(() ->
+		{
+		});
+		try
+		{
+			readTheConfig(fb);
+		}
+
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			System.exit(1);
+		}
+
+		if(!cfg.getBoolean("remote-deploy.master.master-enabled"))
+		{
+			l("Nothing to do. Master is not enabled");
+			System.exit(0);
+		}
+
+		l("Service Start");
+		l("===========================================");
+		mod = new HashMap<File, Long>();
+		las = new HashMap<File, Long>();
+
+		for(File i : ff.listFiles())
+		{
+			if(i.isFile() && i.getName().endsWith(".jar"))
+			{
+				mod.put(i, i.lastModified());
+				las.put(i, i.length());
+				l("Now tracking: " + i.getName());
+			}
+		}
+
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				play();
+				while(!Thread.interrupted())
+				{
+					try
+					{
+						try
+						{
+							for(File i : ff.listFiles())
+							{
+								if(i.isDirectory() || !i.getName().endsWith(".jar"))
+								{
+									continue;
+								}
+
+								boolean send = false;
+
+								if(!mod.containsKey(i))
+								{
+									send = true;
+									mod.put(i, i.lastModified());
+									las.put(i, i.length());
+								}
+
+								else if(mod.get(i) != i.lastModified() || las.get(i) != i.length())
+								{
+									send = true;
+									mod.put(i, i.lastModified());
+									las.put(i, i.length());
+								}
+
+								if(send)
+								{
+									boolean al = false;
+
+									for(String j : cfg.getStringList("remote-deploy.master.master-deploy-signatures"))
+									{
+										if(i.getName().toLowerCase().startsWith(j.toLowerCase()))
+										{
+											al = true;
+											break;
+										}
+									}
+
+									if(al)
+									{
+										for(String j : cfg.getStringList("remote-deploy.master.master-deploy-to"))
+										{
+											svc.submit(new Runnable()
+											{
+												@Override
+												public void run()
+												{
+													try
+													{
+														streamFile(i, j.split(":")[0], Integer.valueOf(j.split(":")[1]), j.split(":")[2]);
+														l(i.getName() + " -> " + j.split(":")[0] + ":" + j.split(":")[1]);
+
+														svc.submit(new Runnable()
+														{
+															@Override
+															public void run()
+															{
+																play();
+															}
+														});
+													}
+
+													catch(Exception e)
+													{
+														e.printStackTrace();
+													}
+												}
+											});
+										}
+									}
+								}
+							}
+						}
+
+						catch(Throwable e)
+						{
+							e.printStackTrace();
+						}
+
+						Thread.sleep(500);
+					}
+
+					catch(InterruptedException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+		}, "File Tracker").start();
+		l("File Threads Started: 1t/1000ms");
+		l("===========================================");
+	}
 
 	public static void streamFile(File f, String address, int port, String password) throws UnknownHostException, IOException
 	{
@@ -64,7 +241,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 		s.close();
 	}
 
-	private void readTheConfig() throws IOException, Exception
+	private static void readTheConfig(File df) throws IOException, Exception
 	{
 		DataCluster cc = new DataCluster();
 		cc.set("remote-deploy.slave.slave-enabled", false);
@@ -75,7 +252,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 		cc.set("remote-deploy.master.master-deploy-signatures", new GList<String>().qadd("MyPlugin").qadd("AnotherPlugin"));
 		cfg = cc;
 
-		File f = new File(getDataFolder(), "config.yml");
+		File f = new File(df, "config.yml");
 		f.getParentFile().mkdirs();
 
 		if(!f.exists())
@@ -93,7 +270,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 	{
 		try
 		{
-			readTheConfig();
+			readTheConfig(getDataFolder());
 		}
 
 		catch(Exception e)
