@@ -1,7 +1,11 @@
 package com.volmit.bile;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,27 +17,109 @@ import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.volmit.volume.cluster.DataCluster;
+import com.volmit.volume.lang.collections.GList;
+import com.volmit.volume.lang.collections.YAMLClusterPort;
+
 import net.md_5.bungee.api.ChatColor;
 
 public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 {
+	private SlaveBileServer srv;
 	public static BileTools bile;
 	private HashMap<File, Long> mod;
 	private HashMap<File, Long> las;
 	private File folder;
 	private File backoff;
-	private String tag;
+	public String tag;
 	private Sound sx;
 	private int cd = 10;
+	public static DataCluster cfg;
+
+	public static void streamFile(File f, String address, int port, String password) throws UnknownHostException, IOException
+	{
+		Socket s = new Socket(address, port);
+		DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+		dos.writeUTF(password);
+		dos.writeUTF(f.getName());
+
+		FileInputStream fin = new FileInputStream(f);
+		byte[] buffer = new byte[8192];
+		int read = 0;
+
+		while((read = fin.read(buffer)) != -1)
+		{
+			dos.write(buffer, 0, read);
+		}
+
+		fin.close();
+		dos.flush();
+		s.close();
+	}
+
+	private void readTheConfig() throws IOException, Exception
+	{
+		DataCluster cc = new DataCluster();
+		cc.set("remote-deploy.slave.slave-enabled", false);
+		cc.set("remote-deploy.slave.slave-port", 9876);
+		cc.set("remote-deploy.slave.slave-payload", "pickapassword");
+		cc.set("remote-deploy.master.master-enabled", false);
+		cc.set("remote-deploy.master.master-deploy-to", new GList<String>().qadd("yourserver.com:9876:password"));
+		cc.set("remote-deploy.master.master-deploy-signatures", new GList<String>().qadd("MyPlugin").qadd("AnotherPlugin"));
+		cfg = cc;
+
+		File f = new File(getDataFolder(), "config.yml");
+		f.getParentFile().mkdirs();
+
+		if(!f.exists())
+		{
+			new YAMLClusterPort().fromCluster(cc).save(f);
+		}
+
+		FileConfiguration fc = new YamlConfiguration();
+		fc.load(f);
+		cfg = new YAMLClusterPort().toCluster(fc);
+	}
 
 	@Override
 	public void onEnable()
 	{
+		try
+		{
+			readTheConfig();
+		}
+
+		catch(Exception e)
+		{
+			System.out.println("Unable to read the config...");
+			e.printStackTrace();
+		}
+
+		if(cfg.getBoolean("remote-deploy.slave.slave-enabled"))
+		{
+			getLogger().info("Starting Remote Slave Server on *:" + cfg.getInt("remote-deploy.slave.slave-port"));
+
+			try
+			{
+				srv = new SlaveBileServer();
+				srv.start();
+				getLogger().info("Remote Slave Server online!");
+			}
+
+			catch(Throwable e)
+			{
+				getLogger().warning("Starting Remote Slave Server on *:" + cfg.getInt("remote-deploy.slave.slave-port"));
+				e.printStackTrace();
+			}
+		}
+
 		cd = 10;
 		bile = this;
 		tag = ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY;
@@ -84,7 +170,21 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 	@Override
 	public void onDisable()
 	{
+		if(srv != null && srv.isAlive())
+		{
+			srv.interrupt();
 
+			try
+			{
+				srv.join();
+				System.out.println("Bile Slave Server shut down.");
+			}
+
+			catch(InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public void reset(File f)
@@ -166,7 +266,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 									}
 								}
 							}
-						});
+						}, 5);
 					}
 				}
 
@@ -185,14 +285,98 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 
 							try
 							{
-								BileUtils.reload(j);
-
-								for(Player k : Bukkit.getOnlinePlayers())
+								if(cfg.getBoolean("remote-deploy.master.master-enabled"))
 								{
-									if(k.hasPermission("bile.use"))
+									if(cfg.getStringList("remote-deploy.master.master-deploy-signatures").contains(j.getName()))
 									{
-										k.sendMessage(tag + "Reloaded " + ChatColor.WHITE + j.getName());
-										k.playSound(k.getLocation(), sx, 1f, 1.9f);
+										Bukkit.getScheduler().scheduleAsyncDelayedTask(BileTools.bile, new Runnable()
+										{
+											@Override
+											public void run()
+											{
+												for(String g : cfg.getStringList("remote-deploy.master.master-deploy-to"))
+												{
+													try
+													{
+														streamFile(i, g.split(":")[0], Integer.valueOf(g.split(":")[1]), g.split(":")[2]);
+													}
+
+													catch(NumberFormatException e)
+													{
+														System.out.println("Invalid format");
+														e.printStackTrace();
+													}
+
+													catch(UnknownHostException e)
+													{
+														System.out.println("Invalid host");
+														e.printStackTrace();
+													}
+
+													catch(IOException e)
+													{
+														System.out.println("Invalid connection");
+														e.printStackTrace();
+													}
+												}
+
+												for(Player k : Bukkit.getOnlinePlayers())
+												{
+													if(k.hasPermission("bile.use"))
+													{
+														k.sendMessage(tag + "Deployed " + ChatColor.WHITE + j.getName() + ChatColor.GRAY + " to " + cfg.getStringList("remote-deploy.master.master-deploy-to").size() + " remote server(s)");
+													}
+												}
+
+												Bukkit.getScheduler().scheduleSyncDelayedTask(BileTools.bile, new Runnable()
+												{
+													@Override
+													public void run()
+													{
+														try
+														{
+															BileUtils.reload(j);
+
+															for(Player k : Bukkit.getOnlinePlayers())
+															{
+																if(k.hasPermission("bile.use"))
+																{
+																	k.sendMessage(tag + "Reloaded " + ChatColor.WHITE + j.getName());
+																	k.playSound(k.getLocation(), sx, 1f, 1.9f);
+																}
+															}
+														}
+
+														catch(Throwable e)
+														{
+															for(Player k : Bukkit.getOnlinePlayers())
+															{
+																if(k.hasPermission("bile.use"))
+																{
+																	k.sendMessage(tag + "Failed to Reload " + ChatColor.RED + j.getName());
+																}
+															}
+
+															e.printStackTrace();
+														}
+													}
+												}, 5);
+											}
+										});
+									}
+								}
+
+								else
+								{
+									BileUtils.reload(j);
+
+									for(Player k : Bukkit.getOnlinePlayers())
+									{
+										if(k.hasPermission("bile.use"))
+										{
+											k.sendMessage(tag + "Reloaded " + ChatColor.WHITE + j.getName());
+											k.playSound(k.getLocation(), sx, 1f, 1.9f);
+										}
 									}
 								}
 							}
