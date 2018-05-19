@@ -56,13 +56,20 @@ public class SlaveBileServer extends Thread
 						fos.write(buf, 0, read);
 					}
 
-					for(Player k : Bukkit.getOnlinePlayers())
+					Bukkit.getScheduler().scheduleSyncDelayedTask(BileTools.bile, new Runnable()
 					{
-						if(k.hasPermission("bile.use"))
+						@Override
+						public void run()
 						{
-							k.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + f.getName() + ChatColor.GRAY + " from " + ChatColor.WHITE + client.getInetAddress().getHostAddress());
+							for(Player k : Bukkit.getOnlinePlayers())
+							{
+								if(k.hasPermission("bile.use"))
+								{
+									k.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + f.getName() + ChatColor.GRAY + " from " + ChatColor.WHITE + client.getInetAddress().getHostAddress());
+								}
+							}
 						}
-					}
+					});
 
 					fos.close();
 					din.close();
