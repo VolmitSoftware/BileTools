@@ -7,6 +7,6 @@ public class ClusterStringList extends ClusterBase<GList<String>>
 	@SuppressWarnings("unchecked")
 	public ClusterStringList(GList<String> t)
 	{
-		super((Class<? extends GList<String>>) GList.class, t);
+		super((Class<? extends GList<String>>) (Class<? extends GList>) GList.class, t);
 	}
 }

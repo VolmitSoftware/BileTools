@@ -454,7 +454,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor
 
 					for(Plugin j : Bukkit.getServer().getPluginManager().getPlugins())
 					{
-						if(BileUtils.getPluginFile(j).getName().equals(i.getName()))
+						File file = BileUtils.getPluginFile(j);
+						if(file != null && file.getName().equals(i.getName()))
 						{
 							getLogger().log(Level.INFO, "File change detected: " + i.getName());
 							getLogger().log(Level.INFO, "Identified Plugin: " + j.getName() + " <-> " + i.getName());
