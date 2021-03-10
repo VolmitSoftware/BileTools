@@ -104,3 +104,5 @@ Temporary Items
 /bin/
 *.classpath
 *.classpath
+
+.idea/
