@@ -250,7 +250,7 @@ public class BileUtils {
     }
 
     public static void backup(Plugin p) throws IOException {
-        BileTools.bile.getLogger().warning("Backed up " + p.getName() + " " + p.getDescription().getVersion());
+        BileTools.bile.getLogger().info("Backed up " + p.getName() + " " + p.getDescription().getVersion());
         copy(getPluginFile(p), new File(getBackupLocation(p), p.getDescription().getVersion() + ".jar"));
     }
 
