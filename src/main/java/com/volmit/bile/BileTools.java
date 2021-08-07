@@ -86,8 +86,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         try {
             readTheConfig();
         } catch (Exception e) {
-            System.out.println("Unable to read the config...");
-            e.printStackTrace();
+            this.getLogger().log(Level.SEVERE, "Unable to read the config...", e);
         }
 
         if (cfg.getBoolean("remote-deploy.slave.slave-enabled")) {
@@ -142,7 +141,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
 
             try {
                 srv.join();
-                System.out.println("Bile Slave Server shut down.");
+                this.getLogger().info("Bile Slave Server shut down.");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -220,13 +219,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                                                 try {
                                                     streamFile(i, g.split(":")[0], Integer.parseInt(g.split(":")[1]), g.split(":")[2]);
                                                 } catch (NumberFormatException e) {
-                                                    System.out.println("Invalid format");
+                                                    this.getLogger().warning("Invalid format");
                                                     e.printStackTrace();
                                                 } catch (UnknownHostException e) {
-                                                    System.out.println("Invalid host");
+                                                    this.getLogger().warning("Invalid host");
                                                     e.printStackTrace();
                                                 } catch (IOException e) {
-                                                    System.out.println("Invalid connection");
+                                                    this.getLogger().warning("Invalid connection");
                                                     e.printStackTrace();
                                                 }
                                             }

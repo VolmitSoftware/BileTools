@@ -103,6 +103,6 @@ Temporary Items
 .apdisk
 /bin/
 *.classpath
-*.classpath
 
 .idea/
+*.iml
