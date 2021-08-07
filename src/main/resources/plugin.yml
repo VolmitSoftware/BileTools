@@ -1,6 +1,7 @@
 name: ${project.name}
 version: ${project.version}
 main: com.volmit.bile.BileTools
+api-version: 1.13
 commands: 
   biletools:
     aliases: [bile, bi, b, volmit, vomit, vom]
