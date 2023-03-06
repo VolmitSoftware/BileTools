@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.logging.Level;
 
 public class SlaveBileServer extends Thread {
     private final ServerSocket socket;
@@ -61,8 +62,7 @@ public class SlaveBileServer extends Thread {
                 } catch (SocketTimeoutException ignored) {
 
                 } catch (Throwable e) {
-                    System.out.println("Error receiving file.");
-                    e.printStackTrace();
+                    BileTools.bile.getLogger().log(Level.SEVERE,"Error receiving file.",e);
                 }
             }
 
