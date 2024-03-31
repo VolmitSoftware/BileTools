@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -23,6 +24,39 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public class BileUtils {
+    public static boolean isModernPaperPlugin = false;
+    private static Method INSTANCE_METHOD;
+    private static Field INSTANCE_MANAGER_FIELD;
+    private static Field LOOKUP_NAMES_FIELD;
+    private static Method DISABLE_PLUGIN_METHOD;
+    private static Field PLUGIN_LIST_FIELD;
+
+    static {
+        try {
+            final Class<?> PAPER_PLUGIN_MANAGER = Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
+
+            INSTANCE_METHOD = PAPER_PLUGIN_MANAGER.getMethod("getInstance");
+            final Object instance = INSTANCE_METHOD.invoke(null);
+
+            INSTANCE_MANAGER_FIELD = instance.getClass().getDeclaredField("instanceManager");
+            INSTANCE_MANAGER_FIELD.setAccessible(true);
+
+            final Object instanceManager = INSTANCE_MANAGER_FIELD.get(instance);
+            LOOKUP_NAMES_FIELD = instanceManager.getClass().getDeclaredField("lookupNames");
+            LOOKUP_NAMES_FIELD.setAccessible(true);
+
+            DISABLE_PLUGIN_METHOD = instanceManager.getClass().getMethod("disablePlugin", Plugin.class);
+            DISABLE_PLUGIN_METHOD.setAccessible(true);
+
+            PLUGIN_LIST_FIELD = instanceManager.getClass().getDeclaredField("plugins");
+            PLUGIN_LIST_FIELD.setAccessible(true);
+
+            isModernPaperPlugin = true;
+        }
+        catch (Exception ignored) {}
+    }
+
+
     public static void delete(Plugin p) throws IOException {
         File f = getPluginFile(p);
         backup(p);
@@ -141,6 +175,19 @@ public class BileUtils {
         boolean reloadlisteners = true;
 
         if (pluginManager != null) {
+            if (isModernPaperPlugin) {
+                try {
+                    final Object instanceManager = INSTANCE_MANAGER_FIELD.get(INSTANCE_METHOD.invoke(null));
+                    DISABLE_PLUGIN_METHOD.invoke(instanceManager, plugin);
+
+                    ((Map<String, Object>) LOOKUP_NAMES_FIELD.get(instanceManager)).remove(plugin.getName().toLowerCase());
+                    ((List<Plugin>) PLUGIN_LIST_FIELD.get(instanceManager)).remove(plugin);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             pluginManager.disablePlugin(plugin);
 
             try {
@@ -169,9 +216,9 @@ public class BileUtils {
                 e.printStackTrace();
                 return new HashSet<>();
             }
-        }
 
-        pluginManager.disablePlugin(plugin);
+            pluginManager.disablePlugin(plugin);
+        }
 
         if (plugins != null) {
             plugins.remove(plugin);
