@@ -83,8 +83,9 @@ tasks.named('build') {
 }
 
 tasks.register('biletools', Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from tasks.named('shadowJar').flatMap { it.archiveFile }
-    into layout.buildDirectory
+    into layout.buildDirectory.dir('out')
     rename { "BileTools-${version}.jar" }
 }
 
@@ -132,8 +133,8 @@ void createOutputTask(String name, String path, boolean doRename) {
     tasks.register("build${name}", Copy) {
         group = 'development'
         outputs.upToDateWhen { false }
-        dependsOn 'biletools'
-        from tasks.named('biletools', Copy).map { it.outputs.files.singleFile }
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        from tasks.named('shadowJar').flatMap { it.archiveFile }
         into file(path)
         if (doRename) rename { 'BileTools.jar' }
     }
