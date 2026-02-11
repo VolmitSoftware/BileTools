@@ -1,11 +1,11 @@
-name: ${project.name}
-version: ${project.version}
-main: com.volmit.bile.BileTools
-api-version: 1.13
-commands: 
+name: ${name}
+version: ${version}
+main: ${main}
+api-version: ${apiVersion}
+commands:
   biletools:
     aliases: [bile, bi, b, volmit, vomit, vom]
 permissions:
-  bile.use: 
+  bile.use:
     description: Gives access to biletools
     default: op

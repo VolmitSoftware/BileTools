@@ -1,0 +1,16 @@
+[versions]
+# Plugins
+lombok = "8.14"
+shadow = "9.0.0-rc3"
+runTask = "2.3.1"
+
+# Libraries
+paper = "1.21.4-R0.1-SNAPSHOT"
+
+[libraries]
+paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
+
+[plugins]
+lombok = { id = "io.freefair.lombok", version.ref = "lombok" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+runPaper = { id = "xyz.jpenilla.run-paper", version.ref = "runTask" }

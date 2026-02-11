@@ -1,6 +1,7 @@
 package com.volmit.bile;
 
-import com.google.common.io.Files;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,7 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,7 +25,9 @@ import java.util.zip.ZipFile;
 public class BileUtils {
     public static void delete(Plugin p) throws IOException {
         File f = getPluginFile(p);
-        backup(p);
+        if (BileTools.cfg.getBoolean("archive-plugins")) {
+            backup(p);
+        }
         unload(p);
         f.delete();
     }
@@ -36,14 +38,18 @@ public class BileUtils {
             return;
         }
 
-        PluginDescriptionFile fx = getPluginDescription(f);
-        copy(f, new File(getBackupLocation(fx.getName()), fx.getVersion() + ".jar"));
+        if (BileTools.cfg.getBoolean("archive-plugins")) {
+            PluginDescriptionFile fx = getPluginDescription(f);
+            copy(f, new File(getBackupLocation(fx.getName()), fx.getVersion() + ".jar"));
+        }
         f.delete();
     }
 
     public static void reload(Plugin p) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
         File f = getPluginFile(p);
-        backup(p);
+        if (BileTools.cfg.getBoolean("archive-plugins")) {
+            backup(p);
+        }
         Set<File> x = unload(p);
 
         for (File i : x) {
@@ -204,9 +210,9 @@ public class BileUtils {
 
         ClassLoader cl = plugin.getClass().getClassLoader();
 
-        if (cl instanceof URLClassLoader) {
+        if (cl instanceof java.io.Closeable) {
             try {
-                ((URLClassLoader) cl).close();
+                ((java.io.Closeable) cl).close();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -256,7 +262,7 @@ public class BileUtils {
 
     public static void copy(File a, File b) throws IOException {
         b.getParentFile().mkdirs();
-        Files.copy(a, b);
+        Files.copy(a.toPath(), b.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
     public static long hash(File file) throws NoSuchAlgorithmException {

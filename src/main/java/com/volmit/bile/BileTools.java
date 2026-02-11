@@ -67,6 +67,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         cc.set("remote-deploy.master.master-enabled", false);
         cc.set("remote-deploy.master.master-deploy-to", new GList<String>().qadd("yourserver.com:9876:password"));
         cc.set("remote-deploy.master.master-deploy-signatures", new GList<String>().qadd("MyPlugin").qadd("AnotherPlugin"));
+        cc.set("archive-plugins", true);
         cfg = cc;
 
         File f = new File(getDataFolder(), "config.yml");
@@ -113,13 +114,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         getCommand("bile").setExecutor(this);
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        for (Sound f : Sound.values()) {
-            if (f.name().contains("ORB")) {
-                sx = f;
-            }
-        }
+        sx = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
 
-        getServer().getScheduler().scheduleSyncRepeatingTask(this, this::onTick, 10, 0);
+        getServer().getScheduler().runTaskTimer(this, this::onTick, 10, 0);
     }
 
     public boolean isBackoff(Player p) {
@@ -153,7 +150,6 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         las.put(f, f.lastModified());
     }
 
-    @SuppressWarnings("deprecation")
     public void onTick() {
         if (cd > 0) {
             cd--;
@@ -164,23 +160,25 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                 if (!mod.containsKey(i)) {
                     getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
 
-                    Bukkit.getScheduler().scheduleAsyncDelayedTask(bile, () -> {
-                        Plugin pp = BileUtils.getPlugin(i);
+                    if (cfg.getBoolean("archive-plugins")) {
+                        Bukkit.getScheduler().runTaskAsynchronously(bile, () -> {
+                            Plugin pp = BileUtils.getPlugin(i);
 
-                        if (pp != null) {
-                            try {
-                                BileUtils.backup(pp);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                            if (pp != null) {
+                                try {
+                                    BileUtils.backup(pp);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
 
                     mod.put(i, i.length());
                     las.put(i, i.lastModified());
 
                     if (cd == 0) {
-                        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
+                        Bukkit.getScheduler().runTaskLater(this, () -> {
                             try {
                                 BileUtils.load(i);
 
@@ -214,7 +212,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                             try {
                                 if (cfg.getBoolean("remote-deploy.master.master-enabled")) {
                                     if (cfg.getStringList("remote-deploy.master.master-deploy-signatures").contains(j.getName())) {
-                                        Bukkit.getScheduler().scheduleAsyncDelayedTask(BileTools.bile, () -> {
+                                        Bukkit.getScheduler().runTaskAsynchronously(BileTools.bile, () -> {
                                             for (String g : cfg.getStringList("remote-deploy.master.master-deploy-to")) {
                                                 try {
                                                     streamFile(i, g.split(":")[0], Integer.parseInt(g.split(":")[1]), g.split(":")[2]);
@@ -236,7 +234,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                                                 }
                                             }
 
-                                            Bukkit.getScheduler().scheduleSyncDelayedTask(BileTools.bile, () -> {
+                                            Bukkit.getScheduler().runTaskLater(BileTools.bile, () -> {
                                                 try {
                                                     BileUtils.reload(j);
 

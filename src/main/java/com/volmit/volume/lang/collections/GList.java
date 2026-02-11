@@ -683,9 +683,10 @@ public class GList<T> extends ArrayList<T>
 	/**
 	 * Remove the last element
 	 */
-	public void removeLast()
+	@Override
+	public T removeLast()
 	{
-		remove(last());
+		return remove(size() - 1);
 	}
 
 	/**

@@ -1,0 +1,140 @@
+import xyz.jpenilla.runpaper.task.RunServer
+
+plugins {
+    id 'java-library'
+    alias libs.plugins.lombok
+    alias libs.plugins.shadow
+    alias libs.plugins.runPaper
+}
+
+version = '1.7.0'
+def apiVersion = '1.21'
+def main = 'com.volmit.bile.BileTools'
+
+// ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
+// ======================== WINDOWS =============================
+// registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
+// ========================== UNIX ==============================
+registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugins')
+// ==============================================================
+
+def supported = ['1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4']
+
+def MIN_HEAP_SIZE = '2G'
+def MAX_HEAP_SIZE = '8G'
+def COLOR = 'truecolor'
+
+supported.each { ver ->
+    tasks.register("runServer-${ver}", RunServer) {
+        group = 'servers'
+        minecraftVersion(ver)
+        minHeapSize = MIN_HEAP_SIZE
+        maxHeapSize = MAX_HEAP_SIZE
+        systemProperty('disable.watchdog', '')
+        systemProperty('net.kyori.ansi.colorLevel', COLOR)
+        systemProperty('com.mojang.eula.agree', 'true')
+        pluginJars(tasks.named('shadowJar').flatMap { it.archiveFile })
+        runDirectory.convention(layout.buildDirectory.dir("run/${ver}"))
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    }
+}
+
+tasks.processResources {
+    inputs.properties(
+        'name': rootProject.name,
+        'version': version,
+        'main': main,
+        'apiVersion': apiVersion,
+    )
+
+    filesMatching('**/plugin.yml') {
+        expand(inputs.properties)
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url = 'https://jitpack.io' }
+}
+
+tasks.compileJava {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(21)
+}
+
+dependencies {
+    compileOnly libs.paper
+}
+
+tasks.named('shadowJar') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
+
+tasks.register('biletools', Copy) {
+    from tasks.named('shadowJar').flatMap { it.archiveFile }
+    into layout.buildDirectory
+    rename { "BileTools-${version}.jar" }
+}
+
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+    System.err.println()
+    System.err.println('=========================================================================================================')
+    System.err.println("You must run gradle on Java 21 or newer. You are using ${JavaVersion.current()}")
+    System.err.println()
+    System.err.println('=== For IDEs ===')
+    System.err.println('1. Configure the project for Java 21')
+    System.err.println('2. Configure the bundled gradle to use Java 21 in settings')
+    System.err.println()
+    System.err.println('=== For Command Line (gradlew) ===')
+    System.err.println('1. Install JDK 21 from https://www.oracle.com/java/technologies/downloads/#java21')
+    System.err.println('2. Set JAVA_HOME environment variable to the new jdk installation folder')
+    System.err.println('3. Open a new command prompt window to get the new environment variables if need be.')
+    System.err.println('=========================================================================================================')
+    System.err.println()
+    System.exit(69)
+}
+
+void registerCustomOutputTask(String name, String path) {
+    registerCustomOutputTask(name, path, true)
+}
+
+void registerCustomOutputTask(String name, String path, boolean doRename) {
+    if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
+        return
+    }
+    createOutputTask(name, path, doRename)
+}
+
+void registerCustomOutputTaskUnix(String name, String path) {
+    registerCustomOutputTaskUnix(name, path, true)
+}
+
+void registerCustomOutputTaskUnix(String name, String path, boolean doRename) {
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        return
+    }
+    createOutputTask(name, path, doRename)
+}
+
+void createOutputTask(String name, String path, boolean doRename) {
+    tasks.register("build${name}", Copy) {
+        group = 'development'
+        outputs.upToDateWhen { false }
+        dependsOn 'biletools'
+        from tasks.named('biletools', Copy).map { it.outputs.files.singleFile }
+        into file(path)
+        if (doRename) rename { 'BileTools.jar' }
+    }
+}

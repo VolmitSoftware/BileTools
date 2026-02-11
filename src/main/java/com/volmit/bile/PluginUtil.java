@@ -11,7 +11,6 @@ import org.bukkit.plugin.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URLClassLoader;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -440,9 +439,9 @@ public class PluginUtil {
         // jar file.
         ClassLoader cl = plugin.getClass().getClassLoader();
 
-        if (cl instanceof URLClassLoader) {
+        if (cl instanceof java.io.Closeable) {
             try {
-                ((URLClassLoader) cl).close();
+                ((java.io.Closeable) cl).close();
             } catch (IOException ex) {
                 Logger.getLogger(PluginUtil.class.getName()).log(Level.SEVERE, null, ex);
             }

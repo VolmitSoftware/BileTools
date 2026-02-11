@@ -8,6 +8,10 @@ ehthumbs.db
 # Eclipse & Maven
 target/
 .metadata
+
+# Gradle
+build/
+.gradle/
 bin/
 tmp/
 *.tmp
