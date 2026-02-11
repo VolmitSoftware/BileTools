@@ -7,7 +7,7 @@ plugins {
     alias libs.plugins.runPaper
 }
 
-version = '1.7.0'
+version = '3.0.0'
 def apiVersion = '1.21'
 def main = 'com.volmit.bile.BileTools'
 

@@ -160,7 +160,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                 if (!mod.containsKey(i)) {
                     getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
 
-                    if (cfg.getBoolean("archive-plugins")) {
+                    if (!cfg.has("archive-plugins") || cfg.getBoolean("archive-plugins")) {
                         Bukkit.getScheduler().runTaskAsynchronously(bile, () -> {
                             Plugin pp = BileUtils.getPlugin(i);
 
@@ -178,9 +178,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                     las.put(i, i.lastModified());
 
                     if (cd == 0) {
+                        getLogger().info("Scheduling hot drop for " + i.getName());
                         Bukkit.getScheduler().runTaskLater(this, () -> {
                             try {
+                                getLogger().info("Hot dropping " + i.getName());
                                 BileUtils.load(i);
+                                getLogger().info("Hot dropped " + i.getName() + " successfully");
 
                                 for (Player k : Bukkit.getOnlinePlayers()) {
                                     if (k.hasPermission("bile.use")) {
@@ -189,6 +192,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                                     }
                                 }
                             } catch (Throwable e) {
+                                getLogger().log(Level.SEVERE, "Failed to hot drop " + i.getName(), e);
+
                                 for (Player k : Bukkit.getOnlinePlayers()) {
                                     if (k.hasPermission("bile.use")) {
                                         k.sendMessage(tag + "Failed to hot drop " + ChatColor.RED + i.getName());
@@ -245,13 +250,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                                                         }
                                                     }
                                                 } catch (Throwable e) {
+                                                    getLogger().log(Level.SEVERE, "Failed to reload " + j.getName() + " after remote deploy", e);
+
                                                     for (Player k : Bukkit.getOnlinePlayers()) {
                                                         if (k.hasPermission("bile.use")) {
                                                             k.sendMessage(tag + "Failed to Reload " + ChatColor.RED + j.getName());
                                                         }
                                                     }
-
-                                                    e.printStackTrace();
                                                 }
                                             }, 5);
                                         });
@@ -267,13 +272,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
                                     }
                                 }
                             } catch (Throwable e) {
+                                getLogger().log(Level.SEVERE, "Failed to reload " + j.getName(), e);
+
                                 for (Player k : Bukkit.getOnlinePlayers()) {
                                     if (k.hasPermission("bile.use")) {
                                         k.sendMessage(tag + "Failed to Reload " + ChatColor.RED + j.getName());
                                     }
                                 }
-
-                                e.printStackTrace();
                             }
 
                             break;

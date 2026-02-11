@@ -422,15 +422,20 @@ public class PluginUtil {
         }
 
         if (commandMap != null) {
-            for (Iterator<Map.Entry<String, Command>> it = commands.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Command> entry = it.next();
+            List<String> toRemove = new ArrayList<>();
+
+            for (Map.Entry<String, Command> entry : commands.entrySet()) {
                 if (entry.getValue() instanceof PluginCommand) {
                     PluginCommand c = (PluginCommand) entry.getValue();
                     if (c.getPlugin() == plugin) {
                         c.unregister(commandMap);
-                        it.remove();
+                        toRemove.add(entry.getKey());
                     }
                 }
+            }
+
+            for (String key : toRemove) {
+                commands.remove(key);
             }
         }
 
