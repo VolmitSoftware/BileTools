@@ -26,9 +26,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
+    private static final int HOT_DROP_RETRY_LIMIT = 18;
+    private static final long HOT_DROP_INITIAL_DELAY_TICKS = 5L;
+    private static final long HOT_DROP_RETRY_DELAY_TICKS = 10L;
+
     private SlaveBileServer srv;
     public static BileTools bile;
     private HashMap<File, Long> mod;
@@ -150,6 +157,99 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         las.put(f, f.lastModified());
     }
 
+    private void scheduleHotDrop(File file) {
+        scheduleHotDrop(file, HOT_DROP_RETRY_LIMIT, HOT_DROP_INITIAL_DELAY_TICKS);
+    }
+
+    private void scheduleHotDrop(File file, int attemptsRemaining, long delayTicks) {
+        Bukkit.getScheduler().runTaskLater(this, () -> attemptHotDrop(file, attemptsRemaining), delayTicks);
+    }
+
+    private void attemptHotDrop(File file, int attemptsRemaining) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            return;
+        }
+
+        try {
+            if (!isReadablePluginJar(file)) {
+                if (attemptsRemaining > 0) {
+                    getLogger().info("Hot drop waiting for completed jar write: " + file.getName() + " (" + attemptsRemaining + " retries left)");
+                    scheduleHotDrop(file, attemptsRemaining - 1, HOT_DROP_RETRY_DELAY_TICKS);
+                    return;
+                }
+
+                throw new IOException("Jar is not readable after waiting for copy completion: " + file.getName());
+            }
+
+            getLogger().info("Hot dropping " + file.getName());
+            BileUtils.load(file);
+            getLogger().info("Hot dropped " + file.getName() + " successfully");
+
+            for (Player k : Bukkit.getOnlinePlayers()) {
+                if (k.hasPermission("bile.use")) {
+                    k.sendMessage(tag + "Hot Dropped " + ChatColor.WHITE + file.getName());
+                    k.playSound(k.getLocation(), sx, 1f, 1.9f);
+                }
+            }
+        } catch (Throwable e) {
+            if (attemptsRemaining > 0 && isTransientJarState(e)) {
+                getLogger().info("Hot drop deferred for " + file.getName() + ": " + rootMessage(e) + " (" + attemptsRemaining + " retries left)");
+                scheduleHotDrop(file, attemptsRemaining - 1, HOT_DROP_RETRY_DELAY_TICKS);
+                return;
+            }
+
+            getLogger().log(Level.SEVERE, "Failed to hot drop " + file.getName(), e);
+
+            for (Player k : Bukkit.getOnlinePlayers()) {
+                if (k.hasPermission("bile.use")) {
+                    k.sendMessage(tag + "Failed to hot drop " + ChatColor.RED + file.getName());
+                }
+            }
+        }
+    }
+
+    private boolean isReadablePluginJar(File file) {
+        try (ZipFile zipFile = new ZipFile(file)) {
+            return zipFile.getEntry("plugin.yml") != null || zipFile.getEntry("paper-plugin.yml") != null;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    private boolean isTransientJarState(Throwable throwable) {
+        Throwable root = rootCause(throwable);
+        if (root instanceof ZipException) {
+            return true;
+        }
+
+        String message = root.getMessage();
+        if (message == null) {
+            return false;
+        }
+
+        String lower = message.toLowerCase(Locale.ROOT);
+        return lower.contains("zip end header not found")
+                || lower.contains("zip file is empty")
+                || lower.contains("error in opening zip file")
+                || lower.contains("no such file");
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+
+        while (current != null && current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+
+        return current == null ? throwable : current;
+    }
+
+    private String rootMessage(Throwable throwable) {
+        Throwable root = rootCause(throwable);
+        String message = root.getMessage();
+        return message == null ? root.getClass().getSimpleName() : message;
+    }
+
     public void onTick() {
         if (cd > 0) {
             cd--;
@@ -179,28 +279,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
 
                     if (cd == 0) {
                         getLogger().info("Scheduling hot drop for " + i.getName());
-                        Bukkit.getScheduler().runTaskLater(this, () -> {
-                            try {
-                                getLogger().info("Hot dropping " + i.getName());
-                                BileUtils.load(i);
-                                getLogger().info("Hot dropped " + i.getName() + " successfully");
-
-                                for (Player k : Bukkit.getOnlinePlayers()) {
-                                    if (k.hasPermission("bile.use")) {
-                                        k.sendMessage(tag + "Hot Dropped " + ChatColor.WHITE + i.getName());
-                                        k.playSound(k.getLocation(), sx, 1f, 1.9f);
-                                    }
-                                }
-                            } catch (Throwable e) {
-                                getLogger().log(Level.SEVERE, "Failed to hot drop " + i.getName(), e);
-
-                                for (Player k : Bukkit.getOnlinePlayers()) {
-                                    if (k.hasPermission("bile.use")) {
-                                        k.sendMessage(tag + "Failed to hot drop " + ChatColor.RED + i.getName());
-                                    }
-                                }
-                            }
-                        }, 5);
+                        scheduleHotDrop(i);
                     }
                 }
 

@@ -39,6 +39,9 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class BileUtils {
+    private static final int ZIP_READ_RETRY_LIMIT = 20;
+    private static final long ZIP_READ_RETRY_DELAY_MS = 250L;
+
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
     private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
 
@@ -1141,30 +1144,69 @@ public class BileUtils {
     }
 
     public static PluginDescriptionFile getPluginDescription(File file) throws IOException, InvalidDescriptionException {
-        try (ZipFile z = new ZipFile(file)) {
-            ZipEntry pluginYml = z.getEntry("plugin.yml");
-            if (pluginYml != null) {
-                try (InputStream is = z.getInputStream(pluginYml)) {
-                    return new PluginDescriptionFile(is);
+        IOException lastZipReadError = null;
+
+        for (int attempt = 0; attempt <= ZIP_READ_RETRY_LIMIT; attempt++) {
+            try (ZipFile z = new ZipFile(file)) {
+                ZipEntry pluginYml = z.getEntry("plugin.yml");
+                if (pluginYml != null) {
+                    try (InputStream is = z.getInputStream(pluginYml)) {
+                        return new PluginDescriptionFile(is);
+                    }
                 }
-            }
 
-            ZipEntry paperYml = z.getEntry("paper-plugin.yml");
-            if (paperYml == null) {
-                throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + file.getName());
-            }
+                ZipEntry paperYml = z.getEntry("paper-plugin.yml");
+                if (paperYml == null) {
+                    throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + file.getName());
+                }
 
-            byte[] paperBytes;
-            try (InputStream is = z.getInputStream(paperYml)) {
-                paperBytes = readAllBytes(is);
-            }
+                byte[] paperBytes;
+                try (InputStream is = z.getInputStream(paperYml)) {
+                    paperBytes = readAllBytes(is);
+                }
 
-            try {
-                return new PluginDescriptionFile(new ByteArrayInputStream(paperBytes));
-            } catch (InvalidDescriptionException invalidPaperAsPluginYml) {
-                String converted = buildPluginYmlFromPaperPluginYml(paperBytes, file.getName());
-                return new PluginDescriptionFile(new ByteArrayInputStream(converted.getBytes(StandardCharsets.UTF_8)));
+                try {
+                    return new PluginDescriptionFile(new ByteArrayInputStream(paperBytes));
+                } catch (InvalidDescriptionException invalidPaperAsPluginYml) {
+                    String converted = buildPluginYmlFromPaperPluginYml(paperBytes, file.getName());
+                    return new PluginDescriptionFile(new ByteArrayInputStream(converted.getBytes(StandardCharsets.UTF_8)));
+                }
+            } catch (IOException e) {
+                if (!isTransientZipReadError(e) || attempt >= ZIP_READ_RETRY_LIMIT) {
+                    throw e;
+                }
+
+                lastZipReadError = e;
+                sleepQuietly(ZIP_READ_RETRY_DELAY_MS);
             }
+        }
+
+        if (lastZipReadError != null) {
+            throw lastZipReadError;
+        }
+
+        throw new IOException("Unable to read plugin jar " + file.getName());
+    }
+
+    private static boolean isTransientZipReadError(IOException e) {
+        String message = rootMessage(e);
+        if (message == null) {
+            return false;
+        }
+
+        String lower = message.toLowerCase(Locale.ROOT);
+        return lower.contains("zip end header not found")
+                || lower.contains("zip file is empty")
+                || lower.contains("error in opening zip file")
+                || lower.contains("invalid loc header")
+                || lower.contains("cannot read");
+    }
+
+    private static void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 
