@@ -6,4 +6,9 @@ Tools for making garbage
 * New Plugins are hot-dropped into the server when they are added to the plugins folder
 * It's basically plugman also. You can unload load and reload plugins.
 
+## Compatibility
+* Minecraft: `1.20.x+` (plugin `api-version: 1.20`)
+* Runtime JVM: `Java 21+`
+* Targets: Paper/Purpur (runtime loading paths are optimized for Paper-family internals)
+
 ### [Download](https://github.com/VolmitSoftware/BileTools/releases/)

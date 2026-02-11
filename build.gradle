@@ -8,7 +8,7 @@ plugins {
 }
 
 version = '3.0.0'
-def apiVersion = '1.21'
+def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 
 // ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
@@ -18,7 +18,7 @@ def main = 'com.volmit.bile.BileTools'
 registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugins')
 // ==============================================================
 
-def supported = ['1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4']
+def supported = ['1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
 
 def MIN_HEAP_SIZE = '2G'
 def MAX_HEAP_SIZE = '8G'
