@@ -116,6 +116,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             this.getLogger().log(Level.SEVERE, "Unable to read the config...", e);
         }
 
+        SplashScreen.print(this);
+
         if (cfg.getBoolean("remote-deploy.slave.slave-enabled")) {
             getLogger().info("Starting Remote Slave Server on *:" + cfg.getInt("remote-deploy.slave.slave-port"));
 
