@@ -7,7 +7,7 @@ plugins {
     alias libs.plugins.runPaper
 }
 
-version = '3.0.0'
+version = '3.0.0-Dev1'
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 
@@ -56,6 +56,18 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+sourceSets["main"].java {
+    srcDir("../VolmLib/shared/src/main/java")
+    include("com/volmit/**")
+    include("art/arcane/volmlib/util/director/**")
+    include("art/arcane/volmlib/util/decree/**")
+    include("art/arcane/volmlib/util/collection/**")
+    include("art/arcane/volmlib/util/function/**")
+    include("art/arcane/volmlib/util/json/**")
+    include("art/arcane/volmlib/util/scheduling/Queue.java")
+    include("art/arcane/volmlib/util/scheduling/ShurikenQueue.java")
 }
 
 repositories {

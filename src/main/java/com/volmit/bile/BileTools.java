@@ -1,5 +1,14 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.util.director.compat.DirectorDecreeEngineFactory;
+import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
+import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
+import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
+import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
+import art.arcane.volmlib.util.director.runtime.DirectorSender;
+import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
+import com.volmit.bile.command.BileFancyMenu;
+import com.volmit.bile.command.CommandBile;
 import com.volmit.volume.cluster.DataCluster;
 import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.YAMLClusterPort;
@@ -9,6 +18,9 @@ import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Entity;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -23,15 +35,20 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
+public class BileTools extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {
+    private static final String ROOT_COMMAND = "biletools";
+    private static final String ROOT_PERMISSION = "bile.use";
     private static final int HOT_DROP_RETRY_LIMIT = 18;
     private static final long HOT_DROP_INITIAL_DELAY_TICKS = 5L;
     private static final long HOT_DROP_RETRY_DELAY_TICKS = 10L;
@@ -45,6 +62,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
     public String tag;
     private Sound sx;
     private int cd = 10;
+    private volatile DirectorRuntimeEngine director;
+    private volatile DirectorVisualCommand helpRoot;
     public static DataCluster cfg;
 
     public static void streamFile(File f, String address, int port, String password) throws IOException {
@@ -118,7 +137,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         folder = getDataFolder().getParentFile();
         backoff = new File(getDataFolder(), "backoff");
         backoff.mkdirs();
-        getCommand("bile").setExecutor(this);
+        PluginCommand bileCommand = getCommand(ROOT_COMMAND);
+        if (bileCommand != null) {
+            bileCommand.setExecutor(this);
+            bileCommand.setTabCompleter(this);
+            getDirector();
+        } else {
+            getLogger().warning("Could not register /" + ROOT_COMMAND + " command executor");
+        }
         Bukkit.getPluginManager().registerEvents(this, this);
 
         sx = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
@@ -368,311 +394,380 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor {
         }
     }
 
+    public DirectorRuntimeEngine getDirector() {
+        DirectorRuntimeEngine local = director;
+        if (local != null) {
+            return local;
+        }
+
+        synchronized (this) {
+            if (director != null) {
+                return director;
+            }
+
+            director = DirectorDecreeEngineFactory.create(
+                    new CommandBile(this),
+                    null,
+                    buildDirectorContexts(),
+                    null,
+                    null,
+                    null
+            );
+            return director;
+        }
+    }
+
+    public DirectorVisualCommand getHelpRoot() {
+        DirectorVisualCommand local = helpRoot;
+        if (local != null) {
+            return local;
+        }
+
+        synchronized (this) {
+            if (helpRoot != null) {
+                return helpRoot;
+            }
+
+            helpRoot = DirectorVisualCommand.createRoot(getDirector());
+            return helpRoot;
+        }
+    }
+
+    private DirectorContextRegistry buildDirectorContexts() {
+        DirectorContextRegistry contexts = new DirectorContextRegistry();
+        contexts.register(CommandSender.class, (invocation, map) -> {
+            if (invocation.getSender() instanceof BukkitDirectorSender sender) {
+                return sender.sender();
+            }
+
+            return null;
+        });
+
+        contexts.register(Player.class, (invocation, map) -> {
+            if (invocation.getSender() instanceof BukkitDirectorSender sender && sender.sender() instanceof Player player) {
+                return player;
+            }
+
+            return null;
+        });
+
+        return contexts;
+    }
+
+    private DirectorExecutionResult runDirector(CommandSender sender, String label, String[] args) {
+        try {
+            return getDirector().execute(new DirectorInvocation(new BukkitDirectorSender(sender), label, Arrays.asList(args)));
+        } catch (Throwable e) {
+            getLogger().log(Level.SEVERE, "Director command execution failed", e);
+            return DirectorExecutionResult.notHandled();
+        }
+    }
+
+    private List<String> runDirectorTab(CommandSender sender, String alias, String[] args) {
+        try {
+            return getDirector().tabComplete(new DirectorInvocation(new BukkitDirectorSender(sender), alias, Arrays.asList(args)));
+        } catch (Throwable e) {
+            getLogger().log(Level.WARNING, "Director tab completion failed", e);
+            return List.of();
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (command.getName().equals("biletools")) {
-            if (!sender.hasPermission("bile.use")) {
-                sender.sendMessage(tag + "You need bile.use or OP.");
-                return true;
-            }
+        if (!isRootCommand(command)) {
+            return false;
+        }
 
-            if (args.length == 0) {
-                sender.sendMessage(tag + "/// - Ingame dev mode toggle");
-                sender.sendMessage(tag + "/bile load <plugin>");
-                sender.sendMessage(tag + "/bile unload <plugin>");
-                sender.sendMessage(tag + "/bile reload <plugin>");
-                sender.sendMessage(tag + "/bile install <plugin> [version]");
-                sender.sendMessage(tag + "/bile uninstall <plugin>");
-                sender.sendMessage(tag + "/bile library [plugin]");
-            } else {
-                if (args[0].equalsIgnoreCase("load")) {
-                    if (args.length > 1) {
-                        for (int i = 1; i < args.length; i++) {
-                            try {
-                                File s = BileUtils.getPluginFile(args[i]);
-
-                                if (s == null) {
-                                    sender.sendMessage(tag + "Couldn't find \"" + args[i] + "\".");
-                                    continue;
-                                }
-
-                                try {
-                                    BileUtils.load(s);
-                                    String n = BileUtils.getPluginByName(args[i]).getName();
-                                    sender.sendMessage(tag + "Loaded " + ChatColor.WHITE + n + ChatColor.GRAY + " from " + ChatColor.WHITE + s.getName());
-                                } catch (Throwable e) {
-                                    sender.sendMessage(tag + "Couldn't load \"" + args[i] + "\".");
-                                    e.printStackTrace();
-                                }
-                            } catch (Throwable e) {
-                                sender.sendMessage(tag + "Couldn't load or find \"" + args[i] + "\".");
-                                e.printStackTrace();
-                            }
-                        }
-                    } else {
-                        sender.sendMessage(tag + "/bile load <PLUGIN>");
-                    }
-                }
-
-                if (args[0].equalsIgnoreCase("uninstall")) {
-                    if (args.length > 1) {
-                        for (int i = 1; i < args.length; i++) {
-                            try {
-                                File s = BileUtils.getPluginFile(args[i]);
-
-                                if (s == null) {
-                                    sender.sendMessage(tag + "Couldn't find \"" + args[i] + "\".");
-                                    continue;
-                                }
-
-                                try {
-                                    String n = BileUtils.getPluginName(s);
-                                    BileUtils.delete(s);
-
-                                    if (!s.exists()) {
-                                        sender.sendMessage(tag + "Uninstalled " + ChatColor.WHITE + n + ChatColor.GRAY + " from " + ChatColor.WHITE + s.getName());
-                                    } else {
-                                        sender.sendMessage(tag + "Uninstalled " + ChatColor.WHITE + n + ChatColor.GRAY + " from " + ChatColor.WHITE + s.getName());
-                                        sender.sendMessage(tag + "But it looks like we can't delete it. You may need to delete " + ChatColor.RED + s.getName() + ChatColor.GRAY + " before installing it again.");
-                                    }
-                                } catch (Throwable e) {
-                                    sender.sendMessage(tag + "Couldn't uninstall \"" + args[i] + "\".");
-                                    e.printStackTrace();
-                                }
-                            } catch (Throwable e) {
-                                sender.sendMessage(tag + "Couldn't uninstall or find \"" + args[i] + "\".");
-                                e.printStackTrace();
-                            }
-                        }
-                    } else {
-                        sender.sendMessage(tag + "/bile uninstall <PLUGIN>");
-                    }
-                }
-
-                if (args[0].equalsIgnoreCase("install")) {
-                    if (args.length > 1) {
-                        try {
-                            for (File i : new File(getDataFolder(), "library").listFiles()) {
-                                if (i.getName().equalsIgnoreCase(args[1])) {
-                                    if (args.length == 2) {
-                                        long highest = -100000;
-                                        File latest = null;
-
-                                        for (File j : i.listFiles()) {
-                                            String v = j.getName().replace(".jar", "");
-                                            List<Integer> d = new ArrayList<>();
-
-                                            for (char k : v.toCharArray()) {
-                                                if (Character.isDigit(k)) {
-                                                    d.add(Integer.valueOf(k + ""));
-                                                }
-                                            }
-
-                                            Collections.reverse(d);
-                                            long g = 0;
-
-                                            for (int k = 0; k < d.size(); k++) {
-                                                g += (Math.pow(d.get(k), (k + 2)));
-                                            }
-
-                                            if (g > highest) {
-                                                highest = g;
-                                                latest = j;
-                                            }
-                                        }
-
-                                        if (latest != null) {
-                                            File ff = new File(BileUtils.getPluginsFolder(), i.getName() + "-" + latest.getName());
-                                            BileUtils.copy(latest, ff);
-                                            BileUtils.load(ff);
-                                            sender.sendMessage(tag + "Installed " + ChatColor.WHITE + ff.getName() + ChatColor.GRAY + " from library.");
-                                        }
-                                    } else {
-                                        for (File j : i.listFiles()) {
-                                            String v = j.getName().replace(".jar", "");
-
-                                            if (v.equals(args[2])) {
-                                                File ff = new File(BileUtils.getPluginsFolder(), i.getName() + "-" + v);
-                                                BileUtils.copy(j, ff);
-                                                BileUtils.load(ff);
-                                                sender.sendMessage(tag + "Installed " + ChatColor.WHITE + ff.getName() + ChatColor.GRAY + " from library.");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Throwable e) {
-                            sender.sendMessage(tag + "Couldn't install or find \"" + args[1] + "\".");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        sender.sendMessage(tag + "/bile install <PLUGIN> [VERSION]");
-                    }
-                }
-
-                if (args[0].equalsIgnoreCase("library")) {
-                    if (args.length == 1) {
-                        try {
-                            for (File i : new File(getDataFolder(), "library").listFiles()) {
-                                long highest = -100000;
-                                File latest = null;
-
-                                for (File j : i.listFiles()) {
-                                    String v = j.getName().replace(".jar", "");
-                                    List<Integer> d = new ArrayList<>();
-
-                                    for (char k : v.toCharArray()) {
-                                        if (Character.isDigit(k)) {
-                                            d.add(Integer.valueOf(k + ""));
-                                        }
-                                    }
-
-                                    Collections.reverse(d);
-                                    long g = 0;
-
-                                    for (int k = 0; k < d.size(); k++) {
-                                        g += (Math.pow(d.get(k), (k + 2)));
-                                    }
-
-                                    if (g > highest) {
-                                        highest = g;
-                                        latest = j;
-                                    }
-                                }
-
-                                if (latest != null) {
-                                    boolean inst = false;
-                                    String v = null;
-
-                                    for (File k : BileUtils.getPluginsFolder().listFiles()) {
-                                        if (BileUtils.isPluginJar(k) && i.getName().equalsIgnoreCase(BileUtils.getPluginName(k))) {
-                                            v = BileUtils.getPluginVersion(k);
-                                            inst = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if (inst) {
-                                        sender.sendMessage(tag + i.getName() + " " + ChatColor.GREEN + "(" + v + " installed) " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
-                                    } else {
-                                        sender.sendMessage(tag + i.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
-                                    }
-                                }
-                            }
-                        } catch (Throwable e) {
-                            sender.sendMessage(tag + "Couldn't list library.");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        try {
-                            boolean dx = false;
-
-                            for (File i : new File(getDataFolder(), "library").listFiles()) {
-                                if (!i.getName().equalsIgnoreCase(args[1])) {
-                                    continue;
-                                }
-
-                                dx = true;
-                                long highest = -100000;
-                                File latest = null;
-
-                                for (File j : i.listFiles()) {
-                                    String v = j.getName().replace(".jar", "");
-                                    List<Integer> d = new ArrayList<>();
-
-                                    for (char k : v.toCharArray()) {
-                                        if (Character.isDigit(k)) {
-                                            d.add(Integer.valueOf(k + ""));
-                                        }
-                                    }
-
-                                    Collections.reverse(d);
-                                    long g = 0;
-
-                                    for (int k = 0; k < d.size(); k++) {
-                                        g += (Math.pow(d.get(k), (k + 2)));
-                                    }
-
-                                    if (g > highest) {
-                                        highest = g;
-                                        latest = j;
-                                    }
-                                }
-
-                                if (latest != null) {
-                                    for (File j : i.listFiles()) {
-                                        sender.sendMessage(tag + j.getName().replace(".jar", ""));
-                                    }
-
-                                    sender.sendMessage(tag + i.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
-                                }
-                            }
-
-                            if (!dx) {
-                                sender.sendMessage(tag + "Couldn't find " + args[1] + " in library.");
-                            }
-                        } catch (Throwable e) {
-                            sender.sendMessage(tag + "Couldn't list library.");
-                            e.printStackTrace();
-                        }
-                    }
-                } else if (args[0].equalsIgnoreCase("unload")) {
-                    if (args.length > 1) {
-                        for (int i = 1; i < args.length; i++) {
-                            try {
-                                Plugin s = BileUtils.getPluginByName(args[i]);
-
-                                if (s == null) {
-                                    sender.sendMessage(tag + "Couldn't find \"" + args[i] + "\".");
-                                    continue;
-                                }
-
-                                String sn = s.getName();
-                                BileUtils.unload(s);
-                                File n = BileUtils.getPluginFile(args[i]);
-                                sender.sendMessage(tag + "Unloaded " + ChatColor.WHITE + sn + ChatColor.GRAY + " (" + ChatColor.WHITE + n.getName() + ChatColor.GRAY + ")");
-                            } catch (Throwable e) {
-                                sender.sendMessage(tag + "Couldn't unload \"" + args[i] + "\".");
-                                e.printStackTrace();
-                            }
-                        }
-                    } else {
-                        sender.sendMessage(tag + "/bile unload <PLUGIN>");
-                    }
-                } else if (args[0].equalsIgnoreCase("reload")) {
-                    if (args.length > 1) {
-                        for (int i = 1; i < args.length; i++) {
-                            try {
-                                Plugin s = BileUtils.getPluginByName(args[i]);
-
-                                if (s == null) {
-                                    sender.sendMessage(tag + "Couldn't find \"" + args[i] + "\".");
-                                    continue;
-                                }
-
-                                try {
-                                    String sn = s.getName();
-                                    BileUtils.reload(s);
-                                    File n = BileUtils.getPluginFile(args[i]);
-                                    sender.sendMessage(tag + "Reloaded " + ChatColor.WHITE + sn + ChatColor.GRAY + " (" + ChatColor.WHITE + n.getName() + ChatColor.GRAY + ")");
-                                } catch (Throwable e) {
-                                    sender.sendMessage(tag + "Couldn't reload \"" + args[i] + "\".");
-                                    e.printStackTrace();
-                                }
-                            } catch (Throwable e) {
-                                sender.sendMessage(tag + "Couldn't reload or find \"" + args[i] + "\".");
-                                e.printStackTrace();
-                            }
-                        }
-                    } else {
-                        sender.sendMessage(tag + "/bile reload <PLUGIN>");
-                    }
-                }
-            }
-
+        if (!sender.hasPermission(ROOT_PERMISSION)) {
+            sender.sendMessage(tag + "You need " + ROOT_PERMISSION + " or OP.");
             return true;
         }
 
-        return false;
+        if (BileFancyMenu.sendIfHelpRequested(sender, getHelpRoot(), args)) {
+            BileFancyMenu.playSuccessSound(sender);
+            return true;
+        }
+
+        DirectorExecutionResult result = runDirector(sender, label, args);
+        if (result.isSuccess()) {
+            BileFancyMenu.playSuccessSound(sender);
+            return true;
+        }
+
+        BileFancyMenu.playFailureSound(sender);
+        if (result.getMessage() == null || result.getMessage().trim().isEmpty()) {
+            sender.sendMessage(tag + "Unknown command \"" + String.join(" ", args) + "\".");
+        }
+        return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!sender.hasPermission(ROOT_PERMISSION)) {
+            return List.of();
+        }
+
+        if (!isRootCommand(command)) {
+            return List.of();
+        }
+
+        List<String> suggestions = runDirectorTab(sender, alias, args);
+        BileFancyMenu.playTabSound(sender);
+        return suggestions;
+    }
+
+    public void loadPlugin(CommandSender sender, String pluginName) {
+        try {
+            File pluginFile = BileUtils.getPluginFile(pluginName);
+            if (pluginFile == null) {
+                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
+                return;
+            }
+
+            BileUtils.load(pluginFile);
+            Plugin loaded = BileUtils.getPluginByName(pluginName);
+            String resolvedName = loaded == null ? pluginName : loaded.getName();
+            sender.sendMessage(tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+        } catch (Throwable e) {
+            sender.sendMessage(tag + "Couldn't load \"" + pluginName + "\".");
+            getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
+        }
+    }
+
+    public void unloadPlugin(CommandSender sender, String pluginName) {
+        try {
+            Plugin plugin = BileUtils.getPluginByName(pluginName);
+            if (plugin == null) {
+                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
+                return;
+            }
+
+            String name = plugin.getName();
+            BileUtils.unload(plugin);
+            File file = BileUtils.getPluginFile(pluginName);
+            String fileName = file == null ? (pluginName + ".jar") : file.getName();
+            sender.sendMessage(tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+        } catch (Throwable e) {
+            sender.sendMessage(tag + "Couldn't unload \"" + pluginName + "\".");
+            getLogger().log(Level.SEVERE, "Failed to unload plugin " + pluginName, e);
+        }
+    }
+
+    public void reloadPlugin(CommandSender sender, String pluginName) {
+        try {
+            Plugin plugin = BileUtils.getPluginByName(pluginName);
+            if (plugin == null) {
+                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
+                return;
+            }
+
+            String name = plugin.getName();
+            BileUtils.reload(plugin);
+            File file = BileUtils.getPluginFile(pluginName);
+            String fileName = file == null ? (pluginName + ".jar") : file.getName();
+            sender.sendMessage(tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+        } catch (Throwable e) {
+            sender.sendMessage(tag + "Couldn't reload \"" + pluginName + "\".");
+            getLogger().log(Level.SEVERE, "Failed to reload plugin " + pluginName, e);
+        }
+    }
+
+    public void uninstallPlugin(CommandSender sender, String pluginName) {
+        try {
+            File pluginFile = BileUtils.getPluginFile(pluginName);
+            if (pluginFile == null) {
+                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
+                return;
+            }
+
+            String name = BileUtils.getPluginName(pluginFile);
+            BileUtils.delete(pluginFile);
+
+            sender.sendMessage(tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+            if (pluginFile.exists()) {
+                sender.sendMessage(tag + "But it looks like we can't delete it. You may need to delete " + ChatColor.RED + pluginFile.getName() + ChatColor.GRAY + " before installing it again.");
+            }
+        } catch (Throwable e) {
+            sender.sendMessage(tag + "Couldn't uninstall \"" + pluginName + "\".");
+            getLogger().log(Level.SEVERE, "Failed to uninstall plugin " + pluginName, e);
+        }
+    }
+
+    public void installLibraryPlugin(CommandSender sender, String pluginName, String version) {
+        File libraryPlugin = new File(new File(getDataFolder(), "library"), pluginName);
+        if (!libraryPlugin.exists() || !libraryPlugin.isDirectory()) {
+            sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\" in library.");
+            return;
+        }
+
+        File selected = null;
+        if (version == null || version.trim().isEmpty() || version.equalsIgnoreCase("latest")) {
+            selected = findLatestLibraryVersion(libraryPlugin);
+        } else {
+            File[] entries = libraryPlugin.listFiles();
+            if (entries != null) {
+                for (File entry : entries) {
+                    if (entry != null && entry.isFile() && entry.getName().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                        String v = entry.getName().replace(".jar", "");
+                        if (v.equalsIgnoreCase(version.trim())) {
+                            selected = entry;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (selected == null) {
+            sender.sendMessage(tag + "Couldn't find version \"" + version + "\" for \"" + pluginName + "\".");
+            return;
+        }
+
+        try {
+            File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selected.getName());
+            BileUtils.copy(selected, out);
+            BileUtils.load(out);
+            sender.sendMessage(tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
+        } catch (Throwable e) {
+            sender.sendMessage(tag + "Couldn't install \"" + pluginName + "\".");
+            getLogger().log(Level.SEVERE, "Failed to install library plugin " + pluginName + "@" + version, e);
+        }
+    }
+
+    public void listLibrary(CommandSender sender) {
+        File library = new File(getDataFolder(), "library");
+        File[] plugins = library.listFiles();
+        if (plugins == null || plugins.length == 0) {
+            sender.sendMessage(tag + "Library is empty.");
+            return;
+        }
+
+        for (File pluginDir : plugins) {
+            if (pluginDir == null || !pluginDir.isDirectory()) {
+                continue;
+            }
+
+            File latest = findLatestLibraryVersion(pluginDir);
+            if (latest == null) {
+                continue;
+            }
+
+            boolean installed = false;
+            String installedVersion = null;
+            File pluginsFolder = BileUtils.getPluginsFolder();
+            File[] installedPlugins = pluginsFolder == null ? null : pluginsFolder.listFiles();
+            if (installedPlugins != null) {
+                for (File file : installedPlugins) {
+                    if (file == null || !file.isFile()) {
+                        continue;
+                    }
+
+                    try {
+                        if (BileUtils.isPluginJar(file) && pluginDir.getName().equalsIgnoreCase(BileUtils.getPluginName(file))) {
+                            installedVersion = BileUtils.getPluginVersion(file);
+                            installed = true;
+                            break;
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+
+            if (installed) {
+                sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.GREEN + "(" + installedVersion + " installed) " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+            } else {
+                sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+            }
+        }
+    }
+
+    public void listLibrary(CommandSender sender, String pluginName) {
+        File pluginDir = new File(new File(getDataFolder(), "library"), pluginName);
+        if (!pluginDir.exists() || !pluginDir.isDirectory()) {
+            sender.sendMessage(tag + "Couldn't find " + pluginName + " in library.");
+            return;
+        }
+
+        File latest = findLatestLibraryVersion(pluginDir);
+        File[] versions = pluginDir.listFiles();
+        if (versions != null) {
+            for (File version : versions) {
+                if (version != null && version.isFile() && version.getName().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                    sender.sendMessage(tag + version.getName().replace(".jar", ""));
+                }
+            }
+        }
+
+        if (latest != null) {
+            sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+        }
+    }
+
+    private File findLatestLibraryVersion(File pluginLibraryFolder) {
+        if (pluginLibraryFolder == null || !pluginLibraryFolder.exists() || !pluginLibraryFolder.isDirectory()) {
+            return null;
+        }
+
+        long highest = Long.MIN_VALUE;
+        File latest = null;
+        File[] entries = pluginLibraryFolder.listFiles();
+        if (entries == null) {
+            return null;
+        }
+
+        for (File jar : entries) {
+            if (jar == null || !jar.isFile() || !jar.getName().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                continue;
+            }
+
+            long score = scoreVersion(jar.getName().replace(".jar", ""));
+            if (score > highest) {
+                highest = score;
+                latest = jar;
+            }
+        }
+
+        return latest;
+    }
+
+    private long scoreVersion(String version) {
+        List<Integer> digits = new ArrayList<>();
+        for (char c : version.toCharArray()) {
+            if (Character.isDigit(c)) {
+                digits.add(Integer.parseInt(String.valueOf(c)));
+            }
+        }
+
+        Collections.reverse(digits);
+        long score = 0;
+        for (int i = 0; i < digits.size(); i++) {
+            score += (long) Math.pow(digits.get(i), (i + 2));
+        }
+
+        return score;
+    }
+
+    private boolean isRootCommand(Command command) {
+        String name = command.getName();
+        return name.equalsIgnoreCase(ROOT_COMMAND);
+    }
+
+    private record BukkitDirectorSender(CommandSender sender) implements DirectorSender {
+        @Override
+        public String getName() {
+            return sender.getName();
+        }
+
+        @Override
+        public boolean isPlayer() {
+            return sender instanceof Player;
+        }
+
+        @Override
+        public void sendMessage(String message) {
+            if (message != null && !message.trim().isEmpty()) {
+                sender.sendMessage(message);
+            }
+        }
     }
 }
