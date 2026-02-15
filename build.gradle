@@ -15,7 +15,7 @@ def main = 'com.volmit.bile.BileTools'
 // ======================== WINDOWS =============================
 // registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
 // ========================== UNIX ==============================
-registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugins')
+registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugin-jars")
 // ==============================================================
 
 def supported = ['1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
