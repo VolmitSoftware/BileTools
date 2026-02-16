@@ -44,10 +44,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -58,6 +62,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final int HOT_DROP_RETRY_LIMIT = 18;
     private static final long HOT_DROP_INITIAL_DELAY_TICKS = 5L;
     private static final long HOT_DROP_RETRY_DELAY_TICKS = 10L;
+    private static final long PLUGIN_OPERATION_TIMEOUT_SECONDS = 120L;
 
     private SlaveBileServer srv;
     public static BileTools bile;
@@ -237,7 +242,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             enqueuePluginOperation(operationKey, () -> {
                 try {
                     getLogger().info("Hot dropping " + file.getName());
-                    BileUtils.load(file);
+                    executePluginLifecycle("hot drop " + file.getName(), () -> BileUtils.load(file));
                     getLogger().info("Hot dropped " + file.getName() + " successfully");
                     notifyBileUsers(tag + "Hot Dropped " + ChatColor.WHITE + file.getName(), true);
                 } catch (Throwable e) {
@@ -378,7 +383,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             try {
-                BileUtils.reload(targetPlugin);
+                executePluginLifecycle("reload " + pluginName, () -> BileUtils.reload(targetPlugin));
                 notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName, e);
@@ -425,7 +430,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             try {
-                BileUtils.reload(targetPlugin);
+                executePluginLifecycle("reload " + pluginName + " after remote deploy", () -> BileUtils.reload(targetPlugin));
                 notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName + " after remote deploy", e);
@@ -490,6 +495,48 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 getLogger().log(Level.SEVERE, "Rejected plugin operation task", e);
             }
         }
+    }
+
+    private void executePluginLifecycle(String operationName, ThrowingRunnable operation) throws Throwable {
+        if (operation == null || !isEnabled()) {
+            return;
+        }
+
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        boolean scheduled = runGlobal(() -> {
+            try {
+                operation.run();
+                completion.complete(null);
+            } catch (Throwable t) {
+                completion.completeExceptionally(t);
+            }
+        });
+
+        if (!scheduled) {
+            operation.run();
+            return;
+        }
+
+        try {
+            completion.get(PLUGIN_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for plugin operation: " + operationName, e);
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("Timed out while waiting for plugin operation: " + operationName, e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                throw cause;
+            }
+
+            throw e;
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Throwable;
     }
 
     private void scheduleTicker(long delayTicks) {
@@ -730,7 +777,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     return;
                 }
 
-                BileUtils.load(pluginFile);
+                executePluginLifecycle("load " + pluginName, () -> BileUtils.load(pluginFile));
                 Plugin loaded = BileUtils.getPluginByName(pluginName);
                 String resolvedName = loaded == null ? pluginName : loaded.getName();
                 sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
@@ -753,7 +800,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 String name = plugin.getName();
                 File sourceFile = BileUtils.getPluginFile(plugin);
-                BileUtils.unload(plugin);
+                executePluginLifecycle("unload " + pluginName, () -> BileUtils.unload(plugin));
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
             } catch (Throwable e) {
@@ -775,7 +822,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 String name = plugin.getName();
                 File sourceFile = BileUtils.getPluginFile(plugin);
-                BileUtils.reload(plugin);
+                executePluginLifecycle("reload " + pluginName, () -> BileUtils.reload(plugin));
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
             } catch (Throwable e) {
@@ -796,7 +843,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 String name = BileUtils.getPluginName(pluginFile);
-                BileUtils.delete(pluginFile);
+                executePluginLifecycle("uninstall " + pluginName, () -> BileUtils.delete(pluginFile));
 
                 sendCommandMessage(sender, tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
                 if (pluginFile.exists()) {
@@ -845,7 +892,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             try {
                 File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selectedVersion.getName());
                 BileUtils.copy(selectedVersion, out);
-                BileUtils.load(out);
+                executePluginLifecycle("install " + pluginName, () -> BileUtils.load(out));
                 sendCommandMessage(sender, tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
             } catch (Throwable e) {
                 sendCommandMessage(sender, tag + "Couldn't install \"" + pluginName + "\".");
