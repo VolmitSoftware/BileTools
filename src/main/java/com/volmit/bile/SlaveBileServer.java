@@ -1,5 +1,6 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -48,13 +49,20 @@ public class SlaveBileServer extends Thread {
                         fos.write(buf, 0, read);
                     }
 
-                    Bukkit.getScheduler().runTaskLater(BileTools.bile, () -> {
-						for (Player k : Bukkit.getOnlinePlayers()) {
-							if (k.hasPermission("bile.use")) {
-								k.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + f.getName() + ChatColor.GRAY + " from " + ChatColor.WHITE + client.getInetAddress().getHostAddress());
-							}
-						}
-					}, 0);
+                    Runnable notify = () -> {
+                        for (Player k : Bukkit.getOnlinePlayers()) {
+                            if (k.hasPermission("bile.use")) {
+                                k.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + f.getName() + ChatColor.GRAY + " from " + ChatColor.WHITE + client.getInetAddress().getHostAddress());
+                            }
+                        }
+                    };
+
+                    if (!FoliaScheduler.runGlobal(BileTools.bile, notify)) {
+                        try {
+                            Bukkit.getScheduler().runTask(BileTools.bile, notify);
+                        } catch (Throwable ignored) {
+                        }
+                    }
 
                     fos.close();
                     din.close();

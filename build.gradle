@@ -66,6 +66,7 @@ sourceSets["main"].java {
     include("art/arcane/volmlib/util/collection/**")
     include("art/arcane/volmlib/util/function/**")
     include("art/arcane/volmlib/util/json/**")
+    include("art/arcane/volmlib/util/scheduling/FoliaScheduler.java")
     include("art/arcane/volmlib/util/scheduling/Queue.java")
     include("art/arcane/volmlib/util/scheduling/ShurikenQueue.java")
 }

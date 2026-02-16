@@ -2,6 +2,7 @@ name: ${name}
 version: ${version}
 main: ${main}
 api-version: ${apiVersion}
+folia-supported: true
 commands:
   biletools:
     aliases: [bile, bi, b, volmit, vomit, vom]

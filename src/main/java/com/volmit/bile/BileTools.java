@@ -7,6 +7,7 @@ import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
 import com.volmit.volume.cluster.DataCluster;
@@ -25,6 +26,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -42,6 +44,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -62,8 +68,15 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     public String tag;
     private Sound sx;
     private int cd = 10;
+    private volatile boolean tickerActive;
     private volatile DirectorRuntimeEngine director;
     private volatile DirectorVisualCommand helpRoot;
+    private final Set<String> queuedOperationKeys = ConcurrentHashMap.newKeySet();
+    private final ExecutorService pluginOperationExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "BileTools-PluginOps");
+        thread.setDaemon(true);
+        return thread;
+    });
     public static DataCluster cfg;
 
     public static void streamFile(File f, String address, int port, String password) throws IOException {
@@ -151,7 +164,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         sx = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
 
-        getServer().getScheduler().runTaskTimer(this, this::onTick, 10, 0);
+        tickerActive = true;
+        scheduleTicker(10L);
     }
 
     public boolean isBackoff(Player p) {
@@ -168,6 +182,17 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     @Override
     public void onDisable() {
+        tickerActive = false;
+
+        queuedOperationKeys.clear();
+        pluginOperationExecutor.shutdownNow();
+
+        FoliaScheduler.cancelTasks(this);
+        try {
+            Bukkit.getScheduler().cancelTasks(this);
+        } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
+        }
+
         if (srv != null && srv.isAlive()) {
             srv.interrupt();
 
@@ -190,7 +215,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void scheduleHotDrop(File file, int attemptsRemaining, long delayTicks) {
-        Bukkit.getScheduler().runTaskLater(this, () -> attemptHotDrop(file, attemptsRemaining), delayTicks);
+        runGlobalLater(() -> attemptHotDrop(file, attemptsRemaining), delayTicks);
     }
 
     private void attemptHotDrop(File file, int attemptsRemaining) {
@@ -208,17 +233,24 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 throw new IOException("Jar is not readable after waiting for copy completion: " + file.getName());
             }
+            String operationKey = "hotdrop:" + file.getAbsolutePath().toLowerCase(Locale.ROOT);
+            enqueuePluginOperation(operationKey, () -> {
+                try {
+                    getLogger().info("Hot dropping " + file.getName());
+                    BileUtils.load(file);
+                    getLogger().info("Hot dropped " + file.getName() + " successfully");
+                    notifyBileUsers(tag + "Hot Dropped " + ChatColor.WHITE + file.getName(), true);
+                } catch (Throwable e) {
+                    if (attemptsRemaining > 0 && isTransientJarState(e)) {
+                        getLogger().info("Hot drop deferred for " + file.getName() + ": " + rootMessage(e) + " (" + attemptsRemaining + " retries left)");
+                        runGlobal(() -> scheduleHotDrop(file, attemptsRemaining - 1, HOT_DROP_RETRY_DELAY_TICKS));
+                        return;
+                    }
 
-            getLogger().info("Hot dropping " + file.getName());
-            BileUtils.load(file);
-            getLogger().info("Hot dropped " + file.getName() + " successfully");
-
-            for (Player k : Bukkit.getOnlinePlayers()) {
-                if (k.hasPermission("bile.use")) {
-                    k.sendMessage(tag + "Hot Dropped " + ChatColor.WHITE + file.getName());
-                    k.playSound(k.getLocation(), sx, 1f, 1.9f);
+                    getLogger().log(Level.SEVERE, "Failed to hot drop " + file.getName(), e);
+                    notifyBileUsers(tag + "Failed to hot drop " + ChatColor.RED + file.getName(), false);
                 }
-            }
+            });
         } catch (Throwable e) {
             if (attemptsRemaining > 0 && isTransientJarState(e)) {
                 getLogger().info("Hot drop deferred for " + file.getName() + ": " + rootMessage(e) + " (" + attemptsRemaining + " retries left)");
@@ -289,17 +321,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
 
                     if (!cfg.has("archive-plugins") || cfg.getBoolean("archive-plugins")) {
-                        Bukkit.getScheduler().runTaskAsynchronously(bile, () -> {
-                            Plugin pp = BileUtils.getPlugin(i);
-
-                            if (pp != null) {
-                                try {
-                                    BileUtils.backup(pp);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
+                        Plugin trackedPlugin = BileUtils.getPlugin(i);
+                        if (trackedPlugin != null) {
+                            String trackedPluginName = trackedPlugin.getName();
+                            String trackedPluginVersion = trackedPlugin.getDescription().getVersion();
+                            File trackedPluginFile = BileUtils.getPluginFile(trackedPlugin);
+                            runAsync(() -> backupPluginFile(trackedPluginFile, trackedPluginName, trackedPluginVersion));
+                        }
                     }
 
                     mod.put(i, i.length());
@@ -321,71 +349,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                             getLogger().log(Level.INFO, "Identified Plugin: " + j.getName() + " <-> " + i.getName());
                             getLogger().log(Level.INFO, "Reloading: " + j.getName());
 
-                            try {
-                                if (cfg.getBoolean("remote-deploy.master.master-enabled")) {
-                                    if (cfg.getStringList("remote-deploy.master.master-deploy-signatures").contains(j.getName())) {
-                                        Bukkit.getScheduler().runTaskAsynchronously(BileTools.bile, () -> {
-                                            for (String g : cfg.getStringList("remote-deploy.master.master-deploy-to")) {
-                                                try {
-                                                    streamFile(i, g.split(":")[0], Integer.parseInt(g.split(":")[1]), g.split(":")[2]);
-                                                } catch (NumberFormatException e) {
-                                                    this.getLogger().warning("Invalid format");
-                                                    e.printStackTrace();
-                                                } catch (UnknownHostException e) {
-                                                    this.getLogger().warning("Invalid host");
-                                                    e.printStackTrace();
-                                                } catch (IOException e) {
-                                                    this.getLogger().warning("Invalid connection");
-                                                    e.printStackTrace();
-                                                }
-                                            }
-
-                                            for (Player k : Bukkit.getOnlinePlayers()) {
-                                                if (k.hasPermission("bile.use")) {
-                                                    k.sendMessage(tag + "Deployed " + ChatColor.WHITE + j.getName() + ChatColor.GRAY + " to " + cfg.getStringList("remote-deploy.master.master-deploy-to").size() + " remote server(s)");
-                                                }
-                                            }
-
-                                            Bukkit.getScheduler().runTaskLater(BileTools.bile, () -> {
-                                                try {
-                                                    BileUtils.reload(j);
-
-                                                    for (Player k : Bukkit.getOnlinePlayers()) {
-                                                        if (k.hasPermission("bile.use")) {
-                                                            k.sendMessage(tag + "Reloaded " + ChatColor.WHITE + j.getName());
-                                                            k.playSound(k.getLocation(), sx, 1f, 1.9f);
-                                                        }
-                                                    }
-                                                } catch (Throwable e) {
-                                                    getLogger().log(Level.SEVERE, "Failed to reload " + j.getName() + " after remote deploy", e);
-
-                                                    for (Player k : Bukkit.getOnlinePlayers()) {
-                                                        if (k.hasPermission("bile.use")) {
-                                                            k.sendMessage(tag + "Failed to Reload " + ChatColor.RED + j.getName());
-                                                        }
-                                                    }
-                                                }
-                                            }, 5);
-                                        });
-                                    }
-                                } else {
-                                    BileUtils.reload(j);
-
-                                    for (Player k : Bukkit.getOnlinePlayers()) {
-                                        if (k.hasPermission("bile.use")) {
-                                            k.sendMessage(tag + "Reloaded " + ChatColor.WHITE + j.getName());
-                                            k.playSound(k.getLocation(), sx, 1f, 1.9f);
-                                        }
-                                    }
-                                }
-                            } catch (Throwable e) {
-                                getLogger().log(Level.SEVERE, "Failed to reload " + j.getName(), e);
-
-                                for (Player k : Bukkit.getOnlinePlayers()) {
-                                    if (k.hasPermission("bile.use")) {
-                                        k.sendMessage(tag + "Failed to Reload " + ChatColor.RED + j.getName());
-                                    }
-                                }
+                            if (cfg.getBoolean("remote-deploy.master.master-enabled")
+                                    && cfg.getStringList("remote-deploy.master.master-deploy-signatures").contains(j.getName())) {
+                                queueRemoteDeployReload(i, j.getName());
+                            } else {
+                                queuePluginReload(j.getName());
                             }
 
                             break;
@@ -393,6 +361,240 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     }
                 }
             }
+        }
+    }
+
+    private void queuePluginReload(String pluginName) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+
+        String key = "reload:" + pluginName.toLowerCase(Locale.ROOT);
+        enqueuePluginOperation(key, () -> {
+            Plugin targetPlugin = BileUtils.getPluginByName(pluginName);
+            if (targetPlugin == null) {
+                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                return;
+            }
+
+            try {
+                BileUtils.reload(targetPlugin);
+                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
+            } catch (Throwable e) {
+                getLogger().log(Level.SEVERE, "Failed to reload " + pluginName, e);
+                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+            }
+        });
+    }
+
+    private void queueRemoteDeployReload(File sourceFile, String pluginName) {
+        if (sourceFile == null || pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+
+        String key = "remote-reload:" + pluginName.toLowerCase(Locale.ROOT);
+        enqueuePluginOperation(key, () -> {
+            for (String target : cfg.getStringList("remote-deploy.master.master-deploy-to")) {
+                String[] split = target.split(":", 3);
+                if (split.length < 3) {
+                    getLogger().warning("Invalid remote deploy target format: " + target);
+                    continue;
+                }
+
+                try {
+                    streamFile(sourceFile, split[0], Integer.parseInt(split[1]), split[2]);
+                } catch (NumberFormatException e) {
+                    getLogger().warning("Invalid port in remote deploy target: " + target);
+                } catch (UnknownHostException e) {
+                    getLogger().warning("Invalid host in remote deploy target: " + target);
+                } catch (IOException e) {
+                    getLogger().warning("Failed remote deploy to " + target + ": " + e.getMessage());
+                }
+            }
+
+            notifyBileUsers(
+                    tag + "Deployed " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " to "
+                            + cfg.getStringList("remote-deploy.master.master-deploy-to").size() + " remote server(s)",
+                    false
+            );
+
+            Plugin targetPlugin = BileUtils.getPluginByName(pluginName);
+            if (targetPlugin == null) {
+                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                return;
+            }
+
+            try {
+                BileUtils.reload(targetPlugin);
+                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
+            } catch (Throwable e) {
+                getLogger().log(Level.SEVERE, "Failed to reload " + pluginName + " after remote deploy", e);
+                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+            }
+        });
+    }
+
+    private void notifyBileUsers(String message, boolean playSound) {
+        runGlobal(() -> {
+            for (Player k : Bukkit.getOnlinePlayers()) {
+                if (k.hasPermission(ROOT_PERMISSION)) {
+                    k.sendMessage(message);
+                    if (playSound) {
+                        k.playSound(k.getLocation(), sx, 1f, 1.9f);
+                    }
+                }
+            }
+        });
+    }
+
+    private void sendCommandMessage(CommandSender sender, String message) {
+        if (sender == null || message == null) {
+            return;
+        }
+
+        if (!runGlobal(() -> sender.sendMessage(message))) {
+            sender.sendMessage(message);
+        }
+    }
+
+    private void enqueuePluginOperation(String key, Runnable operation) {
+        if (operation == null) {
+            return;
+        }
+
+        String normalizedKey = key == null ? null : key.toLowerCase(Locale.ROOT);
+        if (normalizedKey != null && !queuedOperationKeys.add(normalizedKey)) {
+            return;
+        }
+
+        try {
+            pluginOperationExecutor.execute(() -> {
+                try {
+                    if (isEnabled()) {
+                        operation.run();
+                    }
+                } catch (Throwable e) {
+                    getLogger().log(Level.SEVERE, "Queued plugin operation failed", e);
+                } finally {
+                    if (normalizedKey != null) {
+                        queuedOperationKeys.remove(normalizedKey);
+                    }
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (normalizedKey != null) {
+                queuedOperationKeys.remove(normalizedKey);
+            }
+
+            if (isEnabled()) {
+                getLogger().log(Level.SEVERE, "Rejected plugin operation task", e);
+            }
+        }
+    }
+
+    private void scheduleTicker(long delayTicks) {
+        if (!tickerActive || !isEnabled()) {
+            return;
+        }
+
+        long safeDelay = Math.max(1L, delayTicks);
+        if (!runGlobalLater(() -> {
+            if (!tickerActive || !isEnabled()) {
+                return;
+            }
+
+            onTick();
+            scheduleTicker(1L);
+        }, safeDelay)) {
+            tickerActive = false;
+            getLogger().warning("Failed to schedule BileTools ticker task.");
+        }
+    }
+
+    private boolean runGlobal(Runnable runnable) {
+        if (runnable == null || !isEnabled()) {
+            return false;
+        }
+
+        Runnable guarded = () -> {
+            if (isEnabled()) {
+                runnable.run();
+            }
+        };
+
+        if (FoliaScheduler.runGlobal(this, guarded)) {
+            return true;
+        }
+
+        try {
+            Bukkit.getScheduler().runTask(this, guarded);
+            return true;
+        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
+            return false;
+        }
+    }
+
+    private boolean runGlobalLater(Runnable runnable, long delayTicks) {
+        if (delayTicks <= 0) {
+            return runGlobal(runnable);
+        }
+
+        if (runnable == null || !isEnabled()) {
+            return false;
+        }
+
+        Runnable guarded = () -> {
+            if (isEnabled()) {
+                runnable.run();
+            }
+        };
+
+        long safeDelay = Math.max(1L, delayTicks);
+        if (FoliaScheduler.runGlobal(this, guarded, safeDelay)) {
+            return true;
+        }
+
+        try {
+            Bukkit.getScheduler().runTaskLater(this, guarded, safeDelay);
+            return true;
+        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
+            return false;
+        }
+    }
+
+    private boolean runAsync(Runnable runnable) {
+        if (runnable == null || !isEnabled()) {
+            return false;
+        }
+
+        Runnable guarded = () -> {
+            if (isEnabled()) {
+                runnable.run();
+            }
+        };
+
+        if (FoliaScheduler.runAsync(this, guarded)) {
+            return true;
+        }
+
+        try {
+            Bukkit.getScheduler().runTaskAsynchronously(this, guarded);
+            return true;
+        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
+            return false;
+        }
+    }
+
+    private void backupPluginFile(File sourceFile, String pluginName, String pluginVersion) {
+        if (sourceFile == null || pluginName == null || pluginVersion == null) {
+            return;
+        }
+
+        try {
+            BileUtils.copy(sourceFile, new File(BileUtils.getBackupLocation(pluginName), pluginVersion + ".jar"));
+            getLogger().info("Backed up " + pluginName + " " + pluginVersion);
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Failed to back up " + pluginName + " " + pluginVersion, e);
         }
     }
 
@@ -519,80 +721,92 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     public void loadPlugin(CommandSender sender, String pluginName) {
-        try {
-            File pluginFile = BileUtils.getPluginFile(pluginName);
-            if (pluginFile == null) {
-                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
-                return;
-            }
+        sendCommandMessage(sender, tag + "Queued load for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        enqueuePluginOperation("cmd-load:" + pluginName, () -> {
+            try {
+                File pluginFile = BileUtils.getPluginFile(pluginName);
+                if (pluginFile == null) {
+                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    return;
+                }
 
-            BileUtils.load(pluginFile);
-            Plugin loaded = BileUtils.getPluginByName(pluginName);
-            String resolvedName = loaded == null ? pluginName : loaded.getName();
-            sender.sendMessage(tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
-        } catch (Throwable e) {
-            sender.sendMessage(tag + "Couldn't load \"" + pluginName + "\".");
-            getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
-        }
+                BileUtils.load(pluginFile);
+                Plugin loaded = BileUtils.getPluginByName(pluginName);
+                String resolvedName = loaded == null ? pluginName : loaded.getName();
+                sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+            } catch (Throwable e) {
+                sendCommandMessage(sender, tag + "Couldn't load \"" + pluginName + "\".");
+                getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
+            }
+        });
     }
 
     public void unloadPlugin(CommandSender sender, String pluginName) {
-        try {
-            Plugin plugin = BileUtils.getPluginByName(pluginName);
-            if (plugin == null) {
-                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
-                return;
-            }
+        sendCommandMessage(sender, tag + "Queued unload for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        enqueuePluginOperation("cmd-unload:" + pluginName, () -> {
+            try {
+                Plugin plugin = BileUtils.getPluginByName(pluginName);
+                if (plugin == null) {
+                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    return;
+                }
 
-            String name = plugin.getName();
-            BileUtils.unload(plugin);
-            File file = BileUtils.getPluginFile(pluginName);
-            String fileName = file == null ? (pluginName + ".jar") : file.getName();
-            sender.sendMessage(tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
-        } catch (Throwable e) {
-            sender.sendMessage(tag + "Couldn't unload \"" + pluginName + "\".");
-            getLogger().log(Level.SEVERE, "Failed to unload plugin " + pluginName, e);
-        }
+                String name = plugin.getName();
+                File sourceFile = BileUtils.getPluginFile(plugin);
+                BileUtils.unload(plugin);
+                String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
+                sendCommandMessage(sender, tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+            } catch (Throwable e) {
+                sendCommandMessage(sender, tag + "Couldn't unload \"" + pluginName + "\".");
+                getLogger().log(Level.SEVERE, "Failed to unload plugin " + pluginName, e);
+            }
+        });
     }
 
     public void reloadPlugin(CommandSender sender, String pluginName) {
-        try {
-            Plugin plugin = BileUtils.getPluginByName(pluginName);
-            if (plugin == null) {
-                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
-                return;
-            }
+        sendCommandMessage(sender, tag + "Queued reload for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        enqueuePluginOperation("cmd-reload:" + pluginName, () -> {
+            try {
+                Plugin plugin = BileUtils.getPluginByName(pluginName);
+                if (plugin == null) {
+                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    return;
+                }
 
-            String name = plugin.getName();
-            BileUtils.reload(plugin);
-            File file = BileUtils.getPluginFile(pluginName);
-            String fileName = file == null ? (pluginName + ".jar") : file.getName();
-            sender.sendMessage(tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
-        } catch (Throwable e) {
-            sender.sendMessage(tag + "Couldn't reload \"" + pluginName + "\".");
-            getLogger().log(Level.SEVERE, "Failed to reload plugin " + pluginName, e);
-        }
+                String name = plugin.getName();
+                File sourceFile = BileUtils.getPluginFile(plugin);
+                BileUtils.reload(plugin);
+                String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
+                sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+            } catch (Throwable e) {
+                sendCommandMessage(sender, tag + "Couldn't reload \"" + pluginName + "\".");
+                getLogger().log(Level.SEVERE, "Failed to reload plugin " + pluginName, e);
+            }
+        });
     }
 
     public void uninstallPlugin(CommandSender sender, String pluginName) {
-        try {
-            File pluginFile = BileUtils.getPluginFile(pluginName);
-            if (pluginFile == null) {
-                sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\".");
-                return;
-            }
+        sendCommandMessage(sender, tag + "Queued uninstall for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        enqueuePluginOperation("cmd-uninstall:" + pluginName, () -> {
+            try {
+                File pluginFile = BileUtils.getPluginFile(pluginName);
+                if (pluginFile == null) {
+                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    return;
+                }
 
-            String name = BileUtils.getPluginName(pluginFile);
-            BileUtils.delete(pluginFile);
+                String name = BileUtils.getPluginName(pluginFile);
+                BileUtils.delete(pluginFile);
 
-            sender.sendMessage(tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
-            if (pluginFile.exists()) {
-                sender.sendMessage(tag + "But it looks like we can't delete it. You may need to delete " + ChatColor.RED + pluginFile.getName() + ChatColor.GRAY + " before installing it again.");
+                sendCommandMessage(sender, tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+                if (pluginFile.exists()) {
+                    sendCommandMessage(sender, tag + "But it looks like we can't delete it. You may need to delete " + ChatColor.RED + pluginFile.getName() + ChatColor.GRAY + " before installing it again.");
+                }
+            } catch (Throwable e) {
+                sendCommandMessage(sender, tag + "Couldn't uninstall \"" + pluginName + "\".");
+                getLogger().log(Level.SEVERE, "Failed to uninstall plugin " + pluginName, e);
             }
-        } catch (Throwable e) {
-            sender.sendMessage(tag + "Couldn't uninstall \"" + pluginName + "\".");
-            getLogger().log(Level.SEVERE, "Failed to uninstall plugin " + pluginName, e);
-        }
+        });
     }
 
     public void installLibraryPlugin(CommandSender sender, String pluginName, String version) {
@@ -625,15 +839,19 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
 
-        try {
-            File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selected.getName());
-            BileUtils.copy(selected, out);
-            BileUtils.load(out);
-            sender.sendMessage(tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
-        } catch (Throwable e) {
-            sender.sendMessage(tag + "Couldn't install \"" + pluginName + "\".");
-            getLogger().log(Level.SEVERE, "Failed to install library plugin " + pluginName + "@" + version, e);
-        }
+        sendCommandMessage(sender, tag + "Queued library install for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        File selectedVersion = selected;
+        enqueuePluginOperation("cmd-install:" + pluginName, () -> {
+            try {
+                File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selectedVersion.getName());
+                BileUtils.copy(selectedVersion, out);
+                BileUtils.load(out);
+                sendCommandMessage(sender, tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
+            } catch (Throwable e) {
+                sendCommandMessage(sender, tag + "Couldn't install \"" + pluginName + "\".");
+                getLogger().log(Level.SEVERE, "Failed to install library plugin " + pluginName + "@" + version, e);
+            }
+        });
     }
 
     public void listLibrary(CommandSender sender) {

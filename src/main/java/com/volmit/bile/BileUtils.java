@@ -1,5 +1,6 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
@@ -907,7 +908,11 @@ public class BileUtils {
             deps.addAll(unload(getPlugin(i)));
         }
 
-        Bukkit.getScheduler().cancelTasks(plugin);
+        FoliaScheduler.cancelTasks(plugin);
+        try {
+            plugin.getServer().getScheduler().cancelTasks(plugin);
+        } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
+        }
         HandlerList.unregisterAll(plugin);
         String name = plugin.getName();
         PluginManager pluginManager = Bukkit.getPluginManager();
