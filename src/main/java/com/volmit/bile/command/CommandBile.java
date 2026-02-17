@@ -1,10 +1,10 @@
 package com.volmit.bile.command;
 
 import art.arcane.volmlib.util.collection.KList;
-import art.arcane.volmlib.util.decree.DecreeParameterHandler;
-import art.arcane.volmlib.util.decree.annotations.Decree;
-import art.arcane.volmlib.util.decree.annotations.Param;
-import art.arcane.volmlib.util.decree.exceptions.DecreeParsingException;
+import art.arcane.volmlib.util.director.DirectorParameterHandler;
+import art.arcane.volmlib.util.director.annotations.Director;
+import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
 import com.volmit.bile.BileTools;
 import com.volmit.bile.BileUtils;
 import org.bukkit.Bukkit;
@@ -16,7 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-@Decree(name = "biletools", aliases = {"bile", "bi", "b", "volmit", "vomit", "vom"}, description = "BileTools command root")
+@Director(name = "biletools", aliases = {"bile", "bi", "b", "volmit", "vomit", "vom"}, description = "BileTools command root")
 public class CommandBile {
     private final BileTools plugin;
 
@@ -24,7 +24,7 @@ public class CommandBile {
         this.plugin = plugin;
     }
 
-    @Decree(name = "load", description = "Load a plugin jar from plugins directory")
+    @Director(name = "load", description = "Load a plugin jar from plugins directory")
     public void load(
             @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
             @Param(name = "sender", contextual = true) CommandSender sender
@@ -32,7 +32,7 @@ public class CommandBile {
         plugin.loadPlugin(sender, pluginName);
     }
 
-    @Decree(name = "unload", description = "Unload an installed plugin")
+    @Director(name = "unload", description = "Unload an installed plugin")
     public void unload(
             @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
             @Param(name = "sender", contextual = true) CommandSender sender
@@ -40,7 +40,7 @@ public class CommandBile {
         plugin.unloadPlugin(sender, pluginName);
     }
 
-    @Decree(name = "reload", description = "Reload an installed plugin")
+    @Director(name = "reload", description = "Reload an installed plugin")
     public void reload(
             @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
             @Param(name = "sender", contextual = true) CommandSender sender
@@ -48,7 +48,7 @@ public class CommandBile {
         plugin.reloadPlugin(sender, pluginName);
     }
 
-    @Decree(name = "uninstall", description = "Delete plugin jar from plugins directory")
+    @Director(name = "uninstall", description = "Delete plugin jar from plugins directory")
     public void uninstall(
             @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
             @Param(name = "sender", contextual = true) CommandSender sender
@@ -56,7 +56,7 @@ public class CommandBile {
         plugin.uninstallPlugin(sender, pluginName);
     }
 
-    @Decree(name = "install", description = "Install plugin from Bile library")
+    @Director(name = "install", description = "Install plugin from Bile library")
     public void install(
             @Param(name = "plugin", customHandler = LibraryPluginNameHandler.class) String pluginName,
             @Param(name = "version", defaultValue = "latest", customHandler = LibraryVersionHandler.class) String version,
@@ -65,7 +65,7 @@ public class CommandBile {
         plugin.installLibraryPlugin(sender, pluginName, version);
     }
 
-    @Decree(name = "library", description = "List library plugins or versions for one plugin")
+    @Director(name = "library", description = "List library plugins or versions for one plugin")
     public void library(
             @Param(name = "plugin", defaultValue = "*", customHandler = LibraryPluginNameHandler.class) String pluginName,
             @Param(name = "sender", contextual = true) CommandSender sender
@@ -78,7 +78,7 @@ public class CommandBile {
         plugin.listLibrary(sender, pluginName);
     }
 
-    public static class InstalledPluginNameHandler implements DecreeParameterHandler<String> {
+    public static class InstalledPluginNameHandler implements DirectorParameterHandler<String> {
         @Override
         public KList<String> getPossibilities() {
             Set<String> names = new LinkedHashSet<>();
@@ -111,9 +111,9 @@ public class CommandBile {
         }
 
         @Override
-        public String parse(String in, boolean force) throws DecreeParsingException {
+        public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DecreeParsingException("Plugin name cannot be empty");
+                throw new DirectorParsingException("Plugin name cannot be empty");
             }
 
             String value = in.trim();
@@ -132,7 +132,7 @@ public class CommandBile {
         }
     }
 
-    public static class LibraryPluginNameHandler implements DecreeParameterHandler<String> {
+    public static class LibraryPluginNameHandler implements DirectorParameterHandler<String> {
         @Override
         public KList<String> getPossibilities() {
             Set<String> names = new LinkedHashSet<>();
@@ -165,9 +165,9 @@ public class CommandBile {
         }
 
         @Override
-        public String parse(String in, boolean force) throws DecreeParsingException {
+        public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DecreeParsingException("Library plugin name cannot be empty");
+                throw new DirectorParsingException("Library plugin name cannot be empty");
             }
 
             String value = in.trim();
@@ -186,7 +186,7 @@ public class CommandBile {
         }
     }
 
-    public static class LibraryVersionHandler implements DecreeParameterHandler<String> {
+    public static class LibraryVersionHandler implements DirectorParameterHandler<String> {
         @Override
         public KList<String> getPossibilities() {
             Set<String> versions = new LinkedHashSet<>();
@@ -232,9 +232,9 @@ public class CommandBile {
         }
 
         @Override
-        public String parse(String in, boolean force) throws DecreeParsingException {
+        public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DecreeParsingException("Version cannot be empty");
+                throw new DirectorParsingException("Version cannot be empty");
             }
 
             return in.trim();

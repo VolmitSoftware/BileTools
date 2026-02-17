@@ -30,7 +30,7 @@ public final class BileFancyMenu {
             return false;
         }
 
-        sendDecreeHelp(sender, request.get().command(), request.get().page());
+        sendDirectorHelp(sender, request.get().command(), request.get().page());
         return true;
     }
 
@@ -58,10 +58,10 @@ public final class BileFancyMenu {
         return (float) ThreadLocalRandom.current().nextDouble(min, max);
     }
 
-    private static void sendDecreeHelp(CommandSender sender, DirectorVisualCommand v, int page) {
+    private static void sendDirectorHelp(CommandSender sender, DirectorVisualCommand v, int page) {
         if (!(sender instanceof Player)) {
             for (DirectorVisualCommand i : v.getNodes()) {
-                sendDecreeHelpNode(sender, i);
+                sendDirectorHelpNode(sender, i);
             }
 
             return;
@@ -77,7 +77,7 @@ public final class BileFancyMenu {
 
             AtomicBoolean next = new AtomicBoolean(false);
             for (DirectorVisualCommand i : paginate(v.getNodes(), HELP_PAGE_SIZE, page, next)) {
-                sendDecreeHelpNode(sender, i);
+                sendDirectorHelpNode(sender, i);
             }
 
             String footer = "";
@@ -97,7 +97,7 @@ public final class BileFancyMenu {
         }
     }
 
-    private static void sendDecreeHelpNode(CommandSender sender, DirectorVisualCommand i) {
+    private static void sendDirectorHelpNode(CommandSender sender, DirectorVisualCommand i) {
         if (sender instanceof Player) {
             sendRaw(sender, HELP_CACHE.computeIfAbsent(i.getPath(), (k) -> {
                 String newline = "<reset>\n";

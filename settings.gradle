@@ -6,3 +6,16 @@ pluginManagement {
 }
 
 rootProject.name = 'BileTools'
+
+def useLocalVolmLib = providers.gradleProperty("useLocalVolmLib").orElse("true").get().toBoolean()
+def localVolmLibDirectory = file("../VolmLib")
+
+if (useLocalVolmLib && file("../VolmLib/settings.gradle.kts").exists()) {
+    includeBuild(localVolmLibDirectory) {
+        dependencySubstitution {
+            substitute(module("com.github.VolmitSoftware:VolmLib")).using(project(":shared"))
+            substitute(module("com.github.VolmitSoftware.VolmLib:shared")).using(project(":shared"))
+            substitute(module("com.github.VolmitSoftware.VolmLib:volmlib-shared")).using(project(":shared"))
+        }
+    }
+}

@@ -19,7 +19,7 @@ public class SlaveBileServer extends Thread {
 
     public SlaveBileServer() throws IOException {
         setName("Bile Slave Connection");
-        socket = new ServerSocket(BileTools.cfg.getInt("remote-deploy.slave.slave-port"));
+        socket = new ServerSocket(BileTools.cfg.getRemoteSlavePort());
         socket.setSoTimeout(1000);
         socket.setPerformancePreferences(1, 1, 10);
     }
@@ -34,7 +34,7 @@ public class SlaveBileServer extends Thread {
                     String password = din.readUTF();
                     String fileName = din.readUTF();
 
-                    if (!password.equals(BileTools.cfg.getString("remote-deploy.slave.slave-payload"))) {
+                    if (!password.equals(BileTools.cfg.getRemoteSlavePayload())) {
                         client.close();
                         continue;
                     }

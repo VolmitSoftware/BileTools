@@ -10,6 +10,7 @@ plugins {
 version = '3.0.0-Dev1'
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
+def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
 
 // ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
 // ======================== WINDOWS =============================
@@ -58,19 +59,6 @@ java {
     }
 }
 
-sourceSets["main"].java {
-    srcDir("../VolmLib/shared/src/main/java")
-    include("com/volmit/**")
-    include("art/arcane/volmlib/util/director/**")
-    include("art/arcane/volmlib/util/decree/**")
-    include("art/arcane/volmlib/util/collection/**")
-    include("art/arcane/volmlib/util/function/**")
-    include("art/arcane/volmlib/util/json/**")
-    include("art/arcane/volmlib/util/scheduling/FoliaScheduler.java")
-    include("art/arcane/volmlib/util/scheduling/Queue.java")
-    include("art/arcane/volmlib/util/scheduling/ShurikenQueue.java")
-}
-
 repositories {
     mavenCentral()
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
@@ -85,6 +73,15 @@ tasks.compileJava {
 
 dependencies {
     compileOnly libs.paper
+    implementation(volmLibCoordinate) {
+        changing = true
+        transitive = false
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+    resolutionStrategy.cacheDynamicVersionsFor(0, "seconds")
 }
 
 tasks.named('shadowJar') {

@@ -78,7 +78,7 @@ public class BileUtils {
 
     public static void delete(Plugin p) throws IOException {
         File f = getPluginFile(p);
-        if (!BileTools.cfg.has("archive-plugins") || BileTools.cfg.getBoolean("archive-plugins")) {
+        if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             backup(p);
         }
         unload(p);
@@ -91,7 +91,7 @@ public class BileUtils {
             return;
         }
 
-        if (!BileTools.cfg.has("archive-plugins") || BileTools.cfg.getBoolean("archive-plugins")) {
+        if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             PluginDescriptionFile fx = getPluginDescription(f);
             copy(f, new File(getBackupLocation(fx.getName()), fx.getVersion() + ".jar"));
         }
@@ -101,7 +101,7 @@ public class BileUtils {
     public static void reload(Plugin p) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
         File f = getPluginFile(p);
 
-        if (!BileTools.cfg.has("archive-plugins") || BileTools.cfg.getBoolean("archive-plugins")) {
+        if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             backup(p);
         }
         Set<File> x = unload(p);
