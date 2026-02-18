@@ -5,7 +5,7 @@ shadow = "9.0.0-rc3"
 runTask = "2.3.1"
 
 # Libraries
-paper = "1.20.6-R0.1-SNAPSHOT"
+paper = "1.21.11-R0.1-SNAPSHOT"
 
 [libraries]
 paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }

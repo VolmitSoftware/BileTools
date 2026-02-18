@@ -1,14 +1,11 @@
-import xyz.jpenilla.runpaper.task.RunServer
-
 plugins {
     id 'java-library'
     alias libs.plugins.lombok
     alias libs.plugins.shadow
-    alias libs.plugins.runPaper
 }
 
-version = '3.0.0-Dev1'
-def apiVersion = '1.20'
+version = '3.0.0'
+def apiVersion = '1.21'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
 
@@ -18,27 +15,6 @@ def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("co
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/consumers/plugin-consumers/dropins/plugins")
 // ==============================================================
-
-def supported = ['1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
-
-def MIN_HEAP_SIZE = '2G'
-def MAX_HEAP_SIZE = '8G'
-def COLOR = 'truecolor'
-
-supported.each { ver ->
-    tasks.register("runServer-${ver}", RunServer) {
-        group = 'servers'
-        minecraftVersion(ver)
-        minHeapSize = MIN_HEAP_SIZE
-        maxHeapSize = MAX_HEAP_SIZE
-        systemProperty('disable.watchdog', '')
-        systemProperty('net.kyori.ansi.colorLevel', COLOR)
-        systemProperty('com.mojang.eula.agree', 'true')
-        pluginJars(tasks.named('shadowJar').flatMap { it.archiveFile })
-        runDirectory.convention(layout.buildDirectory.dir("run/${ver}"))
-        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
-    }
-}
 
 tasks.processResources {
     inputs.properties(

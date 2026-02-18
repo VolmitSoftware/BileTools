@@ -18,6 +18,7 @@ public final class SplashScreen {
         String releaseTrain = getReleaseTrain(pluginVersion);
         String serverVersion = getServerVersion();
         String startupDate = getStartupDate();
+        String supportedMcVersion = "1.21.11";
 
         String splash =
                 "\n"
@@ -25,7 +26,7 @@ public final class SplashScreen {
                         + dark + "██" + accent + "╔══" + dark + "██" + accent + "╗" + dark + "██" + accent + "║" + dark + "██" + accent + "║     " + dark + "██" + accent + "╔════╝╚══" + dark + "██" + accent + "╔══╝" + dark + "██" + accent + "╔═══" + dark + "██" + accent + "╗" + dark + "██" + accent + "╔═══" + dark + "██" + accent + "╗" + dark + "██" + accent + "║     " + dark + "██" + accent + "╔════╝" + accent + "   BileTools, " + ChatColor.DARK_GREEN + "Hotload Everything" + ChatColor.RED + "[" + releaseTrain + "]\n"
                         + dark + "██████" + accent + "╔╝" + dark + "██" + accent + "║" + dark + "██" + accent + "║     " + dark + "█████" + accent + "╗     " + dark + "██" + accent + "║   " + dark + "██" + accent + "║   " + dark + "██" + accent + "║" + dark + "██" + accent + "║   " + dark + "██" + accent + "║" + dark + "██" + accent + "║     " + dark + "███████" + accent + "╗" + meta + "   Version: " + accent + pluginVersion + "\n"
                         + dark + "██" + accent + "╔══" + dark + "██" + accent + "╗" + dark + "██" + accent + "║" + dark + "██" + accent + "║     " + dark + "██" + accent + "╔══╝     " + dark + "██" + accent + "║   " + dark + "██" + accent + "║   " + dark + "██" + accent + "║" + dark + "██" + accent + "║   " + dark + "██" + accent + "║" + dark + "██" + accent + "║     ╚════" + dark + "██" + accent + "║" + meta + "   By: " + rainbowStudioName() + "\n"
-                        + dark + "██████" + accent + "╔╝" + dark + "██" + accent + "║" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "╗   " + dark + "██" + accent + "║   ╚" + dark + "██████" + accent + "╔╝╚" + dark + "██████" + accent + "╔╝" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "║" + meta + "   Server: " + accent + serverVersion + "\n"
+                        + dark + "██████" + accent + "╔╝" + dark + "██" + accent + "║" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "╗   " + dark + "██" + accent + "║   ╚" + dark + "██████" + accent + "╔╝╚" + dark + "██████" + accent + "╔╝" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "║" + meta + "   Server: " + accent + serverVersion + meta + " | MC Support: " + accent + supportedMcVersion + "\n"
                         + accent + "╚═════╝ ╚═╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝" + meta + "   Java: " + accent + getJavaVersion() + meta + " | Date: " + accent + startupDate + "\n";
 
         Bukkit.getConsoleSender().sendMessage(splash);
