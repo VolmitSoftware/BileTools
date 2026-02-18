@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -77,6 +78,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private volatile boolean tickerActive;
     private volatile DirectorRuntimeEngine director;
     private volatile DirectorVisualCommand helpRoot;
+    private final AtomicBoolean selfReloadQueued = new AtomicBoolean(false);
     private final Set<String> queuedOperationKeys = ConcurrentHashMap.newKeySet();
     private final ExecutorService pluginOperationExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "BileTools-PluginOps");
@@ -140,7 +142,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         las = new HashMap<>();
         sig = new HashMap<>();
         trackedPluginNames = new HashMap<>();
-        folder = getDataFolder().getParentFile();
+        folder = BileUtils.getPluginsFolder();
         backoff = new File(getDataFolder(), "backoff");
         backoff.mkdirs();
         PluginCommand bileCommand = getCommand(ROOT_COMMAND);
@@ -394,7 +396,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             if (targetPlugin == this) {
-                getLogger().info("Detected update for " + targetPlugin.getName() + ", skipping automatic self-reload.");
+                queueSelfReload("file update");
                 return;
             }
 
@@ -473,7 +475,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             if (targetPlugin == this) {
-                getLogger().info("Detected update for " + targetPlugin.getName() + ", skipping automatic self-reload.");
+                queueSelfReload("remote deploy");
                 return;
             }
 
@@ -542,6 +544,33 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             if (isEnabled()) {
                 getLogger().log(Level.SEVERE, "Rejected plugin operation task", e);
             }
+        }
+    }
+
+    private void queueSelfReload(String source) {
+        if (!selfReloadQueued.compareAndSet(false, true)) {
+            return;
+        }
+
+        String context = (source == null || source.trim().isEmpty()) ? "reload request" : source.trim();
+        String pluginName = getName();
+
+        notifyBileUsers(tag + "Reloading " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " (" + context + ")", false);
+
+        if (!runGlobalLater(() -> performSelfReload(pluginName, context), 1L)) {
+            selfReloadQueued.set(false);
+            getLogger().warning("Failed to schedule self-reload for " + pluginName + " (" + context + ")");
+            notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+        }
+    }
+
+    private void performSelfReload(String pluginName, String context) {
+        try {
+            BileUtils.reload(this);
+        } catch (Throwable e) {
+            selfReloadQueued.set(false);
+            getLogger().log(Level.SEVERE, "Failed to self-reload " + pluginName + " (" + context + ")", e);
+            notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
         }
     }
 
@@ -960,6 +989,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 String name = plugin.getName();
+                if (plugin == this) {
+                    queueSelfReload("command");
+                    sendCommandMessage(sender, tag + "Reloading " + ChatColor.WHITE + name + ChatColor.GRAY + ".");
+                    return;
+                }
+
                 File sourceFile = BileUtils.getPluginFile(plugin);
                 executePluginLifecycle("reload " + pluginName, () -> BileUtils.reload(plugin));
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();

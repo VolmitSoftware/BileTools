@@ -39,7 +39,7 @@ public class SlaveBileServer extends Thread {
                         continue;
                     }
 
-                    File f = new File(BileTools.bile.getDataFolder().getParentFile(), fileName);
+                    File f = new File(BileUtils.getPluginsFolder(), fileName);
                     BileTools.bile.getLogger().info("Receiving File from " + client.getInetAddress().getHostAddress() + " -> " + f.getName());
                     FileOutputStream fos = new FileOutputStream(f);
                     byte[] buf = new byte[8192];

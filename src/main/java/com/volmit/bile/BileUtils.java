@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
@@ -1080,7 +1081,7 @@ public class BileUtils {
             return override;
         }
 
-        for (File i : getPluginsFolder().listFiles()) {
+        for (File i : listPluginFiles()) {
             if (isPluginJar(i)) {
                 try {
                     if (plugin.getName().equals(getPluginName(i))) {
@@ -1105,13 +1106,13 @@ public class BileUtils {
             return override;
         }
 
-        for (File i : getPluginsFolder().listFiles()) {
+        for (File i : listPluginFiles()) {
             if (isPluginJar(i) && i.isFile() && i.getName().equalsIgnoreCase(name)) {
                 return i;
             }
         }
 
-        for (File i : getPluginsFolder().listFiles()) {
+        for (File i : listPluginFiles()) {
             try {
                 if (isPluginJar(i) && i.isFile() && getPluginName(i).equalsIgnoreCase(name)) {
                     return i;
@@ -1129,7 +1130,71 @@ public class BileUtils {
     }
 
     public static File getPluginsFolder() {
-        return BileTools.bile.getDataFolder().getParentFile();
+        File pluginFolder = resolvePluginsFolder(Bukkit.getServer());
+        if (pluginFolder != null) {
+            return pluginFolder;
+        }
+
+        File worldContainer = Bukkit.getWorldContainer();
+        if (worldContainer != null) {
+            return new File(worldContainer, "plugins");
+        }
+
+        File workingDirectory = new File("").getAbsoluteFile();
+        return new File(workingDirectory, "plugins");
+    }
+
+    private static File[] listPluginFiles() {
+        File pluginsFolder = getPluginsFolder();
+        if (pluginsFolder == null) {
+            return new File[0];
+        }
+
+        File[] files = pluginsFolder.listFiles();
+        if (files == null) {
+            return new File[0];
+        }
+
+        return files;
+    }
+
+    private static File resolvePluginsFolder(Server server) {
+        File serverFolder = invokePluginsFolderMethod(server);
+        if (serverFolder != null) {
+            return serverFolder;
+        }
+
+        File bukkitFolder = invokePluginsFolderMethod(Bukkit.class, null);
+        if (bukkitFolder != null) {
+            return bukkitFolder;
+        }
+
+        return null;
+    }
+
+    private static File invokePluginsFolderMethod(Server server) {
+        if (server == null) {
+            return null;
+        }
+
+        return invokePluginsFolderMethod(server.getClass(), server);
+    }
+
+    private static File invokePluginsFolderMethod(Class<?> owner, Object instance) {
+        if (owner == null) {
+            return null;
+        }
+
+        try {
+            Method method = owner.getMethod("getPluginsFolder");
+            Object resolved = method.invoke(instance);
+            if (resolved instanceof File folder) {
+                return folder;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return null;
     }
 
     public static List<String> getDependencies(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
