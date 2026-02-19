@@ -8,9 +8,37 @@ pluginManagement {
 rootProject.name = 'BileTools'
 
 def useLocalVolmLib = providers.gradleProperty("useLocalVolmLib").orElse("true").get().toBoolean()
-def localVolmLibDirectory = file("../VolmLib")
+def hasVolmLibSettings = { File directory ->
+    return directory != null && (new File(directory, "settings.gradle.kts").exists() || new File(directory, "settings.gradle").exists())
+}
 
-if (useLocalVolmLib && file("../VolmLib/settings.gradle.kts").exists()) {
+def resolveLocalVolmLibDirectory = {
+    def configuredPath = providers.gradleProperty("localVolmLibDirectory")
+            .orElse(providers.environmentVariable("VOLMLIB_DIR"))
+            .orNull
+    if (configuredPath != null && !configuredPath.trim().isEmpty()) {
+        File configuredDirectory = file(configuredPath)
+        if (hasVolmLibSettings(configuredDirectory)) {
+            return configuredDirectory
+        }
+    }
+
+    File currentDirectory = settingsDir
+    while (currentDirectory != null) {
+        File candidate = new File(currentDirectory, "VolmLib")
+        if (hasVolmLibSettings(candidate)) {
+            return candidate
+        }
+
+        currentDirectory = currentDirectory.parentFile
+    }
+
+    return null
+}
+
+def localVolmLibDirectory = resolveLocalVolmLibDirectory()
+
+if (useLocalVolmLib && localVolmLibDirectory != null) {
     includeBuild(localVolmLibDirectory) {
         dependencySubstitution {
             substitute(module("com.github.VolmitSoftware:VolmLib")).using(project(":shared"))

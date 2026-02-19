@@ -72,16 +72,6 @@ public final class SplashScreen {
     }
 
     private static String rainbowStudioName() {
-        return ChatColor.RED + "A"
-                + ChatColor.GOLD + "r"
-                + ChatColor.YELLOW + "c"
-                + ChatColor.GREEN + "a"
-                + ChatColor.DARK_GRAY + "n"
-                + ChatColor.AQUA + "e "
-                + ChatColor.AQUA + "A"
-                + ChatColor.BLUE + "r"
-                + ChatColor.DARK_BLUE + "t"
-                + ChatColor.DARK_PURPLE + "s"
-                + ChatColor.DARK_AQUA + " (Volmit Software)";
+        return ChatColor.DARK_AQUA + "Volmit Software (Arcane Arts)";
     }
 }
