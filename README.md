@@ -8,7 +8,7 @@ Tools for making garbage
 
 ## Compatibility
 * Minecraft: `1.20.x+` (plugin `api-version: 1.20`)
-* Runtime JVM: `Java 21+`
+* Runtime JVM: `Java 25+`
 * Targets: Paper/Purpur (runtime loading paths are optimized for Paper-family internals)
 
 ### [Download](https://github.com/VolmitSoftware/BileTools/releases/)
