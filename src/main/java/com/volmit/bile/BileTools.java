@@ -7,6 +7,7 @@ import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
+import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
@@ -55,7 +56,7 @@ import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-public class BileTools extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {
+public class BileTools extends JavaPlugin implements Listener, CommandExecutor, TabCompleter, ReloadAware {
     private static final String ROOT_COMMAND = "biletools";
     private static final String ROOT_PERMISSION = "bile.use";
     private static final int HOT_DROP_RETRY_LIMIT = 18;
@@ -175,9 +176,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     @Override
     public void onDisable() {
-        tickerActive = false;
-
-        queuedOperationKeys.clear();
+        freezeForUnload();
         pluginOperationExecutor.shutdownNow();
 
         FoliaScheduler.cancelTasks(this);
@@ -185,16 +184,27 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             Bukkit.getScheduler().cancelTasks(this);
         } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
         }
+    }
+
+    @Override
+    public void onPreUnload(ReloadAware.PreUnloadReason reason) {
+        getLogger().info("BileTools pre-unload hook fired (" + reason + "). Freezing watcher + slave before unload.");
+        freezeForUnload();
+    }
+
+    private void freezeForUnload() {
+        tickerActive = false;
+        queuedOperationKeys.clear();
 
         if (srv != null && srv.isAlive()) {
             srv.interrupt();
-
             try {
-                srv.join();
-                this.getLogger().info("Bile Slave Server shut down.");
+                srv.join(5000L);
+                getLogger().info("Bile Slave Server shut down.");
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
             }
+            srv = null;
         }
     }
 

@@ -1,5 +1,6 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
@@ -105,7 +106,7 @@ public class BileUtils {
         if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             backup(p);
         }
-        Set<File> x = unload(p);
+        Set<File> x = unload(p, ReloadAware.PreUnloadReason.HOT_RELOAD);
 
         for (File i : x) {
             load(i);
@@ -158,7 +159,7 @@ public class BileUtils {
             String existingName = existingFile == null ? "unknown source" : existingFile.getName();
             stp("Plugin " + existing.getName() + " is already loaded from " + existingName + ", replacing with " + file.getName());
 
-            Set<File> dependents = unload(existing);
+            Set<File> dependents = unload(existing, ReloadAware.PreUnloadReason.HOT_RELOAD);
             for (File dep : dependents) {
                 if (dep != null && !sameFile(dep, file)) {
                     deferredDependents.add(dep);
@@ -870,8 +871,12 @@ public class BileUtils {
         return root.getMessage() == null ? root.toString() : root.getMessage();
     }
 
-    @SuppressWarnings("unchecked")
     public static Set<File> unload(Plugin plugin) {
+        return unload(plugin, ReloadAware.PreUnloadReason.HOT_UNLOAD);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Set<File> unload(Plugin plugin, ReloadAware.PreUnloadReason reason) {
         Set<File> deps = new HashSet<>();
         File file = getPluginFile(plugin);
         stp("Unloading " + plugin.getName());
@@ -906,7 +911,17 @@ public class BileUtils {
         }
 
         for (File i : new HashSet<>(deps)) {
-            deps.addAll(unload(getPlugin(i)));
+            deps.addAll(unload(getPlugin(i), reason));
+        }
+
+        if (plugin instanceof ReloadAware aware) {
+            stp("Invoking pre-unload hook on " + plugin.getName() + " (" + reason + ")");
+            try {
+                aware.onPreUnload(reason);
+            } catch (Throwable t) {
+                stp("Pre-unload hook for " + plugin.getName() + " threw: " + t);
+                t.printStackTrace();
+            }
         }
 
         FoliaScheduler.cancelTasks(plugin);
