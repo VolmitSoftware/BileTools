@@ -110,3 +110,5 @@ Temporary Items
 
 .idea/
 *.iml
+
+.codegraph/

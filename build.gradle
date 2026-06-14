@@ -62,6 +62,7 @@ configurations.configureEach {
 
 tasks.named('shadowJar') {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    minimize()
 }
 
 tasks.named('build') {
