@@ -940,7 +940,12 @@ public class BileUtils {
         boolean reloadlisteners = true;
 
         if (pluginManager != null) {
-            pluginManager.disablePlugin(plugin);
+            try {
+                pluginManager.disablePlugin(plugin);
+            } catch (Throwable t) {
+                stp("disablePlugin threw for " + name + " (continuing teardown so the plugin is still fully unregistered): " + t);
+                t.printStackTrace();
+            }
 
             try {
                 Field pluginsField = Bukkit.getPluginManager().getClass().getDeclaredField("plugins");
@@ -970,7 +975,12 @@ public class BileUtils {
             }
         }
 
-        pluginManager.disablePlugin(plugin);
+        try {
+            pluginManager.disablePlugin(plugin);
+        } catch (Throwable t) {
+            stp("disablePlugin (second pass) threw for " + name + " (continuing unregister): " + t);
+            t.printStackTrace();
+        }
 
         if (plugins != null) {
             plugins.remove(plugin);
