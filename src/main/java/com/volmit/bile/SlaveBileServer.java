@@ -1,13 +1,10 @@
 package com.volmit.bile;
 
-import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,67 +13,87 @@ import java.util.logging.Level;
 
 public class SlaveBileServer extends Thread {
     private final ServerSocket socket;
+    private final int clientTimeoutMs;
+    private final long maxTransferBytes;
+    private volatile boolean running = true;
 
     public SlaveBileServer() throws IOException {
         setName("Bile Slave Connection");
-        socket = new ServerSocket(BileTools.cfg.getRemoteSlavePort());
-        socket.setSoTimeout(1000);
-        socket.setPerformancePreferences(1, 1, 10);
+        setDaemon(true);
+        this.clientTimeoutMs = Math.max(1000, BileTools.cfg.getRemoteSocketTimeoutMs());
+        this.maxTransferBytes = BileTools.cfg.getRemoteMaxTransferBytes();
+        this.socket = new ServerSocket(BileTools.cfg.getRemoteSlavePort());
+        this.socket.setSoTimeout(1000);
+        this.socket.setPerformancePreferences(1, 1, 10);
+    }
+
+    public void shutdown() {
+        running = false;
+        interrupt();
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+        }
+    }
+
+    public boolean isServerSocketOpen() {
+        return socket != null && !socket.isClosed();
     }
 
     @Override
     public void run() {
         try {
-            while (!interrupted()) {
+            while (running && !interrupted() && !socket.isClosed()) {
                 try {
                     Socket client = socket.accept();
-                    DataInputStream din = new DataInputStream(client.getInputStream());
-                    String password = din.readUTF();
-                    String fileName = din.readUTF();
-
-                    if (!password.equals(BileTools.cfg.getRemoteSlavePayload())) {
-                        client.close();
-                        continue;
-                    }
-
-                    File f = new File(BileUtils.getPluginsFolder(), fileName);
-                    BileTools.bile.getLogger().info("Receiving File from " + client.getInetAddress().getHostAddress() + " -> " + f.getName());
-                    FileOutputStream fos = new FileOutputStream(f);
-                    byte[] buf = new byte[8192];
-                    int read;
-
-                    while ((read = din.read(buf)) != -1) {
-                        fos.write(buf, 0, read);
-                    }
-
-                    Runnable notify = () -> {
-                        for (Player k : Bukkit.getOnlinePlayers()) {
-                            if (k.hasPermission("bile.use")) {
-                                k.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + f.getName() + ChatColor.GRAY + " from " + ChatColor.WHITE + client.getInetAddress().getHostAddress());
-                            }
-                        }
-                    };
-
-                    if (!FoliaScheduler.runGlobal(BileTools.bile, notify)) {
-                        try {
-                            Bukkit.getScheduler().runTask(BileTools.bile, notify);
-                        } catch (Throwable ignored) {
-                        }
-                    }
-
-                    fos.close();
-                    din.close();
-                    client.close();
+                    handleClient(client);
                 } catch (SocketTimeoutException ignored) {
-
+                    // accept poll
                 } catch (Throwable e) {
-                    BileTools.bile.getLogger().log(Level.SEVERE,"Error receiving file.",e);
+                    if (running && !socket.isClosed()) {
+                        BileTools.bile.getLogger().log(Level.SEVERE, "Error receiving file.", e);
+                    }
                 }
             }
+        } finally {
+            try {
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
+            } catch (IOException ignored) {
+            }
+        }
+    }
 
-            socket.close();
-        } catch (Exception ignored) {
+    private void handleClient(Socket client) {
+        try (client) {
+            client.setSoTimeout(clientTimeoutMs);
+            client.setTcpNoDelay(true);
 
+            File received = RemoteDeployProtocol.receiveFile(
+                    client,
+                    BileTools.cfg.getRemoteSlavePayload(),
+                    BileUtils.getPluginsFolder(),
+                    maxTransferBytes
+            );
+
+            String host = client.getInetAddress() == null ? "unknown" : client.getInetAddress().getHostAddress();
+            BileTools.bile.getLogger().info("Received file from " + host + " -> " + received.getName());
+
+            PlatformTasks.runGlobal(BileTools.bile, () -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (!player.hasPermission("bile.use")) {
+                        continue;
+                    }
+                    PlatformTasks.runForPlayer(BileTools.bile, player, () ->
+                            player.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + received.getName()
+                                    + ChatColor.GRAY + " from " + ChatColor.WHITE + host));
+                }
+            });
+        } catch (Throwable e) {
+            if (running) {
+                BileTools.bile.getLogger().log(Level.WARNING, "Rejected or failed remote transfer: " + e.getMessage());
+            }
         }
     }
 }

@@ -8,7 +8,6 @@ import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
 import art.arcane.volmlib.integration.ReloadAware;
-import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
 import com.volmit.bile.config.BileConfig;
@@ -23,15 +22,12 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +60,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final long HOT_DROP_INITIAL_DELAY_TICKS = 5L;
     private static final long HOT_DROP_RETRY_DELAY_TICKS = 10L;
     private static final long PLUGIN_OPERATION_TIMEOUT_SECONDS = 120L;
+    private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
     private static final char[] HEX = "0123456789abcdef".toCharArray();
 
     private SlaveBileServer srv;
@@ -71,12 +69,18 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private HashMap<File, Long> las;
     private HashMap<File, String> sig;
     private HashMap<File, String> trackedPluginNames;
+    private final Map<File, PendingFingerprint> pendingFingerprints = new ConcurrentHashMap<>();
+    private final Set<String> dirtyPlugins = ConcurrentHashMap.newKeySet();
+    private final Set<String> coalescedReloadNames = ConcurrentHashMap.newKeySet();
+    private final Map<String, File> coalescedRemoteSources = new ConcurrentHashMap<>();
+    private final AtomicBoolean coalesceFlushScheduled = new AtomicBoolean(false);
     private File folder;
     private File backoff;
     public String tag;
     private Sound sx;
     private int cd = 10;
     private volatile boolean tickerActive;
+    private volatile boolean watcherBusy;
     private volatile DirectorRuntimeEngine director;
     private volatile DirectorVisualCommand helpRoot;
     private final AtomicBoolean selfReloadQueued = new AtomicBoolean(false);
@@ -86,25 +90,25 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         thread.setDaemon(true);
         return thread;
     });
+    private final ExecutorService remoteDeployExecutor = Executors.newCachedThreadPool(runnable -> {
+        Thread thread = new Thread(runnable, "BileTools-RemoteDeploy");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final ExecutorService fingerprintExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "BileTools-Fingerprint");
+        thread.setDaemon(true);
+        return thread;
+    });
     public static BileConfig cfg;
 
     public static void streamFile(File f, String address, int port, String password) throws IOException {
-        Socket s = new Socket(address, port);
-        DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-        dos.writeUTF(password);
-        dos.writeUTF(f.getName());
+        int timeoutMs = cfg == null ? 15_000 : cfg.getRemoteSocketTimeoutMs();
+        long maxBytes = cfg == null ? 256L * 1024L * 1024L : cfg.getRemoteMaxTransferBytes();
+        RemoteDeployProtocol.streamFile(f, address, port, password, timeoutMs, maxBytes);
+    }
 
-        FileInputStream fin = new FileInputStream(f);
-        byte[] buffer = new byte[8192];
-        int read;
-
-        while ((read = fin.read(buffer)) != -1) {
-            dos.write(buffer, 0, read);
-        }
-
-        fin.close();
-        dos.flush();
-        s.close();
+    private record PendingFingerprint(long length, long lastModified, int stableTicks) {
     }
 
     private void readTheConfig() throws Exception {
@@ -122,6 +126,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         SplashScreen.print(this);
+        getLogger().info("Runtime platform: " + ServerPlatform.summary());
+        if (ServerPlatform.isFoliaFamily()) {
+            getLogger().info("Folia/Canvas detected: using GlobalRegionScheduler; classic Bukkit scheduler is avoided.");
+            getLogger().warning("Hot-reload of third-party plugins on Folia/Canvas is best-effort; plugins without folia-supported may still break.");
+        } else if (!ServerPlatform.isPaperFamily()) {
+            getLogger().info("Spigot-compatible mode: Paper force-load paths disabled; paper-plugin.yml jars use plugin.yml shims.");
+        }
 
         if (cfg.isRemoteSlaveEnabled()) {
             getLogger().info("Starting Remote Slave Server on *:" + cfg.getRemoteSlavePort());
@@ -178,12 +189,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     public void onDisable() {
         freezeForUnload();
         pluginOperationExecutor.shutdownNow();
+        remoteDeployExecutor.shutdownNow();
+        fingerprintExecutor.shutdownNow();
 
-        FoliaScheduler.cancelTasks(this);
-        try {
-            Bukkit.getScheduler().cancelTasks(this);
-        } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
-        }
+        PlatformTasks.cancelPluginTasks(this);
     }
 
     @Override
@@ -195,9 +204,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private void freezeForUnload() {
         tickerActive = false;
         queuedOperationKeys.clear();
+        pendingFingerprints.clear();
+        coalescedReloadNames.clear();
+        coalescedRemoteSources.clear();
+        coalesceFlushScheduled.set(false);
+        watcherBusy = false;
 
-        if (srv != null && srv.isAlive()) {
-            srv.interrupt();
+        if (srv != null) {
+            srv.shutdown();
             try {
                 srv.join(5000L);
                 getLogger().info("Bile Slave Server shut down.");
@@ -239,7 +253,15 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             enqueuePluginOperation(operationKey, () -> {
                 try {
                     getLogger().info("Hot dropping " + file.getName());
-                    executePluginLifecycle("hot drop " + file.getName(), () -> BileUtils.load(file));
+                    String resolvedName = null;
+                    try {
+                        resolvedName = BileUtils.getPluginName(file);
+                    } catch (Throwable ignored) {
+                    }
+                    executePluginLifecycle(resolvedName, "hot drop " + file.getName(), () -> BileUtils.load(file));
+                    if (resolvedName != null) {
+                        clearPluginDirty(resolvedName);
+                    }
                     getLogger().info("Hot dropped " + file.getName() + " successfully");
                     notifyBileUsers(tag + "Hot Dropped " + ChatColor.WHITE + file.getName(), true);
                 } catch (Throwable e) {
@@ -322,67 +344,95 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
 
+        boolean pendingWork = !pendingFingerprints.isEmpty();
+        int debounceTicks = cfg == null ? 8 : cfg.getWatcherFingerprintDebounceTicks();
+
         for (File i : files) {
-            if (i.getName().toLowerCase().endsWith(".jar") && i.isFile()) {
-                if (!mod.containsKey(i)) {
-                    getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
+            if (!i.getName().toLowerCase(Locale.ROOT).endsWith(".jar") || !i.isFile()) {
+                continue;
+            }
 
-                    if (cfg.isArchivePlugins()) {
-                        Plugin trackedPlugin = BileUtils.getPlugin(i);
-                        if (trackedPlugin != null) {
-                            String trackedPluginName = trackedPlugin.getName();
-                            String trackedPluginVersion = trackedPlugin.getDescription().getVersion();
-                            File trackedPluginFile = BileUtils.getPluginFile(trackedPlugin);
-                            runAsync(() -> backupPluginFile(trackedPluginFile, trackedPluginName, trackedPluginVersion));
-                        }
+            // Ignore in-progress remote receives
+            if (i.getName().toLowerCase(Locale.ROOT).endsWith(".jar.part")) {
+                continue;
+            }
+
+            if (!mod.containsKey(i)) {
+                getLogger().log(Level.INFO, "Now Tracking: " + i.getName());
+
+                if (cfg.isArchivePlugins()) {
+                    Plugin trackedPlugin = BileUtils.getPlugin(i);
+                    if (trackedPlugin != null) {
+                        String trackedPluginName = trackedPlugin.getName();
+                        String trackedPluginVersion = trackedPlugin.getDescription().getVersion();
+                        File trackedPluginFile = BileUtils.getPluginFile(trackedPlugin);
+                        runAsync(() -> backupPluginFile(trackedPluginFile, trackedPluginName, trackedPluginVersion));
                     }
+                }
 
-                    trackFileState(i);
-                    trackPluginName(i);
+                trackFileMetadata(i);
+                trackPluginName(i);
 
-                    if (cd == 0) {
+                if (cd == 0) {
+                    String hotDropName = resolvePluginName(i);
+                    if (hotDropName != null && !isAutoLifecycleAllowed(hotDropName)) {
+                        getLogger().info("Skipping hot drop for ignored/filtered plugin " + hotDropName + " (" + i.getName() + ")");
+                    } else {
                         getLogger().info("Scheduling hot drop for " + i.getName());
                         scheduleHotDrop(i);
                     }
                 }
-
-                if (mod.get(i) != i.length() || las.get(i) != i.lastModified()) {
-                    String previousSignature = sig.get(i);
-                    trackFileState(i);
-                    trackPluginName(i);
-                    String currentSignature = sig.get(i);
-
-                    if (previousSignature != null
-                            && currentSignature != null
-                            && previousSignature.equals(currentSignature)) {
-                        continue;
-                    }
-
-                    for (Plugin j : Bukkit.getServer().getPluginManager().getPlugins()) {
-                        File pluginFile = BileUtils.getPluginFile(j);
-                        if (pluginFile != null && pluginFile.getName().equals(i.getName())) {
-                            trackedPluginNames.put(i, j.getName());
-                            getLogger().log(Level.INFO, "File change detected: " + i.getName());
-                            getLogger().log(Level.INFO, "Identified Plugin: " + j.getName() + " <-> " + i.getName());
-                            getLogger().log(Level.INFO, "Reloading: " + j.getName());
-
-                            if (cfg.isRemoteMasterEnabled()
-                                    && cfg.hasRemoteDeploySignature(j.getName())) {
-                                queueRemoteDeployReload(i, j.getName());
-                            } else {
-                                queuePluginReload(j.getName());
-                            }
-
-                            break;
-                        }
-                    }
-                }
+                continue;
             }
+
+            long length = i.length();
+            long lastModified = i.lastModified();
+            Long trackedLength = mod.get(i);
+            Long trackedModified = las.get(i);
+
+            if (trackedLength == null || trackedModified == null
+                    || trackedLength != length || trackedModified != lastModified) {
+                mod.put(i, length);
+                las.put(i, lastModified);
+                BileUtils.invalidateJarMeta(i);
+                // Reset debounce window whenever size/mtime moves.
+                pendingFingerprints.put(i, new PendingFingerprint(length, lastModified, 0));
+                pendingWork = true;
+            }
+        }
+
+        for (Map.Entry<File, PendingFingerprint> entry : new ArrayList<>(pendingFingerprints.entrySet())) {
+            File file = entry.getKey();
+            PendingFingerprint pending = entry.getValue();
+            if (!file.exists() || !file.isFile()) {
+                pendingFingerprints.remove(file);
+                continue;
+            }
+
+            long length = file.length();
+            long lastModified = file.lastModified();
+            if (length != pending.length() || lastModified != pending.lastModified()) {
+                // Will be reset by metadata loop next pass; keep active polling.
+                pendingWork = true;
+                continue;
+            }
+
+            int nextStable = pending.stableTicks() + 1;
+            if (nextStable < debounceTicks) {
+                pendingFingerprints.put(file, new PendingFingerprint(length, lastModified, nextStable));
+                pendingWork = true;
+                continue;
+            }
+
+            pendingFingerprints.remove(file);
+            queueFingerprintCheck(file, length, lastModified);
+            pendingWork = true;
         }
 
         Set<File> removed = new LinkedHashSet<>(mod.keySet());
         for (File i : files) {
-            if (i.getName().toLowerCase().endsWith(".jar") && i.isFile()) {
+            if (i.getName().toLowerCase(Locale.ROOT).endsWith(".jar") && i.isFile()
+                    && !i.getName().toLowerCase(Locale.ROOT).endsWith(".jar.part")) {
                 removed.remove(i);
             }
         }
@@ -390,10 +440,202 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         for (File file : removed) {
             handleRemovedTrackedFile(file);
         }
+
+        watcherBusy = pendingWork
+                || !pendingFingerprints.isEmpty()
+                || !coalescedReloadNames.isEmpty()
+                || coalesceFlushScheduled.get();
+    }
+
+    private void queueFingerprintCheck(File file, long length, long lastModified) {
+        String operationKey = "fingerprint:" + file.getAbsolutePath().toLowerCase(Locale.ROOT);
+        if (!queuedOperationKeys.add(operationKey)) {
+            return;
+        }
+
+        try {
+            fingerprintExecutor.execute(() -> {
+                try {
+                    if (!isEnabled() || !file.exists()) {
+                        return;
+                    }
+
+                    if (file.length() != length || file.lastModified() != lastModified) {
+                        // still changing; re-queue via next tick metadata mismatch
+                        return;
+                    }
+
+                    String previousSignature = sig.get(file);
+                    String currentSignature = fingerprint(file);
+                    trackFileMetadata(file);
+                    if (currentSignature != null) {
+                        sig.put(file, currentSignature);
+                    }
+                    trackPluginName(file);
+
+                    if (previousSignature != null
+                            && currentSignature != null
+                            && previousSignature.equals(currentSignature)) {
+                        return;
+                    }
+
+                    String pluginName = trackedPluginNames.get(file);
+                    if (pluginName == null || pluginName.trim().isEmpty()) {
+                        Plugin matched = BileUtils.getPlugin(file);
+                        if (matched != null) {
+                            pluginName = matched.getName();
+                            trackedPluginNames.put(file, pluginName);
+                        }
+                    }
+
+                    if (pluginName == null) {
+                        for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
+                            File pluginFile = BileUtils.getPluginFile(plugin);
+                            if (pluginFile != null && pluginFile.getName().equals(file.getName())) {
+                                pluginName = plugin.getName();
+                                trackedPluginNames.put(file, pluginName);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (pluginName == null || pluginName.trim().isEmpty()) {
+                        getLogger().info("Content change for untracked jar " + file.getName() + " (no loaded plugin match)");
+                        return;
+                    }
+
+                    if (isPluginDirty(pluginName)) {
+                        getLogger().warning("Skipping reload for dirty plugin " + pluginName + " after prior lifecycle timeout");
+                        return;
+                    }
+
+                    if (!isAutoLifecycleAllowed(pluginName)) {
+                        getLogger().info("Skipping auto-reload for ignored/filtered plugin " + pluginName);
+                        return;
+                    }
+
+                    final String resolvedName = pluginName;
+                    getLogger().log(Level.INFO, "File change detected: " + file.getName());
+                    getLogger().log(Level.INFO, "Identified Plugin: " + resolvedName + " <-> " + file.getName());
+
+                    if (cfg.isRemoteMasterEnabled() && cfg.hasRemoteDeploySignature(resolvedName)) {
+                        scheduleCoalescedReload(resolvedName, file, true);
+                    } else {
+                        scheduleCoalescedReload(resolvedName, file, false);
+                    }
+                } catch (Throwable e) {
+                    getLogger().log(Level.WARNING, "Fingerprint check failed for " + file.getName(), e);
+                } finally {
+                    queuedOperationKeys.remove(operationKey);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            queuedOperationKeys.remove(operationKey);
+        }
+    }
+
+    private boolean isAutoLifecycleAllowed(String pluginName) {
+        if (cfg == null) {
+            return true;
+        }
+        return cfg.isAutoReloadAllowed(pluginName);
+    }
+
+    /**
+     * Batches nearby jar change events into one ordered reload flush so multi-module
+     * Gradle exports (plugin + soft-deps) do not thrash.
+     */
+    private void scheduleCoalescedReload(String pluginName, File sourceFile, boolean remoteDeploy) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+
+        String key = pluginName.toLowerCase(Locale.ROOT);
+        coalescedReloadNames.add(key);
+        if (remoteDeploy && sourceFile != null) {
+            coalescedRemoteSources.put(key, sourceFile);
+        }
+
+        int window = cfg == null ? 10 : cfg.getWatcherCoalesceWindowTicks();
+        if (window <= 0) {
+            flushCoalescedReloads();
+            return;
+        }
+
+        if (coalesceFlushScheduled.compareAndSet(false, true)) {
+            if (!runGlobalLater(() -> {
+                coalesceFlushScheduled.set(false);
+                flushCoalescedReloads();
+            }, window)) {
+                coalesceFlushScheduled.set(false);
+                flushCoalescedReloads();
+            }
+        }
+    }
+
+    private void flushCoalescedReloads() {
+        if (coalescedReloadNames.isEmpty()) {
+            return;
+        }
+
+        List<String> batch = new ArrayList<>(coalescedReloadNames);
+        Map<String, File> remoteSources = new HashMap<>(coalescedRemoteSources);
+        coalescedReloadNames.clear();
+        coalescedRemoteSources.clear();
+
+        batch.sort(this::compareReloadOrder);
+        getLogger().info("Coalesced reload batch (" + batch.size() + "): " + String.join(", ", batch));
+
+        for (String nameKey : batch) {
+            String displayName = resolveCanonicalPluginName(nameKey);
+            File remoteSource = remoteSources.get(nameKey);
+            if (remoteSource != null && cfg != null && cfg.isRemoteMasterEnabled()
+                    && cfg.hasRemoteDeploySignature(displayName)) {
+                queueRemoteDeployReload(remoteSource, displayName);
+            } else {
+                queuePluginReload(displayName);
+            }
+        }
+    }
+
+    private String resolveCanonicalPluginName(String nameKey) {
+        Plugin plugin = BileUtils.getPluginByName(nameKey);
+        if (plugin != null) {
+            return plugin.getName();
+        }
+        return nameKey;
+    }
+
+    private int compareReloadOrder(String aKey, String bKey) {
+        Plugin a = BileUtils.getPluginByName(aKey);
+        Plugin b = BileUtils.getPluginByName(bKey);
+        if (a != null && b != null) {
+            if (pluginDependsOn(a, b)) {
+                return 1; // a depends on b -> reload b first
+            }
+            if (pluginDependsOn(b, a)) {
+                return -1;
+            }
+        }
+        return aKey.compareToIgnoreCase(bKey);
+    }
+
+    private boolean pluginDependsOn(Plugin plugin, Plugin dependency) {
+        if (plugin == null || dependency == null) {
+            return false;
+        }
+        String depName = dependency.getName();
+        return plugin.getDescription().getDepend().contains(depName)
+                || plugin.getDescription().getSoftDepend().contains(depName);
     }
 
     private void queuePluginReload(String pluginName) {
         if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+
+        if (isPluginDirty(pluginName)) {
+            getLogger().warning("Refusing reload for dirty plugin " + pluginName);
             return;
         }
 
@@ -410,11 +652,16 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 return;
             }
 
+            long startNs = System.nanoTime();
             try {
-                executePluginLifecycle("reload " + pluginName, () -> BileUtils.reload(targetPlugin));
-                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
+                executePluginLifecycle(pluginName, "reload " + pluginName, () -> BileUtils.reload(targetPlugin));
+                clearPluginDirty(pluginName);
+                long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
+                        + ChatColor.GRAY + " (" + totalMs + "ms)", true);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName, e);
+                markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
                 notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
             }
         });
@@ -422,6 +669,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     private void queuePluginUnload(String pluginName) {
         if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+
+        if (!isAutoLifecycleAllowed(pluginName)) {
+            getLogger().info("Skipping auto-unload for ignored/filtered plugin " + pluginName);
             return;
         }
 
@@ -437,9 +689,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 return;
             }
 
+            long startNs = System.nanoTime();
             try {
-                executePluginLifecycle("unload " + pluginName, () -> BileUtils.unload(targetPlugin));
-                notifyBileUsers(tag + "Unloaded " + ChatColor.WHITE + pluginName, false);
+                executePluginLifecycle(pluginName, "unload " + pluginName, () -> BileUtils.unload(targetPlugin));
+                clearPluginDirty(pluginName);
+                long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                notifyBileUsers(tag + "Unloaded " + ChatColor.WHITE + pluginName
+                        + ChatColor.GRAY + " (" + totalMs + "ms)", false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to unload " + pluginName + " after file removal", e);
                 notifyBileUsers(tag + "Failed to Unload " + ChatColor.RED + pluginName, false);
@@ -452,31 +708,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
 
+        if (isPluginDirty(pluginName)) {
+            getLogger().warning("Refusing remote deploy reload for dirty plugin " + pluginName);
+            return;
+        }
+
         String key = "remote-reload:" + pluginName.toLowerCase(Locale.ROOT);
         enqueuePluginOperation(key, () -> {
-            for (String target : cfg.getRemoteMasterDeployTargets()) {
-                String[] split = target.split(":", 3);
-                if (split.length < 3) {
-                    getLogger().warning("Invalid remote deploy target format: " + target);
-                    continue;
-                }
-
-                try {
-                    streamFile(sourceFile, split[0], Integer.parseInt(split[1]), split[2]);
-                } catch (NumberFormatException e) {
-                    getLogger().warning("Invalid port in remote deploy target: " + target);
-                } catch (UnknownHostException e) {
-                    getLogger().warning("Invalid host in remote deploy target: " + target);
-                } catch (IOException e) {
-                    getLogger().warning("Failed remote deploy to " + target + ": " + e.getMessage());
-                }
-            }
-
-            notifyBileUsers(
-                    tag + "Deployed " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " to "
-                            + cfg.getRemoteMasterDeployTargets().size() + " remote server(s)",
-                    false
-            );
+            deployToRemoteTargets(sourceFile, pluginName);
 
             Plugin targetPlugin = BileUtils.getPluginByName(pluginName);
             if (targetPlugin == null) {
@@ -489,31 +728,106 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 return;
             }
 
+            long startNs = System.nanoTime();
             try {
-                executePluginLifecycle("reload " + pluginName + " after remote deploy", () -> BileUtils.reload(targetPlugin));
-                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName, true);
+                executePluginLifecycle(pluginName, "reload " + pluginName + " after remote deploy", () -> BileUtils.reload(targetPlugin));
+                clearPluginDirty(pluginName);
+                long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
+                        + ChatColor.GRAY + " (" + totalMs + "ms)", true);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName + " after remote deploy", e);
+                markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
                 notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
             }
         });
     }
 
+    private void deployToRemoteTargets(File sourceFile, String pluginName) {
+        List<String> targets = cfg.getRemoteMasterDeployTargets();
+        if (targets.isEmpty()) {
+            return;
+        }
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (String target : targets) {
+            String[] split = target.split(":", 3);
+            if (split.length < 3) {
+                getLogger().warning("Invalid remote deploy target format: " + target);
+                continue;
+            }
+
+            String host = split[0];
+            String password = split[2];
+            int port;
+            try {
+                port = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) {
+                getLogger().warning("Invalid port in remote deploy target: " + target);
+                continue;
+            }
+
+            futures.add(CompletableFuture.runAsync(() -> {
+                try {
+                    streamFile(sourceFile, host, port, password);
+                } catch (UnknownHostException e) {
+                    getLogger().warning("Invalid host in remote deploy target: " + target);
+                } catch (IOException e) {
+                    getLogger().warning("Failed remote deploy to " + target + ": " + e.getMessage());
+                }
+            }, remoteDeployExecutor));
+        }
+
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(REMOTE_DEPLOY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            getLogger().warning("Remote deploy timed out after " + REMOTE_DEPLOY_TIMEOUT_SECONDS + "s for " + pluginName);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            getLogger().warning("Remote deploy interrupted for " + pluginName);
+        } catch (ExecutionException e) {
+            getLogger().warning("Remote deploy failed for " + pluginName + ": " + e.getMessage());
+        }
+
+        notifyBileUsers(
+                tag + "Deployed " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " to "
+                        + targets.size() + " remote server(s)",
+                false
+        );
+    }
+
     private void notifyBileUsers(String message, boolean playSound) {
         runGlobal(() -> {
-            for (Player k : Bukkit.getOnlinePlayers()) {
-                if (k.hasPermission(ROOT_PERMISSION)) {
-                    k.sendMessage(message);
-                    if (playSound) {
-                        k.playSound(k.getLocation(), sx, 1f, 1.9f);
-                    }
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.hasPermission(ROOT_PERMISSION)) {
+                    continue;
                 }
+
+                // Folia/Canvas: entity-thread for location/sound; message is still safe via entity task.
+                PlatformTasks.runForPlayer(this, player, () -> {
+                    player.sendMessage(message);
+                    if (playSound) {
+                        try {
+                            player.playSound(player.getLocation(), sx, 1f, 1.9f);
+                        } catch (Throwable ignored) {
+                            // Folia can reject off-region entity access; message already sent.
+                        }
+                    }
+                });
             }
         });
     }
 
     private void sendCommandMessage(CommandSender sender, String message) {
         if (sender == null || message == null) {
+            return;
+        }
+
+        if (sender instanceof Player player) {
+            if (!PlatformTasks.runForPlayer(this, player, () -> player.sendMessage(message))) {
+                player.sendMessage(message);
+            }
             return;
         }
 
@@ -557,6 +871,31 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
     }
 
+    private boolean isPluginDirty(String pluginName) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return false;
+        }
+        return dirtyPlugins.contains(pluginName.toLowerCase(Locale.ROOT));
+    }
+
+    private void markPluginDirty(String pluginName, String reason) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+        String key = pluginName.toLowerCase(Locale.ROOT);
+        if (dirtyPlugins.add(key)) {
+            getLogger().severe("Marked plugin dirty: " + pluginName + " (" + reason + "). Further auto-ops blocked until a successful manual lifecycle or clear.");
+            notifyBileUsers(tag + ChatColor.RED + pluginName + ChatColor.GRAY + " marked dirty after lifecycle failure. Auto reloads paused for it.", false);
+        }
+    }
+
+    private void clearPluginDirty(String pluginName) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return;
+        }
+        dirtyPlugins.remove(pluginName.toLowerCase(Locale.ROOT));
+    }
+
     private void queueSelfReload(String source) {
         if (!selfReloadQueued.compareAndSet(false, true)) {
             return;
@@ -585,6 +924,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void executePluginLifecycle(String operationName, ThrowingRunnable operation) throws Throwable {
+        executePluginLifecycle(null, operationName, operation);
+    }
+
+    private void executePluginLifecycle(String pluginName, String operationName, ThrowingRunnable operation) throws Throwable {
         if (operation == null || !isEnabled()) {
             return;
         }
@@ -600,16 +943,32 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         });
 
         if (!scheduled) {
-            operation.run();
-            return;
+            // Never run plugin lifecycle off the global/main thread on Folia/Canvas.
+            if (ServerPlatform.isFoliaFamily()) {
+                throw new IllegalStateException("Unable to schedule plugin operation on Folia/Canvas global region: " + operationName);
+            }
+
+            // Spigot/Paper: if already on primary thread, run inline; otherwise fail loudly.
+            if (Bukkit.isPrimaryThread()) {
+                operation.run();
+                return;
+            }
+
+            throw new IllegalStateException("Unable to schedule plugin operation on server main thread: " + operationName);
         }
 
         try {
             completion.get(PLUGIN_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            if (pluginName != null) {
+                markPluginDirty(pluginName, "interrupted: " + operationName);
+            }
             throw new IllegalStateException("Interrupted while waiting for plugin operation: " + operationName, e);
         } catch (TimeoutException e) {
+            if (pluginName != null) {
+                markPluginDirty(pluginName, "timeout: " + operationName);
+            }
             throw new IllegalStateException("Timed out while waiting for plugin operation: " + operationName, e);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -638,7 +997,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             onTick();
-            scheduleTicker(1L);
+            long nextDelay = watcherBusy
+                    ? (cfg == null ? 5L : cfg.getWatcherActivePollTicks())
+                    : (cfg == null ? 20L : cfg.getWatcherIdlePollTicks());
+            scheduleTicker(nextDelay);
         }, safeDelay)) {
             tickerActive = false;
             getLogger().warning("Failed to schedule BileTools ticker task.");
@@ -646,77 +1008,15 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private boolean runGlobal(Runnable runnable) {
-        if (runnable == null || !isEnabled()) {
-            return false;
-        }
-
-        Runnable guarded = () -> {
-            if (isEnabled()) {
-                runnable.run();
-            }
-        };
-
-        if (FoliaScheduler.runGlobal(this, guarded)) {
-            return true;
-        }
-
-        try {
-            Bukkit.getScheduler().runTask(this, guarded);
-            return true;
-        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
-            return false;
-        }
+        return PlatformTasks.runGlobal(this, runnable);
     }
 
     private boolean runGlobalLater(Runnable runnable, long delayTicks) {
-        if (delayTicks <= 0) {
-            return runGlobal(runnable);
-        }
-
-        if (runnable == null || !isEnabled()) {
-            return false;
-        }
-
-        Runnable guarded = () -> {
-            if (isEnabled()) {
-                runnable.run();
-            }
-        };
-
-        long safeDelay = Math.max(1L, delayTicks);
-        if (FoliaScheduler.runGlobal(this, guarded, safeDelay)) {
-            return true;
-        }
-
-        try {
-            Bukkit.getScheduler().runTaskLater(this, guarded, safeDelay);
-            return true;
-        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
-            return false;
-        }
+        return PlatformTasks.runGlobal(this, runnable, delayTicks);
     }
 
     private boolean runAsync(Runnable runnable) {
-        if (runnable == null || !isEnabled()) {
-            return false;
-        }
-
-        Runnable guarded = () -> {
-            if (isEnabled()) {
-                runnable.run();
-            }
-        };
-
-        if (FoliaScheduler.runAsync(this, guarded)) {
-            return true;
-        }
-
-        try {
-            Bukkit.getScheduler().runTaskAsynchronously(this, guarded);
-            return true;
-        } catch (IllegalPluginAccessException | UnsupportedOperationException ignored) {
-            return false;
-        }
+        return PlatformTasks.runAsync(this, runnable);
     }
 
     private void backupPluginFile(File sourceFile, String pluginName, String pluginVersion) {
@@ -733,13 +1033,22 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void trackFileState(File file) {
+        trackFileMetadata(file);
+        if (file != null) {
+            String signature = fingerprint(file);
+            if (signature != null) {
+                sig.put(file, signature);
+            }
+        }
+    }
+
+    private void trackFileMetadata(File file) {
         if (file == null) {
             return;
         }
 
         mod.put(file, file.length());
         las.put(file, file.lastModified());
-        sig.put(file, fingerprint(file));
     }
 
     private void trackPluginName(File file) {
@@ -781,6 +1090,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         mod.remove(file);
         las.remove(file);
         sig.remove(file);
+        pendingFingerprints.remove(file);
+        BileUtils.invalidateJarMeta(file);
         String trackedPluginName = trackedPluginNames.remove(file);
 
         getLogger().info("File removed: " + file.getName());
@@ -955,10 +1266,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     return;
                 }
 
-                executePluginLifecycle("load " + pluginName, () -> BileUtils.load(pluginFile));
+                long startNs = System.nanoTime();
+                executePluginLifecycle(pluginName, "load " + pluginName, () -> BileUtils.load(pluginFile));
                 Plugin loaded = BileUtils.getPluginByName(pluginName);
                 String resolvedName = loaded == null ? pluginName : loaded.getName();
-                sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+                clearPluginDirty(resolvedName);
+                long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from "
+                        + ChatColor.WHITE + pluginFile.getName() + ChatColor.GRAY + " (" + totalMs + "ms)");
             } catch (Throwable e) {
                 sendCommandMessage(sender, tag + "Couldn't load \"" + pluginName + "\".");
                 getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
@@ -978,7 +1293,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 String name = plugin.getName();
                 File sourceFile = BileUtils.getPluginFile(plugin);
-                executePluginLifecycle("unload " + pluginName, () -> BileUtils.unload(plugin));
+                executePluginLifecycle(name, "unload " + pluginName, () -> BileUtils.unload(plugin));
+                clearPluginDirty(name);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
             } catch (Throwable e) {
@@ -1006,10 +1322,15 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 File sourceFile = BileUtils.getPluginFile(plugin);
-                executePluginLifecycle("reload " + pluginName, () -> BileUtils.reload(plugin));
+                long startNs = System.nanoTime();
+                executePluginLifecycle(name, "reload " + pluginName, () -> BileUtils.reload(plugin));
+                clearPluginDirty(name);
+                long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
-                sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+                sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " ("
+                        + ChatColor.WHITE + fileName + ChatColor.GRAY + ", " + totalMs + "ms)");
             } catch (Throwable e) {
+                markPluginDirty(pluginName, "manual reload failure: " + rootMessage(e));
                 sendCommandMessage(sender, tag + "Couldn't reload \"" + pluginName + "\".");
                 getLogger().log(Level.SEVERE, "Failed to reload plugin " + pluginName, e);
             }
@@ -1027,7 +1348,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 String name = BileUtils.getPluginName(pluginFile);
-                executePluginLifecycle("uninstall " + pluginName, () -> BileUtils.delete(pluginFile));
+                executePluginLifecycle(name, "uninstall " + pluginName, () -> BileUtils.delete(pluginFile));
+                clearPluginDirty(name);
 
                 sendCommandMessage(sender, tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
                 if (pluginFile.exists()) {
@@ -1076,7 +1398,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             try {
                 File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selectedVersion.getName());
                 BileUtils.copy(selectedVersion, out);
-                executePluginLifecycle("install " + pluginName, () -> BileUtils.load(out));
+                executePluginLifecycle(pluginName, "install " + pluginName, () -> BileUtils.load(out));
+                clearPluginDirty(pluginName);
                 sendCommandMessage(sender, tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
             } catch (Throwable e) {
                 sendCommandMessage(sender, tag + "Couldn't install \"" + pluginName + "\".");

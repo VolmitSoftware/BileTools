@@ -1,7 +1,6 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.integration.ReloadAware;
-import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
@@ -42,14 +41,19 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class BileUtils {
-    private static final int ZIP_READ_RETRY_LIMIT = 20;
-    private static final long ZIP_READ_RETRY_DELAY_MS = 250L;
+    private static final int ZIP_READ_RETRY_LIMIT = 2;
 
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
     private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
+    private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
+    private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
+    private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
 
     private static String key(String pluginName) {
         return pluginName.toLowerCase(Locale.ROOT);
+    }
+
+    private record CachedJarMeta(long length, long lastModified, String pluginName, String pluginVersion) {
     }
 
     private static void registerLoadedFileOverride(String pluginName, File sourceFile, File runtimeFile) {
@@ -101,18 +105,132 @@ public class BileUtils {
     }
 
     public static void reload(Plugin p) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+        if (p == null) {
+            throw new InvalidPluginException("Cannot reload null plugin");
+        }
+
+        String pluginName = p.getName();
+        long startNs = System.nanoTime();
         File f = getPluginFile(p);
 
         if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             backup(p);
         }
-        Set<File> x = unload(p, ReloadAware.PreUnloadReason.HOT_RELOAD);
 
+        long unloadStartNs = System.nanoTime();
+        Set<File> x = unload(p, ReloadAware.PreUnloadReason.HOT_RELOAD);
+        long unloadMs = nanosToMillis(System.nanoTime() - unloadStartNs);
+
+        long dependentsStartNs = System.nanoTime();
         for (File i : x) {
             load(i);
         }
+        long dependentsMs = nanosToMillis(System.nanoTime() - dependentsStartNs);
 
+        long loadStartNs = System.nanoTime();
         load(f);
+        long loadMs = nanosToMillis(System.nanoTime() - loadStartNs);
+
+        Plugin reloaded = Bukkit.getPluginManager().getPlugin(pluginName);
+        HealthCheckResult health = verifyPluginHealth(reloaded != null ? reloaded : p, f);
+        if (!health.ok()) {
+            throw new InvalidPluginException("Post-reload health check failed for " + pluginName + ": " + health.summary());
+        }
+
+        long totalMs = nanosToMillis(System.nanoTime() - startNs);
+        logTiming("reload " + pluginName, totalMs,
+                "unload=" + unloadMs + "ms",
+                "dependents=" + dependentsMs + "ms",
+                "load=" + loadMs + "ms",
+                "health=ok");
+    }
+
+    public record HealthCheckResult(boolean ok, List<String> failures) {
+        public String summary() {
+            if (failures == null || failures.isEmpty()) {
+                return "ok";
+            }
+            return String.join("; ", failures);
+        }
+    }
+
+    public static HealthCheckResult verifyPluginHealth(Plugin plugin, File sourceFile) {
+        List<String> failures = new ArrayList<>();
+        if (BileTools.cfg != null && !BileTools.cfg.isHealthCheck()) {
+            return new HealthCheckResult(true, failures);
+        }
+
+        if (plugin == null) {
+            failures.add("plugin instance is null");
+            return new HealthCheckResult(false, failures);
+        }
+
+        if (!plugin.isEnabled()) {
+            failures.add("plugin is not enabled");
+        }
+
+        Plugin registered = Bukkit.getPluginManager().getPlugin(plugin.getName());
+        if (registered == null) {
+            failures.add("not registered in PluginManager");
+        } else if (registered != plugin) {
+            failures.add("PluginManager holds a different instance");
+        }
+
+        if (!Bukkit.getPluginManager().isPluginEnabled(plugin)) {
+            failures.add("PluginManager reports disabled");
+        }
+
+        try {
+            ClassLoader loader = plugin.getClass().getClassLoader();
+            if (loader == null) {
+                failures.add("classloader is null");
+            }
+        } catch (Throwable t) {
+            failures.add("classloader inaccessible: " + t.getClass().getSimpleName());
+        }
+
+        // Command map ownership is advisory: many plugins register brigadier/dynamic commands only.
+        try {
+            Map<String, Map<String, Object>> declaredCommands = plugin.getDescription().getCommands();
+            if (declaredCommands != null) {
+                for (String commandName : declaredCommands.keySet()) {
+                    PluginCommand command = Bukkit.getPluginCommand(commandName);
+                    if (command == null) {
+                        stp("Health advisory for " + plugin.getName() + ": declared command not yet in map: /" + commandName);
+                    } else if (command.getPlugin() != plugin) {
+                        stp("Health advisory for " + plugin.getName() + ": /" + commandName + " owned by " + command.getPlugin().getName());
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        if (sourceFile != null && !sourceFile.exists()) {
+            failures.add("source jar missing: " + sourceFile.getName());
+        }
+
+        return new HealthCheckResult(failures.isEmpty(), failures);
+    }
+
+    public static void logTiming(String operation, long totalMs, String... parts) {
+        if (BileTools.cfg != null && !BileTools.cfg.isLogTimings()) {
+            return;
+        }
+
+        StringBuilder message = new StringBuilder();
+        message.append("Timing ").append(operation).append(": total=").append(totalMs).append("ms");
+        if (parts != null) {
+            for (String part : parts) {
+                if (part != null && !part.isEmpty()) {
+                    message.append(" ").append(part);
+                }
+            }
+        }
+        stp(message.toString());
+    }
+
+    private static long nanosToMillis(long nanos) {
+        return Math.max(0L, nanos / 1_000_000L);
     }
 
     public static void stp(String s) {
@@ -137,134 +255,154 @@ public class BileUtils {
             return;
         }
 
-        stp("Loading " + getPluginName(file) + " " + getPluginVersion(file) + " from " + file.getName());
+        long startNs = System.nanoTime();
         PluginDescriptionFile f = getPluginDescription(file);
-        List<File> deferredDependents = new ArrayList<>();
-
-        String baseName = file.getName().toLowerCase(Locale.ROOT).replace(".jar", "");
-        String declaredName = f.getName() == null ? "" : f.getName().toLowerCase(Locale.ROOT);
-        if (!declaredName.isEmpty() && !baseName.contains(declaredName)) {
-            stp("Warning: " + file.getName() + " declares plugin name " + f.getName() + " (filename does not match plugin id)");
+        String cycleKey = key(f.getName());
+        Set<String> visiting = LOAD_VISITING.get();
+        if (!visiting.add(cycleKey)) {
+            stp("Skipping cyclic load for " + f.getName());
+            return;
         }
 
-        Plugin existing = Bukkit.getPluginManager().getPlugin(f.getName());
-        if (existing != null) {
-            File existingFile = getPluginFile(existing);
+        try {
+            invalidateJarMeta(file);
+            stp("Loading " + f.getName() + " " + f.getVersion() + " from " + file.getName());
+            List<File> deferredDependents = new ArrayList<>();
 
-            if (sameFile(existingFile, file)) {
-                stp("Skipping " + file.getName() + " (plugin " + existing.getName() + " already loaded from this jar)");
-                return;
+            String baseName = file.getName().toLowerCase(Locale.ROOT).replace(".jar", "");
+            String declaredName = f.getName() == null ? "" : f.getName().toLowerCase(Locale.ROOT);
+            if (!declaredName.isEmpty() && !baseName.contains(declaredName)) {
+                stp("Warning: " + file.getName() + " declares plugin name " + f.getName() + " (filename does not match plugin id)");
             }
 
-            String existingName = existingFile == null ? "unknown source" : existingFile.getName();
-            stp("Plugin " + existing.getName() + " is already loaded from " + existingName + ", replacing with " + file.getName());
+            Plugin existing = Bukkit.getPluginManager().getPlugin(f.getName());
+            if (existing != null) {
+                File existingFile = getPluginFile(existing);
 
-            Set<File> dependents = unload(existing, ReloadAware.PreUnloadReason.HOT_RELOAD);
-            for (File dep : dependents) {
-                if (dep != null && !sameFile(dep, file)) {
-                    deferredDependents.add(dep);
-                }
-            }
-        }
-
-        for (String i : f.getDepend()) {
-            if (Bukkit.getPluginManager().getPlugin(i) == null) {
-                stp(getPluginName(file) + " depends on " + i);
-                File fx = getPluginFile(i);
-
-                if (fx != null) {
-                    load(fx);
-                } else {
-                    stp("Missing dependency " + i + " for " + getPluginName(file) + ", aborting load");
+                if (sameFile(existingFile, file)) {
+                    stp("Skipping " + file.getName() + " (plugin " + existing.getName() + " already loaded from this jar)");
                     return;
                 }
-            }
-        }
 
-        for (String i : f.getSoftDepend()) {
-            if (Bukkit.getPluginManager().getPlugin(i) == null) {
-                File fx = getPluginFile(i);
+                String existingName = existingFile == null ? "unknown source" : existingFile.getName();
+                stp("Plugin " + existing.getName() + " is already loaded from " + existingName + ", replacing with " + file.getName());
 
-                if (fx != null) {
-                    stp(getPluginName(file) + " soft depends on " + i);
-                    load(fx);
+                Set<File> dependents = unload(existing, ReloadAware.PreUnloadReason.HOT_RELOAD);
+                for (File dep : dependents) {
+                    if (dep != null && !sameFile(dep, file)) {
+                        deferredDependents.add(dep);
+                    }
                 }
             }
-        }
 
-        stp("Calling loadPlugin for " + file.getName());
-        Plugin target = null;
-        boolean usedForcePaperLoader = false;
+            for (String i : f.getDepend()) {
+                if (Bukkit.getPluginManager().getPlugin(i) == null) {
+                    stp(f.getName() + " depends on " + i);
+                    File fx = getPluginFile(i);
 
-        try {
-            target = Bukkit.getPluginManager().loadPlugin(file);
-        } catch (Throwable e) {
-            if (e.getCause() instanceof IllegalStateException
-                    && e.getCause().getMessage() != null
-                    && e.getCause().getMessage().contains("paper plugin")) {
-                stp("Paper blocked runtime loading, attempting compatibility runtime load for " + file.getName());
+                    if (fx != null) {
+                        load(fx);
+                    } else {
+                        stp("Missing dependency " + i + " for " + f.getName() + ", aborting load");
+                        return;
+                    }
+                }
+            }
+
+            for (String i : f.getSoftDepend()) {
+                if (Bukkit.getPluginManager().getPlugin(i) == null) {
+                    File fx = getPluginFile(i);
+
+                    if (fx != null) {
+                        stp(f.getName() + " soft depends on " + i);
+                        load(fx);
+                    }
+                }
+            }
+
+            stp("Calling loadPlugin for " + file.getName());
+            Plugin target = null;
+            boolean usedForcePaperLoader = false;
+            boolean paperOnlyJar = isPaperPlugin(file) && !jarHasPluginYml(file);
+
+            // Spigot (and pure Bukkit) cannot load paper-plugin.yml-only jars via PluginManager.
+            if (paperOnlyJar && !ServerPlatform.isPaperPluginManagerAvailable()) {
+                stp("paper-plugin.yml-only jar on non-Paper runtime; using plugin.yml compatibility shim for " + file.getName());
+                usedForcePaperLoader = true;
+                target = loadPaperViaCompatibilityShim(file);
+            } else {
+                try {
+                    target = Bukkit.getPluginManager().loadPlugin(file);
+                } catch (Throwable e) {
+                    if (shouldAttemptPaperCompatibilityLoad(e) || paperOnlyJar) {
+                        stp("Runtime blocked loading " + file.getName() + " (" + rootMessage(e) + "); attempting Paper compatibility path");
+                        usedForcePaperLoader = true;
+                        if (ServerPlatform.isPaperPluginManagerAvailable()) {
+                            target = loadForcePaper(file);
+                        } else {
+                            target = loadPaperViaCompatibilityShim(file);
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            if (target == null && paperOnlyJar && ServerPlatform.isPaperPluginManagerAvailable()) {
+                stp("loadPlugin returned null for paper plugin " + file.getName() + "; trying force path");
                 usedForcePaperLoader = true;
                 target = loadForcePaper(file);
+            }
+
+            if (target == null) {
+                stp("loadPlugin returned null for " + file.getName());
+                throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
+            }
+
+            boolean explicitOnLoad = !usedForcePaperLoader && shouldCallExplicitOnLoad();
+            clearLoadedFileOverride(target.getName());
+
+            if (explicitOnLoad) {
+                stp("Calling onLoad for " + target.getName());
+                target.onLoad();
             } else {
-                throw e;
+                stp("Skipping explicit onLoad for " + target.getName() + " (already handled by server plugin loader)");
             }
-        }
 
-        if (target == null) {
-            stp("loadPlugin returned null for " + file.getName());
-            throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
-        }
+            stp("Enabling " + target.getName());
+            Bukkit.getPluginManager().enablePlugin(target);
 
-        boolean explicitOnLoad = !usedForcePaperLoader && shouldCallExplicitOnLoad();
-        clearLoadedFileOverride(target.getName());
+            Plugin registered = Bukkit.getPluginManager().getPlugin(target.getName());
+            if (registered == null || !Bukkit.getPluginManager().isPluginEnabled(registered)) {
+                throw new InvalidPluginException("Plugin " + target.getName() + " did not enable successfully");
+            }
 
-        if (explicitOnLoad) {
-            stp("Calling onLoad for " + target.getName());
-            target.onLoad();
-        } else {
-            stp("Skipping explicit onLoad for " + target.getName() + " (already handled by server plugin loader)");
-        }
+            ensurePluginRegistered(target);
 
-        stp("Enabling " + target.getName());
-        Bukkit.getPluginManager().enablePlugin(target);
+            registerLoadedFileOverride(target.getName(), file, null);
+            invalidateJarMeta(file);
+            stp("Enabled " + target.getName() + " successfully");
 
-        Plugin registered = Bukkit.getPluginManager().getPlugin(target.getName());
-        if (registered == null || !Bukkit.getPluginManager().isPluginEnabled(registered)) {
-            throw new InvalidPluginException("Plugin " + target.getName() + " did not enable successfully");
-        }
-
-        try {
-            PluginManager pm = Bukkit.getPluginManager();
-            Field pluginsField = pm.getClass().getDeclaredField("plugins");
-            pluginsField.setAccessible(true);
-            Object pluginsObj = pluginsField.get(pm);
-
-            if (pluginsObj instanceof List) {
-                List<Plugin> plugins = (List<Plugin>) pluginsObj;
-                if (!plugins.contains(target)) {
-                    plugins.add(target);
+            if (!deferredDependents.isEmpty()) {
+                stp("Reloading " + deferredDependents.size() + " dependent plugin(s) after replacement of " + target.getName());
+                for (File dependent : deferredDependents) {
+                    if (dependent != null && dependent.exists()) {
+                        load(dependent);
+                    }
                 }
             }
 
-            Field lookupField = pm.getClass().getDeclaredField("lookupNames");
-            lookupField.setAccessible(true);
-            Object lookupObj = lookupField.get(pm);
-
-            if (lookupObj instanceof Map) {
-                Map<String, Plugin> lookup = (Map<String, Plugin>) lookupObj;
-                lookup.put(target.getName().toLowerCase(), target);
+            HealthCheckResult health = verifyPluginHealth(target, file);
+            if (!health.ok()) {
+                throw new InvalidPluginException("Post-load health check failed for " + target.getName() + ": " + health.summary());
             }
-        } catch (Throwable ignored) {
-        }
 
-        stp("Enabled " + target.getName() + " successfully");
-
-        if (!deferredDependents.isEmpty()) {
-            stp("Reloading " + deferredDependents.size() + " dependent plugin(s) after replacement of " + target.getName());
-            for (File dependent : deferredDependents) {
-                if (dependent != null && dependent.exists()) {
-                    load(dependent);
-                }
+            rebuildServerCommandGraph();
+            logTiming("load " + target.getName(), nanosToMillis(System.nanoTime() - startNs), "health=ok");
+        } finally {
+            visiting.remove(cycleKey);
+            if (visiting.isEmpty()) {
+                LOAD_VISITING.remove();
             }
         }
     }
@@ -690,23 +828,22 @@ public class BileUtils {
     }
 
     private static boolean isPaperRuntimePluginManager(PluginManager pluginManager) {
-        if (findFieldInHierarchy(pluginManager.getClass(), "paperPluginManager") != null) {
+        if (!ServerPlatform.isPaperPluginManagerAvailable()) {
+            return false;
+        }
+
+        if (pluginManager != null && findFieldInHierarchy(pluginManager.getClass(), "paperPluginManager") != null) {
             return true;
         }
 
-        String className = pluginManager.getClass().getName().toLowerCase(Locale.ROOT);
-        if (className.contains("paper") || className.contains("purpur")) {
-            return true;
+        if (pluginManager != null) {
+            String className = pluginManager.getClass().getName().toLowerCase(Locale.ROOT);
+            if (className.contains("paper") || className.contains("purpur") || className.contains("folia") || className.contains("canvas") || className.contains("leaf")) {
+                return true;
+            }
         }
 
-        try {
-            Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-            return true;
-        } catch (ClassNotFoundException ignored) {
-            return false;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return ServerPlatform.isPaperFamily();
     }
 
     private static Field findFieldInHierarchy(Class<?> type, String fieldName) {
@@ -878,173 +1015,580 @@ public class BileUtils {
     @SuppressWarnings("unchecked")
     public static Set<File> unload(Plugin plugin, ReloadAware.PreUnloadReason reason) {
         Set<File> deps = new HashSet<>();
-        File file = getPluginFile(plugin);
-        stp("Unloading " + plugin.getName());
-
-        if (file == null) {
-            stp("Could not resolve source jar for " + plugin.getName() + ", skipping file reset");
+        if (plugin == null) {
+            return deps;
         }
 
-        for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
-            if (i.equals(plugin)) {
-                continue;
-            }
-
-            if (i.getDescription().getSoftDepend().contains(plugin.getName())) {
-                stp(i.getName() + " soft depends on " + plugin.getName() + ". Playing it safe.");
-                deps.add(getPluginFile(i));
-            }
-
-            if (i.getDescription().getDepend().contains(plugin.getName())) {
-                stp(i.getName() + " depends on " + plugin.getName() + ". Playing it safe.");
-                deps.add(getPluginFile(i));
-            }
+        String cycleKey = key(plugin.getName());
+        Set<String> visiting = UNLOAD_VISITING.get();
+        if (!visiting.add(cycleKey)) {
+            stp("Skipping cyclic unload for " + plugin.getName());
+            return deps;
         }
 
-        if (plugin.getName().equals("WorldEdit")) {
-            Plugin fa = Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
-
-            if (fa != null) {
-                stp(fa.getName() + " (kind of) depends on " + plugin.getName() + ". Playing it safe.");
-                deps.add(getPluginFile(fa));
-            }
-        }
-
-        for (File i : new HashSet<>(deps)) {
-            deps.addAll(unload(getPlugin(i), reason));
-        }
-
-        if (plugin instanceof ReloadAware aware) {
-            stp("Invoking pre-unload hook on " + plugin.getName() + " (" + reason + ")");
-            try {
-                aware.onPreUnload(reason);
-            } catch (Throwable t) {
-                stp("Pre-unload hook for " + plugin.getName() + " threw: " + t);
-                t.printStackTrace();
-            }
-        }
-
-        FoliaScheduler.cancelTasks(plugin);
         try {
-            plugin.getServer().getScheduler().cancelTasks(plugin);
-        } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
-        }
-        HandlerList.unregisterAll(plugin);
-        String name = plugin.getName();
-        PluginManager pluginManager = Bukkit.getPluginManager();
-        SimpleCommandMap commandMap = null;
-        List<Plugin> plugins = null;
-        Map<String, Plugin> names = null;
-        Map<String, Command> commands = null;
-        Map<Event, SortedSet<RegisteredListener>> listeners = null;
-        boolean reloadlisteners = true;
+            long startNs = System.nanoTime();
+            File file = getPluginFile(plugin);
+            stp("Unloading " + plugin.getName());
 
-        if (pluginManager != null) {
-            try {
-                pluginManager.disablePlugin(plugin);
-            } catch (Throwable t) {
-                stp("disablePlugin threw for " + name + " (continuing teardown so the plugin is still fully unregistered): " + t);
-                t.printStackTrace();
+            if (file == null) {
+                stp("Could not resolve source jar for " + plugin.getName() + ", skipping file reset");
             }
 
-            try {
-                Field pluginsField = Bukkit.getPluginManager().getClass().getDeclaredField("plugins");
-                Field lookupNamesField = Bukkit.getPluginManager().getClass().getDeclaredField("lookupNames");
-                pluginsField.setAccessible(true);
-                plugins = (List<Plugin>) pluginsField.get(pluginManager);
-                lookupNamesField.setAccessible(true);
-                names = (Map<String, Plugin>) lookupNamesField.get(pluginManager);
+            for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
+                if (i.equals(plugin)) {
+                    continue;
+                }
+
+                if (i.getDescription().getSoftDepend().contains(plugin.getName())) {
+                    stp(i.getName() + " soft depends on " + plugin.getName() + ". Playing it safe.");
+                    deps.add(getPluginFile(i));
+                }
+
+                if (i.getDescription().getDepend().contains(plugin.getName())) {
+                    stp(i.getName() + " depends on " + plugin.getName() + ". Playing it safe.");
+                    deps.add(getPluginFile(i));
+                }
+            }
+
+            if (plugin.getName().equals("WorldEdit")) {
+                Plugin fa = Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
+
+                if (fa != null) {
+                    stp(fa.getName() + " (kind of) depends on " + plugin.getName() + ". Playing it safe.");
+                    deps.add(getPluginFile(fa));
+                }
+            }
+
+            for (File i : new HashSet<>(deps)) {
+                Plugin dependent = getPlugin(i);
+                if (dependent != null) {
+                    deps.addAll(unload(dependent, reason));
+                }
+            }
+
+            if (plugin instanceof ReloadAware aware) {
+                stp("Invoking pre-unload hook on " + plugin.getName() + " (" + reason + ")");
+                try {
+                    aware.onPreUnload(reason);
+                } catch (Throwable t) {
+                    stp("Pre-unload hook for " + plugin.getName() + " threw: " + t);
+                    t.printStackTrace();
+                }
+            }
+
+            PlatformTasks.cancelPluginTasks(plugin);
+            HandlerList.unregisterAll(plugin);
+            String name = plugin.getName();
+            PluginManager pluginManager = Bukkit.getPluginManager();
+            SimpleCommandMap commandMap = null;
+            List<Plugin> plugins = null;
+            Map<String, Plugin> names = null;
+            Map<String, Command> commands = null;
+            Map<Event, SortedSet<RegisteredListener>> listeners = null;
+            boolean reloadlisteners = true;
+
+            if (pluginManager != null) {
+                try {
+                    pluginManager.disablePlugin(plugin);
+                } catch (Throwable t) {
+                    stp("disablePlugin threw for " + name + " (continuing teardown so the plugin is still fully unregistered): " + t);
+                    t.printStackTrace();
+                }
 
                 try {
-                    Field listenersField = Bukkit.getPluginManager().getClass().getDeclaredField("listeners");
-                    listenersField.setAccessible(true);
-                    listeners = (Map<Event, SortedSet<RegisteredListener>>) listenersField.get(pluginManager);
-                } catch (Exception e) {
-                    reloadlisteners = false;
+                    plugins = readPluginList(pluginManager);
+                    names = readLookupNames(pluginManager);
+
+                    try {
+                        Field listenersField = findFieldInHierarchy(pluginManager.getClass(), "listeners");
+                        if (listenersField != null) {
+                            Object listenersObj = listenersField.get(pluginManager);
+                            if (listenersObj instanceof Map) {
+                                listeners = (Map<Event, SortedSet<RegisteredListener>>) listenersObj;
+                            }
+                        } else {
+                            reloadlisteners = false;
+                        }
+                    } catch (Exception e) {
+                        reloadlisteners = false;
+                    }
+
+                    commandMap = readCommandMap(pluginManager);
+                    if (commandMap != null) {
+                        Field knownCommandsField = findFieldInHierarchy(SimpleCommandMap.class, "knownCommands");
+                        if (knownCommandsField != null) {
+                            Object commandsObj = knownCommandsField.get(commandMap);
+                            if (commandsObj instanceof Map) {
+                                commands = (Map<String, Command>) commandsObj;
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    return new HashSet<>();
+                }
+            }
+
+            try {
+                if (pluginManager != null) {
+                    pluginManager.disablePlugin(plugin);
+                }
+            } catch (Throwable t) {
+                stp("disablePlugin (second pass) threw for " + name + " (continuing unregister): " + t);
+                t.printStackTrace();
+            }
+
+            if (plugins != null) {
+                plugins.remove(plugin);
+            }
+
+            if (names != null) {
+                names.remove(name);
+                names.remove(name.toLowerCase(Locale.ROOT));
+                try {
+                    for (String provided : plugin.getDescription().getProvides()) {
+                        names.remove(provided);
+                        names.remove(provided.toLowerCase(Locale.ROOT));
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+
+            if (listeners != null && reloadlisteners) {
+                for (SortedSet<RegisteredListener> set : listeners.values()) {
+                    set.removeIf(value -> value.getPlugin() == plugin);
+                }
+            }
+
+            scrubPluginCommands(plugin, commandMap, commands);
+            scrubPluginServices(plugin);
+            scrubPluginMessenger(plugin);
+            removePaperPluginTracking(plugin);
+            scrubBrigadierNodes(plugin);
+
+            ClassLoader cl = plugin.getClass().getClassLoader();
+
+            if (cl instanceof java.io.Closeable) {
+                try {
+                    ((java.io.Closeable) cl).close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            if (file != null) {
+                refreshPluginJarHandle(file);
+            }
+
+            clearLoadedFileOverride(plugin.getName());
+            if (file != null) {
+                invalidateJarMeta(file);
+            }
+            rebuildServerCommandGraph();
+            logTiming("unload " + name, nanosToMillis(System.nanoTime() - startNs));
+            return deps;
+        } finally {
+            visiting.remove(cycleKey);
+            if (visiting.isEmpty()) {
+                UNLOAD_VISITING.remove();
+            }
+        }
+    }
+
+    private static void scrubPluginServices(Plugin plugin) {
+        if (plugin == null) {
+            return;
+        }
+
+        try {
+            Bukkit.getServicesManager().unregisterAll(plugin);
+        } catch (Throwable t) {
+            stp("Service unregister for " + plugin.getName() + " threw: " + t.getClass().getSimpleName());
+        }
+    }
+
+    private static void scrubPluginMessenger(Plugin plugin) {
+        if (plugin == null) {
+            return;
+        }
+
+        try {
+            org.bukkit.plugin.messaging.Messenger messenger = Bukkit.getMessenger();
+            try {
+                messenger.unregisterIncomingPluginChannel(plugin);
+            } catch (Throwable ignored) {
+            }
+            try {
+                messenger.unregisterOutgoingPluginChannel(plugin);
+            } catch (Throwable ignored) {
+            }
+        } catch (Throwable t) {
+            stp("Messenger channel scrub for " + plugin.getName() + " threw: " + t.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Best-effort removal of plugin command nodes from Paper's Brigadier/dispatcher graph.
+     * Safe no-op on Spigot or when internals move.
+     */
+    private static void scrubBrigadierNodes(Plugin plugin) {
+        if (plugin == null || !ServerPlatform.isPaperFamily()) {
+            return;
+        }
+
+        try {
+            Object server = Bukkit.getServer();
+            // CraftServer#syncCommands rebuilds brigadier from SimpleCommandMap after our scrub.
+            Method syncCommands = findPublicMethod(server.getClass(), "syncCommands");
+            if (syncCommands != null) {
+                // Deferred to rebuildServerCommandGraph; mark intent only if needed later.
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            // Fallback: walk common Paper command registrant fields and drop plugin-owned nodes.
+            Object paperCommands = invokeStaticNoThrow("io.papermc.paper.command.brigadier.PaperCommands", "getInstance");
+            if (paperCommands == null) {
+                paperCommands = invokeStaticNoThrow("io.papermc.paper.command.brigadier.PaperBrigadier", "get");
+            }
+            if (paperCommands == null) {
+                return;
+            }
+
+            for (Field field : getAllFields(paperCommands.getClass())) {
+                if (!Map.class.isAssignableFrom(field.getType())) {
+                    continue;
+                }
+                field.setAccessible(true);
+                Object value = field.get(paperCommands);
+                if (!(value instanceof Map<?, ?> map)) {
+                    continue;
                 }
 
-                Field commandMapField = Bukkit.getPluginManager().getClass().getDeclaredField("commandMap");
-                Field knownCommandsField = SimpleCommandMap.class.getDeclaredField("knownCommands");
-                commandMapField.setAccessible(true);
-                commandMap = (SimpleCommandMap) commandMapField.get(pluginManager);
-                knownCommandsField.setAccessible(true);
-                commands = (Map<String, Command>) knownCommandsField.get(commandMap);
-            } catch (Throwable e) {
-                e.printStackTrace();
-                return new HashSet<>();
+                List<Object> keys = new ArrayList<>();
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    Object mapValue = entry.getValue();
+                    if (mapValue == null) {
+                        continue;
+                    }
+                    String text = mapValue.toString().toLowerCase(Locale.ROOT);
+                    if (text.contains(plugin.getName().toLowerCase(Locale.ROOT))) {
+                        keys.add(entry.getKey());
+                    }
+                }
+                for (Object key : keys) {
+                    map.remove(key);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Rebuilds the server command dispatcher (Paper/Spigot CraftServer#syncCommands when present)
+     * and pushes updated trees to online players.
+     */
+    public static void rebuildServerCommandGraph() {
+        try {
+            Object server = Bukkit.getServer();
+            Method syncCommands = findPublicMethod(server.getClass(), "syncCommands");
+            if (syncCommands == null) {
+                syncCommands = findDeclaredMethod(server.getClass(), "syncCommands");
+            }
+            if (syncCommands != null) {
+                syncCommands.setAccessible(true);
+                syncCommands.invoke(server);
+            }
+        } catch (Throwable ignored) {
+        }
+
+        resyncPlayerCommands();
+    }
+
+    private static Method findPublicMethod(Class<?> type, String name) {
+        try {
+            return type.getMethod(name);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Method findDeclaredMethod(Class<?> type, String name) {
+        Class<?> current = type;
+        while (current != null && current != Object.class) {
+            try {
+                return current.getDeclaredMethod(name);
+            } catch (NoSuchMethodException ignored) {
+                current = current.getSuperclass();
+            } catch (Throwable ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static List<Field> getAllFields(Class<?> type) {
+        List<Field> fields = new ArrayList<>();
+        Class<?> current = type;
+        while (current != null && current != Object.class) {
+            fields.addAll(Arrays.asList(current.getDeclaredFields()));
+            current = current.getSuperclass();
+        }
+        return fields;
+    }
+
+    private static Object invokeStaticNoThrow(String className, String methodName) {
+        try {
+            Class<?> type = Class.forName(className);
+            Method method = type.getMethod(methodName);
+            return method.invoke(null);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static void scrubPluginCommands(Plugin plugin, SimpleCommandMap commandMap, Map<String, Command> commands) {
+        if (plugin == null || commandMap == null || commands == null) {
+            return;
+        }
+
+        List<String> toRemove = new ArrayList<>();
+        String pluginKey = plugin.getName().toLowerCase(Locale.ROOT);
+
+        for (Map.Entry<String, Command> entry : commands.entrySet()) {
+            Command command = entry.getValue();
+            if (command instanceof PluginCommand pluginCommand) {
+                if (pluginCommand.getPlugin() == plugin) {
+                    try {
+                        pluginCommand.unregister(commandMap);
+                    } catch (Throwable ignored) {
+                    }
+                    toRemove.add(entry.getKey());
+                    continue;
+                }
+            }
+
+            String mapKey = entry.getKey();
+            if (mapKey != null) {
+                String lower = mapKey.toLowerCase(Locale.ROOT);
+                if (lower.startsWith(pluginKey + ":")) {
+                    toRemove.add(mapKey);
+                }
             }
         }
 
         try {
-            pluginManager.disablePlugin(plugin);
-        } catch (Throwable t) {
-            stp("disablePlugin (second pass) threw for " + name + " (continuing unregister): " + t);
-            t.printStackTrace();
-        }
-
-        if (plugins != null) {
-            plugins.remove(plugin);
-        }
-
-        if (names != null) {
-            names.remove(name);
-        }
-
-        if (listeners != null && reloadlisteners) {
-            for (SortedSet<RegisteredListener> set : listeners.values()) {
-                set.removeIf(value -> value.getPlugin() == plugin);
+            for (String commandName : plugin.getDescription().getCommands().keySet()) {
+                toRemove.add(commandName);
+                toRemove.add(commandName.toLowerCase(Locale.ROOT));
+                toRemove.add(pluginKey + ":" + commandName.toLowerCase(Locale.ROOT));
             }
+        } catch (Throwable ignored) {
         }
 
-        if (commandMap != null) {
-            List<String> toRemove = new ArrayList<>();
-
-            for (Map.Entry<String, Command> entry : commands.entrySet()) {
-                if (entry.getValue() instanceof PluginCommand) {
-                    PluginCommand c = (PluginCommand) entry.getValue();
-
-                    if (c.getPlugin() == plugin) {
-                        c.unregister(commandMap);
-                        toRemove.add(entry.getKey());
-                    }
+        for (String key : toRemove) {
+            Command removed = commands.remove(key);
+            if (removed instanceof PluginCommand pluginCommand && pluginCommand.getPlugin() == plugin) {
+                try {
+                    pluginCommand.unregister(commandMap);
+                } catch (Throwable ignored) {
                 }
             }
+        }
+    }
 
-            for (String key : toRemove) {
-                commands.remove(key);
+    /**
+     * Forces clients to rebuild their command trees after plugin command map mutations.
+     */
+    public static void resyncPlayerCommands() {
+        try {
+            for (org.bukkit.entity.Player player : Bukkit.getOnlinePlayers()) {
+                Plugin host = BileTools.bile;
+                Runnable update = () -> {
+                    try {
+                        player.updateCommands();
+                    } catch (Throwable ignored) {
+                    }
+                };
+
+                if (host != null && host.isEnabled()) {
+                    PlatformTasks.runForPlayer(host, player, update);
+                } else {
+                    update.run();
+                }
             }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean jarHasPluginYml(File file) {
+        try (ZipFile z = new ZipFile(file)) {
+            return z.getEntry("plugin.yml") != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean shouldAttemptPaperCompatibilityLoad(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor != null) {
+            String message = cursor.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase(Locale.ROOT);
+                if (lower.contains("paper plugin")
+                        || lower.contains("paper-plugin")
+                        || lower.contains("cannot be loaded on")
+                        || lower.contains("runtime load")
+                        || (lower.contains("bootstrap") && lower.contains("plugin"))) {
+                    return true;
+                }
+            }
+            if (cursor.getCause() == cursor) {
+                break;
+            }
+            cursor = cursor.getCause();
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void ensurePluginRegistered(Plugin target) {
+        if (target == null) {
+            return;
         }
 
-        removePaperPluginTracking(plugin);
-
-        ClassLoader cl = plugin.getClass().getClassLoader();
-
-        if (cl instanceof java.io.Closeable) {
-            try {
-                ((java.io.Closeable) cl).close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
+        try {
+            PluginManager pm = Bukkit.getPluginManager();
+            List<Plugin> plugins = readPluginList(pm);
+            if (plugins != null && !plugins.contains(target)) {
+                plugins.add(target);
             }
+
+            Map<String, Plugin> lookup = readLookupNames(pm);
+            if (lookup != null) {
+                lookup.put(target.getName().toLowerCase(Locale.ROOT), target);
+                lookup.put(target.getName(), target);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Plugin> readPluginList(PluginManager pluginManager) throws IllegalAccessException {
+        if (pluginManager == null) {
+            return null;
+        }
+        Field pluginsField = findFieldInHierarchy(pluginManager.getClass(), "plugins");
+        if (pluginsField == null) {
+            return null;
+        }
+        Object pluginsObj = pluginsField.get(pluginManager);
+        if (pluginsObj instanceof List) {
+            return (List<Plugin>) pluginsObj;
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Plugin> readLookupNames(PluginManager pluginManager) throws IllegalAccessException {
+        if (pluginManager == null) {
+            return null;
+        }
+        Field lookupField = findFieldInHierarchy(pluginManager.getClass(), "lookupNames");
+        if (lookupField == null) {
+            return null;
+        }
+        Object lookupObj = lookupField.get(pluginManager);
+        if (lookupObj instanceof Map) {
+            return (Map<String, Plugin>) lookupObj;
+        }
+        return null;
+    }
+
+    private static SimpleCommandMap readCommandMap(PluginManager pluginManager) throws IllegalAccessException {
+        if (pluginManager == null) {
+            return null;
+        }
+        Field commandMapField = findFieldInHierarchy(pluginManager.getClass(), "commandMap");
+        if (commandMapField == null) {
+            return null;
+        }
+        Object map = commandMapField.get(pluginManager);
+        if (map instanceof SimpleCommandMap simpleCommandMap) {
+            return simpleCommandMap;
+        }
+        return null;
+    }
+
+    /**
+     * On Windows (or when the jar appears locked), rewrite the file via temp copy so the
+     * classloader handle is released for the next load. Skipped on Unix when a simple reset works.
+     */
+    private static void refreshPluginJarHandle(File file) {
+        if (file == null || !file.exists()) {
+            return;
         }
 
-        String idx = UUID.randomUUID().toString();
-        File ff = new File(new File(BileTools.bile.getDataFolder(), "temp"), idx);
-        System.gc();
-
-        if (file != null) {
+        boolean windows = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+        if (!windows) {
             try {
-                copy(file, ff);
-                file.delete();
-                copy(ff, file);
                 BileTools.bile.reset(file);
-                ff.deleteOnExit();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Throwable ignored) {
             }
+            return;
         }
 
-        clearLoadedFileOverride(plugin.getName());
-        return deps;
+        File tempDir = new File(BileTools.bile.getDataFolder(), "temp");
+        tempDir.mkdirs();
+        File temp = new File(tempDir, UUID.randomUUID() + ".jar");
+
+        try {
+            copy(file, temp);
+            if (!file.delete()) {
+                // still attempt rewrite
+            }
+            copy(temp, file);
+            BileTools.bile.reset(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (temp.exists() && !temp.delete()) {
+                temp.deleteOnExit();
+            }
+        }
+    }
+
+    public static void invalidateJarMeta(File file) {
+        if (file == null) {
+            return;
+        }
+        JAR_META_CACHE.remove(cacheKey(file));
+    }
+
+    private static String cacheKey(File file) {
+        try {
+            return file.getCanonicalPath();
+        } catch (IOException ignored) {
+            return file.getAbsolutePath();
+        }
+    }
+
+    private static CachedJarMeta getCachedJarMeta(File file) throws IOException, InvalidDescriptionException {
+        String key = cacheKey(file);
+        long length = file.length();
+        long lastModified = file.lastModified();
+        CachedJarMeta cached = JAR_META_CACHE.get(key);
+        if (cached != null && cached.length() == length && cached.lastModified() == lastModified) {
+            return cached;
+        }
+
+        PluginDescriptionFile description = readPluginDescription(file);
+        CachedJarMeta meta = new CachedJarMeta(length, lastModified, description.getName(), description.getVersion());
+        JAR_META_CACHE.put(key, meta);
+        return meta;
     }
 
     public static File getBackupLocation(Plugin p) {
@@ -1231,14 +1775,22 @@ public class BileUtils {
     }
 
     public static String getPluginVersion(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
-        return getPluginDescription(file).getVersion();
+        return getCachedJarMeta(file).pluginVersion();
     }
 
     public static String getPluginName(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
-        return getPluginDescription(file).getName();
+        return getCachedJarMeta(file).pluginName();
     }
 
     public static PluginDescriptionFile getPluginDescription(File file) throws IOException, InvalidDescriptionException {
+        return readPluginDescription(file);
+    }
+
+    /**
+     * Reads plugin.yml / paper-plugin.yml without sleeping. Callers that race partial jar writes
+     * should reschedule (hot-drop retries) instead of blocking the main thread.
+     */
+    private static PluginDescriptionFile readPluginDescription(File file) throws IOException, InvalidDescriptionException {
         IOException lastZipReadError = null;
 
         for (int attempt = 0; attempt <= ZIP_READ_RETRY_LIMIT; attempt++) {
@@ -1267,12 +1819,10 @@ public class BileUtils {
                     return new PluginDescriptionFile(new ByteArrayInputStream(converted.getBytes(StandardCharsets.UTF_8)));
                 }
             } catch (IOException e) {
+                lastZipReadError = e;
                 if (!isTransientZipReadError(e) || attempt >= ZIP_READ_RETRY_LIMIT) {
                     throw e;
                 }
-
-                lastZipReadError = e;
-                sleepQuietly(ZIP_READ_RETRY_DELAY_MS);
             }
         }
 
@@ -1295,14 +1845,6 @@ public class BileUtils {
                 || lower.contains("error in opening zip file")
                 || lower.contains("invalid loc header")
                 || lower.contains("cannot read");
-    }
-
-    private static void sleepQuietly(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     public static Plugin getPluginByName(String string) {

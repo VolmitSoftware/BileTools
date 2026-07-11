@@ -2,6 +2,8 @@ package com.volmit.bile.command;
 
 import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
 import art.arcane.volmlib.util.director.visual.DirectorVisualCommand.DirectorVisualParameter;
+import com.volmit.bile.BileTools;
+import com.volmit.bile.PlatformTasks;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -35,22 +37,40 @@ public final class BileFancyMenu {
     }
 
     public static void playTabSound(CommandSender sender) {
-        if (sender instanceof Player player) {
-            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.25f, randomPitch(0.125f, 1.95f));
-        }
+        playOnPlayer(sender, player ->
+                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.25f, randomPitch(0.125f, 1.95f)));
     }
 
     public static void playSuccessSound(CommandSender sender) {
-        if (sender instanceof Player player) {
+        playOnPlayer(sender, player -> {
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 1.65f);
             player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.125f, 2.99f);
-        }
+        });
     }
 
     public static void playFailureSound(CommandSender sender) {
-        if (sender instanceof Player player) {
+        playOnPlayer(sender, player -> {
             player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.77f, 0.25f);
             player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.2f, 0.45f);
+        });
+    }
+
+    private static void playOnPlayer(CommandSender sender, java.util.function.Consumer<Player> action) {
+        if (!(sender instanceof Player player) || action == null) {
+            return;
+        }
+
+        Runnable task = () -> {
+            try {
+                action.accept(player);
+            } catch (Throwable ignored) {
+            }
+        };
+
+        if (BileTools.bile != null && BileTools.bile.isEnabled()) {
+            PlatformTasks.runForPlayer(BileTools.bile, player, task);
+        } else {
+            task.run();
         }
     }
 
