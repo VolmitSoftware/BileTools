@@ -27,10 +27,8 @@ public final class ServerPlatform {
         UNKNOWN
     }
 
-    private static final boolean PAPER_PLUGIN_MANAGER = classPresent("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-    private static final boolean PAPER_SERVER = classPresent("com.destroystokyo.paper.PaperConfig")
-            || classPresent("io.papermc.paper.configuration.Configuration")
-            || PAPER_PLUGIN_MANAGER;
+    private static final boolean PAPER_RUNTIME = classPresent("io.papermc.paper.ServerBuildInfo");
+    private static final boolean PAPER_SERVER = PAPER_RUNTIME;
     private static final boolean PURPUR = classPresent("org.purpurmc.purpur.PurpurConfig")
             || classPresent("org.purpurmc.purpur.PurpurServer");
     private static final boolean LEAF = classPresent("org.leavesmc.leaves.LeavesConfig")
@@ -80,8 +78,8 @@ public final class ServerPlatform {
         return f != Family.SPIGOT && f != Family.UNKNOWN;
     }
 
-    public static boolean isPaperPluginManagerAvailable() {
-        return PAPER_PLUGIN_MANAGER;
+    public static boolean isPaperRuntime() {
+        return PAPER_RUNTIME;
     }
 
     /**
@@ -114,7 +112,7 @@ public final class ServerPlatform {
                 + " name=" + name
                 + " version=" + version
                 + " bukkit=" + bukkit
-                + " paperPm=" + PAPER_PLUGIN_MANAGER
+                + " paperRuntime=" + PAPER_RUNTIME
                 + " regionized=" + isRegionizedThreading();
         cachedSummary = result;
         return result;

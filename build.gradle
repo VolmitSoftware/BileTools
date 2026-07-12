@@ -5,9 +5,7 @@ plugins {
 }
 
 version = '3.0.0-26.2'
-// Use a Spigot-recognized api-version so Spigot will load the jar.
-// Compile/runtime still targets Paper 26.2 (see gradle/libs.versions.toml).
-def apiVersion = '1.21'
+def apiVersion = '26.2'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
 
@@ -55,6 +53,8 @@ dependencies {
         changing = true
         transitive = false
     }
+    testImplementation libs.paper
+    testImplementation 'junit:junit:4.13.2'
 }
 
 configurations.configureEach {

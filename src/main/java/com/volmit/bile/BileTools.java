@@ -131,7 +131,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             getLogger().info("Folia/Canvas detected: using GlobalRegionScheduler; classic Bukkit scheduler is avoided.");
             getLogger().warning("Hot-reload of third-party plugins on Folia/Canvas is best-effort; plugins without folia-supported may still break.");
         } else if (!ServerPlatform.isPaperFamily()) {
-            getLogger().info("Spigot-compatible mode: Paper force-load paths disabled; paper-plugin.yml jars use plugin.yml shims.");
+            getLogger().info("Spigot-compatible mode: paper-plugin.yml-only jars are rejected; dual-descriptor jars load through plugin.yml.");
         }
 
         if (cfg.isRemoteSlaveEnabled()) {

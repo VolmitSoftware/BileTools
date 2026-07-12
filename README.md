@@ -10,14 +10,14 @@ Tools for making garbage
 
 | Runtime | Support | Notes |
 |---------|---------|--------|
-| **Paper** | Primary | Full Paper plugin manager force-load + shims |
+| **Paper** | Primary | Public PluginManager load path; hot-unload remains best-effort |
 | **Purpur** | Primary | Paper-family (same load/unload paths) |
 | **Leaf** | Primary | Paper-family fork; treated like Paper |
 | **Folia** | Supported | `folia-supported: true`; GlobalRegionScheduler only; hot-reload is best-effort |
 | **Canvas** | Supported | Folia fork; same regionized scheduling rules as Folia |
-| **Spigot** | Best-effort | No Paper plugin manager; `paper-plugin.yml`-only jars use `plugin.yml` shims. `api-version` is `1.21` so Spigot will load; compiled against Paper 26.2 |
+| **Spigot** | Best-effort | `paper-plugin.yml`-only jars are rejected; dual-descriptor jars load through `plugin.yml`; compiled against Paper 26.2 |
 
-* `plugin.yml` `api-version`: `1.21` (Spigot + Paper loadable)
+* `plugin.yml` `api-version`: `26.2`
 * Compile target: Paper API `26.2` (see `gradle/libs.versions.toml`)
 * Runtime JVM: `Java 25+`
 * Lifecycle mutations always run on the global/main thread (never on PluginOps / network threads)
@@ -27,12 +27,13 @@ Tools for making garbage
 * Third-party plugins without `folia-supported: true` may still fail when hot-loaded
 * Plugin reload on regionized servers is inherently riskier than on single-threaded Paper/Spigot
 * Classic `Bukkit.getScheduler()` is never used on Folia/Canvas (it throws `UnsupportedOperationException`)
+* Runtime hot-load preserves required/optional dependency discovery, but cannot recreate Paper's startup provider graph; missing `BEFORE`, `AFTER`, and `OMIT` dependencies are loaded first so the public PluginManager can validate the target plugin
 
 ### Watcher filters (`config.yml`)
 * `watcher.ignore` — plugin names that auto hot-drop/reload/unload will skip (defaults include LuckPerms, Vault, ProtocolLib, …)
 * `watcher.only` — if non-empty, **only** these plugins are auto-managed (allowlist mode)
 * Manual `/bile load|unload|reload` always bypasses ignore/only
-* `watcher.coalesce-window-ticks` — batch nearby jar changes into one dependency-ordered reload flush
+* `watcher.coalesce-window-ticks` — batch nearby jar changes into one dependency-aware reload flush
 * `lifecycle.health-check` — fail reload if plugin is not actually enabled/registered after enable
 * `observability.log-timings` — log unload/load/reload phase timings
 

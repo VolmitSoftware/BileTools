@@ -1,14 +1,13 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.integration.ReloadAware;
-import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
-import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
@@ -17,34 +16,41 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.*;
+import org.bukkit.plugin.InvalidDescriptionException;
+import org.bukkit.plugin.InvalidPluginException;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.UnknownDependencyException;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class BileUtils {
     private static final int ZIP_READ_RETRY_LIMIT = 2;
 
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
-    private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
     private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
@@ -56,15 +62,21 @@ public class BileUtils {
     private record CachedJarMeta(long length, long lastModified, String pluginName, String pluginVersion) {
     }
 
-    private static void registerLoadedFileOverride(String pluginName, File sourceFile, File runtimeFile) {
+    private record PluginJarMetadata(PluginDescriptionFile description,
+                                     List<String> requiredDependencies,
+                                     List<String> optionalDependencies) {
+        private PluginJarMetadata {
+            requiredDependencies = List.copyOf(requiredDependencies);
+            optionalDependencies = List.copyOf(optionalDependencies);
+        }
+    }
+
+    private static void registerLoadedFileOverride(String pluginName, File sourceFile) {
         if (pluginName == null || sourceFile == null) {
             return;
         }
 
         SOURCE_FILE_OVERRIDES.put(key(pluginName), sourceFile);
-        if (runtimeFile != null) {
-            RUNTIME_PLUGIN_FILES.put(key(pluginName), runtimeFile);
-        }
     }
 
     private static void clearLoadedFileOverride(String pluginName) {
@@ -73,13 +85,6 @@ public class BileUtils {
         }
 
         SOURCE_FILE_OVERRIDES.remove(key(pluginName));
-        File runtime = RUNTIME_PLUGIN_FILES.remove(key(pluginName));
-
-        if (runtime != null && runtime.exists() && runtime.isFile()) {
-            if (!runtime.delete()) {
-                runtime.deleteOnExit();
-            }
-        }
     }
 
     public static void delete(Plugin p) throws IOException {
@@ -256,7 +261,8 @@ public class BileUtils {
         }
 
         long startNs = System.nanoTime();
-        PluginDescriptionFile f = getPluginDescription(file);
+        PluginJarMetadata metadata = readPluginMetadata(file);
+        PluginDescriptionFile f = metadata.description();
         String cycleKey = key(f.getName());
         Set<String> visiting = LOAD_VISITING.get();
         if (!visiting.add(cycleKey)) {
@@ -295,7 +301,7 @@ public class BileUtils {
                 }
             }
 
-            for (String i : f.getDepend()) {
+            for (String i : metadata.requiredDependencies()) {
                 if (Bukkit.getPluginManager().getPlugin(i) == null) {
                     stp(f.getName() + " depends on " + i);
                     File fx = getPluginFile(i);
@@ -309,7 +315,7 @@ public class BileUtils {
                 }
             }
 
-            for (String i : f.getSoftDepend()) {
+            for (String i : metadata.optionalDependencies()) {
                 if (Bukkit.getPluginManager().getPlugin(i) == null) {
                     File fx = getPluginFile(i);
 
@@ -321,45 +327,17 @@ public class BileUtils {
             }
 
             stp("Calling loadPlugin for " + file.getName());
-            Plugin target = null;
-            boolean usedForcePaperLoader = false;
             boolean paperOnlyJar = isPaperPlugin(file) && !jarHasPluginYml(file);
-
-            // Spigot (and pure Bukkit) cannot load paper-plugin.yml-only jars via PluginManager.
-            if (paperOnlyJar && !ServerPlatform.isPaperPluginManagerAvailable()) {
-                stp("paper-plugin.yml-only jar on non-Paper runtime; using plugin.yml compatibility shim for " + file.getName());
-                usedForcePaperLoader = true;
-                target = loadPaperViaCompatibilityShim(file);
-            } else {
-                try {
-                    target = Bukkit.getPluginManager().loadPlugin(file);
-                } catch (Throwable e) {
-                    if (shouldAttemptPaperCompatibilityLoad(e) || paperOnlyJar) {
-                        stp("Runtime blocked loading " + file.getName() + " (" + rootMessage(e) + "); attempting Paper compatibility path");
-                        usedForcePaperLoader = true;
-                        if (ServerPlatform.isPaperPluginManagerAvailable()) {
-                            target = loadForcePaper(file);
-                        } else {
-                            target = loadPaperViaCompatibilityShim(file);
-                        }
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-
-            if (target == null && paperOnlyJar && ServerPlatform.isPaperPluginManagerAvailable()) {
-                stp("loadPlugin returned null for paper plugin " + file.getName() + "; trying force path");
-                usedForcePaperLoader = true;
-                target = loadForcePaper(file);
-            }
+            boolean paperRuntime = ServerPlatform.isPaperRuntime();
+            validateRuntimeCompatibility(paperOnlyJar, paperRuntime, file.getName());
+            Plugin target = Bukkit.getPluginManager().loadPlugin(file);
 
             if (target == null) {
                 stp("loadPlugin returned null for " + file.getName());
                 throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
             }
 
-            boolean explicitOnLoad = !usedForcePaperLoader && shouldCallExplicitOnLoad();
+            boolean explicitOnLoad = shouldCallExplicitOnLoad();
             clearLoadedFileOverride(target.getName());
 
             if (explicitOnLoad) {
@@ -379,7 +357,7 @@ public class BileUtils {
 
             ensurePluginRegistered(target);
 
-            registerLoadedFileOverride(target.getName(), file, null);
+            registerLoadedFileOverride(target.getName(), file);
             invalidateJarMeta(file);
             stp("Enabled " + target.getName() + " successfully");
 
@@ -405,394 +383,6 @@ public class BileUtils {
                 LOAD_VISITING.remove();
             }
         }
-    }
-
-    private static Plugin loadForcePaper(File file) {
-        Throwable runtimeError = null;
-
-        try {
-            stp("Trying Paper runtime internals for " + file.getName());
-            Plugin plugin = loadPaperViaRuntimeInternals(file);
-            if (plugin != null) {
-                registerLoadedFileOverride(plugin.getName(), file, null);
-                stp("Paper runtime load succeeded for " + plugin.getName());
-                return plugin;
-            }
-        } catch (Throwable e) {
-            runtimeError = e;
-            stp("Paper runtime load failed for " + file.getName() + ": " + rootMessage(e));
-        }
-
-        try {
-            stp("Trying compatibility shim for " + file.getName());
-            Plugin plugin = loadPaperViaCompatibilityShim(file);
-            if (plugin != null) {
-                stp("Compatibility shim load succeeded for " + plugin.getName());
-            }
-            return plugin;
-        } catch (Throwable e) {
-            stp("Compatibility shim load failed for " + file.getName() + ": " + rootMessage(e));
-
-            if (runtimeError != null) {
-                runtimeError.printStackTrace();
-            }
-            e.printStackTrace();
-
-            return null;
-        }
-    }
-
-    private static Plugin loadPaperViaRuntimeInternals(File file) throws Exception {
-        Class<?> pluginManagerClass = Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-        Method getInstance = pluginManagerClass.getMethod("getInstance");
-        Object pluginManager = getInstance.invoke(null);
-
-        if (pluginManager == null) {
-            throw new IllegalStateException("PaperPluginManagerImpl.getInstance() returned null");
-        }
-
-        Field instanceManagerField = pluginManagerClass.getDeclaredField("instanceManager");
-        instanceManagerField.setAccessible(true);
-        Object instanceManager = instanceManagerField.get(pluginManager);
-
-        Field dependencyTreeField = instanceManager.getClass().getDeclaredField("dependencyTree");
-        dependencyTreeField.setAccessible(true);
-        Object dependencyTree = dependencyTreeField.get(instanceManager);
-
-        Class<?> singularStorageClass = Class.forName("io.papermc.paper.plugin.manager.SingularRuntimePluginProviderStorage");
-        Constructor<?> singularCtor = singularStorageClass.getDeclaredConstructors()[0];
-        singularCtor.setAccessible(true);
-        Object pluginStorage = singularCtor.newInstance(dependencyTree);
-
-        Class<?> bootstrapStorageClass = Class.forName("io.papermc.paper.plugin.storage.BootstrapProviderStorage");
-        Object bootstrapStorage = bootstrapStorageClass.getDeclaredConstructor().newInstance();
-
-        Class<?> entrypointClass = Class.forName("io.papermc.paper.plugin.entrypoint.Entrypoint");
-        Class<?> entrypointHandlerClass = Class.forName("io.papermc.paper.plugin.entrypoint.EntrypointHandler");
-        Object bootstrapEntrypoint = entrypointClass.getField("BOOTSTRAPPER").get(null);
-        Object pluginEntrypoint = entrypointClass.getField("PLUGIN").get(null);
-
-        InvocationHandler invocationHandler = (proxy, method, args) -> {
-            if (method.getDeclaringClass() == Object.class) {
-                String name = method.getName();
-                if ("toString".equals(name)) {
-                    return "BileRuntimeEntrypointHandler";
-                }
-                if ("hashCode".equals(name)) {
-                    return System.identityHashCode(proxy);
-                }
-                if ("equals".equals(name) && args != null && args.length == 1) {
-                    return proxy == args[0];
-                }
-            }
-
-            String methodName = method.getName();
-            if ("register".equals(methodName) && args != null && args.length == 2) {
-                Object entrypoint = args[0];
-                Object provider = args[1];
-
-                if (entrypoint == bootstrapEntrypoint) {
-                    invokeCompatibleMethod(bootstrapStorage, "register", provider);
-                    return null;
-                }
-
-                if (entrypoint == pluginEntrypoint) {
-                    invokeCompatibleMethod(pluginStorage, "register", wrapPaperProviderIfNeeded(provider));
-                    return null;
-                }
-
-                throw new IllegalArgumentException("Unsupported entrypoint during runtime load: " + entrypoint);
-            }
-
-            if ("enter".equals(methodName) && args != null && args.length == 1) {
-                Object entrypoint = args[0];
-
-                if (entrypoint == bootstrapEntrypoint) {
-                    invokeCompatibleMethod(bootstrapStorage, "enter");
-                    return null;
-                }
-
-                if (entrypoint == pluginEntrypoint) {
-                    invokeCompatibleMethod(pluginStorage, "enter");
-                    return null;
-                }
-
-                throw new IllegalArgumentException("Unsupported entrypoint enter during runtime load: " + entrypoint);
-            }
-
-            throw new UnsupportedOperationException("Unsupported EntrypointHandler method: " + methodName);
-        };
-
-        Object entrypointHandler = Proxy.newProxyInstance(
-                entrypointHandlerClass.getClassLoader(),
-                new Class[]{entrypointHandlerClass},
-                invocationHandler
-        );
-
-        Class<?> paperInstanceManagerClass = Class.forName("io.papermc.paper.plugin.manager.PaperPluginInstanceManager");
-        Field fileProviderSourceField = paperInstanceManagerClass.getDeclaredField("FILE_PROVIDER_SOURCE");
-        fileProviderSourceField.setAccessible(true);
-        Object fileProviderSource = fileProviderSourceField.get(null);
-
-        Path prepared = (Path) invokeCompatibleMethod(fileProviderSource, "prepareContext", file.toPath());
-        invokeCompatibleMethod(fileProviderSource, "registerProviders", entrypointHandler, prepared);
-        invokeCompatibleMethod(entrypointHandler, "enter", bootstrapEntrypoint);
-        invokeCompatibleMethod(entrypointHandler, "enter", pluginEntrypoint);
-
-        @SuppressWarnings("unchecked")
-        Optional<Plugin> loaded = (Optional<Plugin>) invokeCompatibleMethod(pluginStorage, "getSingleLoaded");
-        return loaded.orElse(null);
-    }
-
-    private static Object wrapPaperProviderIfNeeded(Object provider) {
-        if (provider == null) {
-            return null;
-        }
-
-        if (!provider.getClass().getName().contains("PaperPluginParent$PaperServerPluginProvider")) {
-            return provider;
-        }
-
-        Set<Class<?>> interfaces = collectAllInterfaces(provider.getClass());
-        if (interfaces.isEmpty()) {
-            return provider;
-        }
-
-        InvocationHandler handler = (proxy, method, args) -> {
-            if (method.getDeclaringClass() == Object.class) {
-                String name = method.getName();
-                if ("toString".equals(name)) {
-                    return provider.toString();
-                }
-                if ("hashCode".equals(name)) {
-                    return provider.hashCode();
-                }
-                if ("equals".equals(name) && args != null && args.length == 1) {
-                    return proxy == args[0];
-                }
-            }
-
-            Method target = findCompatibleMethod(provider.getClass(), method.getName(), args == null ? new Object[0] : args);
-            return target.invoke(provider, args);
-        };
-
-        return Proxy.newProxyInstance(
-                provider.getClass().getClassLoader(),
-                interfaces.toArray(new Class[0]),
-                handler
-        );
-    }
-
-    private static Set<Class<?>> collectAllInterfaces(Class<?> type) {
-        Set<Class<?>> interfaces = new LinkedHashSet<>();
-
-        while (type != null && type != Object.class) {
-            interfaces.addAll(Arrays.asList(type.getInterfaces()));
-            type = type.getSuperclass();
-        }
-
-        return interfaces;
-    }
-
-    private static Plugin loadPaperViaCompatibilityShim(File sourceFile) throws IOException, InvalidDescriptionException, InvalidPluginException {
-        File shim = createPaperCompatibilityShim(sourceFile);
-        Plugin loaded = Bukkit.getPluginManager().loadPlugin(shim);
-
-        if (loaded != null) {
-            registerLoadedFileOverride(loaded.getName(), sourceFile, shim);
-        } else if (shim.exists() && !shim.delete()) {
-            shim.deleteOnExit();
-        }
-
-        return loaded;
-    }
-
-    private static File createPaperCompatibilityShim(File sourceFile) throws IOException, InvalidDescriptionException {
-        File shimDir = new File(new File(BileTools.bile.getDataFolder(), "temp"), "paper-shims");
-        shimDir.mkdirs();
-
-        File shim = new File(shimDir, sourceFile.getName().replace(".jar", "") + "-shim-" + UUID.randomUUID() + ".jar");
-        byte[] paperPluginYml = null;
-        boolean hasPluginYml = false;
-
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(sourceFile));
-             ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(shim))) {
-            ZipEntry entry;
-            byte[] buffer = new byte[8192];
-
-            while ((entry = zis.getNextEntry()) != null) {
-                String name = entry.getName();
-
-                if ("paper-plugin.yml".equalsIgnoreCase(name)) {
-                    paperPluginYml = readAllBytes(zis);
-                    continue;
-                }
-
-                if ("plugin.yml".equalsIgnoreCase(name)) {
-                    hasPluginYml = true;
-                }
-
-                ZipEntry out = new ZipEntry(name);
-                out.setTime(entry.getTime());
-                zos.putNextEntry(out);
-
-                int read;
-                while ((read = zis.read(buffer)) != -1) {
-                    zos.write(buffer, 0, read);
-                }
-
-                zos.closeEntry();
-            }
-
-            if (!hasPluginYml) {
-                if (paperPluginYml == null) {
-                    throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + sourceFile.getName());
-                }
-
-                String pluginYml = buildPluginYmlFromPaperPluginYml(paperPluginYml, sourceFile.getName());
-                ZipEntry out = new ZipEntry("plugin.yml");
-                zos.putNextEntry(out);
-                zos.write(pluginYml.getBytes(StandardCharsets.UTF_8));
-                zos.closeEntry();
-            }
-        }
-
-        return shim;
-    }
-
-    private static String buildPluginYmlFromPaperPluginYml(byte[] paperPluginYml, String sourceName) throws InvalidDescriptionException {
-        try {
-            YamlConfiguration paper = new YamlConfiguration();
-            paper.loadFromString(new String(paperPluginYml, StandardCharsets.UTF_8));
-
-            String name = paper.getString("name");
-            String main = paper.getString("main");
-            String version = paper.getString("version");
-
-            if (name == null || name.isEmpty() || main == null || main.isEmpty()) {
-                throw new InvalidDescriptionException("paper-plugin.yml missing required name/main in " + sourceName);
-            }
-
-            YamlConfiguration plugin = new YamlConfiguration();
-            plugin.set("name", name);
-            plugin.set("main", main);
-            plugin.set("version", version == null || version.isEmpty() ? "1.0.0" : version);
-
-            if (paper.isString("api-version")) {
-                plugin.set("api-version", paper.getString("api-version"));
-            }
-
-            if (paper.isString("load")) {
-                plugin.set("load", paper.getString("load"));
-            }
-
-            if (paper.isString("description")) {
-                plugin.set("description", paper.getString("description"));
-            }
-
-            if (paper.isString("website")) {
-                plugin.set("website", paper.getString("website"));
-            }
-
-            if (paper.isString("prefix")) {
-                plugin.set("prefix", paper.getString("prefix"));
-            }
-
-            if (paper.isList("authors")) {
-                plugin.set("authors", paper.getStringList("authors"));
-            } else if (paper.isString("author")) {
-                plugin.set("author", paper.getString("author"));
-            }
-
-            if (paper.isList("provides")) {
-                plugin.set("provides", paper.getStringList("provides"));
-            }
-
-            if (paper.isList("libraries")) {
-                plugin.set("libraries", paper.getStringList("libraries"));
-            }
-
-            if (paper.isString("loader")) {
-                plugin.set("paper-plugin-loader", paper.getString("loader"));
-            }
-
-            if (paper.contains("commands")) {
-                plugin.set("commands", paper.get("commands"));
-            }
-
-            if (paper.contains("permissions")) {
-                plugin.set("permissions", paper.get("permissions"));
-            }
-
-            if (paper.contains("default-permission")) {
-                plugin.set("default-permission", paper.get("default-permission"));
-            }
-
-            if (paper.contains("folia-supported")) {
-                plugin.set("folia-supported", paper.get("folia-supported"));
-            }
-
-            List<String> depend = new ArrayList<>();
-            List<String> softDepend = new ArrayList<>();
-            List<String> loadBefore = new ArrayList<>();
-
-            ConfigurationSection serverDependencies = paper.getConfigurationSection("dependencies.server");
-            if (serverDependencies != null) {
-                for (String dependencyName : serverDependencies.getKeys(false)) {
-                    ConfigurationSection dependency = serverDependencies.getConfigurationSection(dependencyName);
-                    boolean required = dependency == null || dependency.getBoolean("required", true);
-                    String load = dependency == null ? null : dependency.getString("load");
-
-                    if ("BEFORE".equalsIgnoreCase(load)) {
-                        loadBefore.add(dependencyName);
-                    }
-
-                    if (required) {
-                        depend.add(dependencyName);
-                    } else {
-                        softDepend.add(dependencyName);
-                    }
-                }
-            }
-
-            if (paper.isList("depend")) {
-                depend.addAll(paper.getStringList("depend"));
-            }
-
-            if (paper.isList("softdepend")) {
-                softDepend.addAll(paper.getStringList("softdepend"));
-            }
-
-            if (paper.isList("loadbefore")) {
-                loadBefore.addAll(paper.getStringList("loadbefore"));
-            }
-
-            if (!depend.isEmpty()) {
-                plugin.set("depend", dedupe(depend));
-            }
-
-            if (!softDepend.isEmpty()) {
-                plugin.set("softdepend", dedupe(softDepend));
-            }
-
-            if (!loadBefore.isEmpty()) {
-                plugin.set("loadbefore", dedupe(loadBefore));
-            }
-
-            return plugin.saveToString();
-        } catch (InvalidConfigurationException e) {
-            throw new InvalidDescriptionException(e);
-        }
-    }
-
-    private static List<String> dedupe(List<String> values) {
-        LinkedHashSet<String> set = new LinkedHashSet<>();
-        for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) {
-                set.add(value);
-            }
-        }
-        return new ArrayList<>(set);
     }
 
     private static byte[] readAllBytes(InputStream in) throws IOException {
@@ -828,7 +418,7 @@ public class BileUtils {
     }
 
     private static boolean isPaperRuntimePluginManager(PluginManager pluginManager) {
-        if (!ServerPlatform.isPaperPluginManagerAvailable()) {
+        if (!ServerPlatform.isPaperRuntime()) {
             return false;
         }
 
@@ -1432,26 +1022,10 @@ public class BileUtils {
         }
     }
 
-    private static boolean shouldAttemptPaperCompatibilityLoad(Throwable throwable) {
-        Throwable cursor = throwable;
-        while (cursor != null) {
-            String message = cursor.getMessage();
-            if (message != null) {
-                String lower = message.toLowerCase(Locale.ROOT);
-                if (lower.contains("paper plugin")
-                        || lower.contains("paper-plugin")
-                        || lower.contains("cannot be loaded on")
-                        || lower.contains("runtime load")
-                        || (lower.contains("bootstrap") && lower.contains("plugin"))) {
-                    return true;
-                }
-            }
-            if (cursor.getCause() == cursor) {
-                break;
-            }
-            cursor = cursor.getCause();
+    static void validateRuntimeCompatibility(boolean paperOnlyJar, boolean paperRuntime, String sourceName) throws InvalidPluginException {
+        if (paperOnlyJar && !paperRuntime) {
+            throw new InvalidPluginException("Cannot load " + sourceName + ": paper-plugin.yml-only jars require a Paper-compatible runtime");
         }
-        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -1699,18 +1273,7 @@ public class BileUtils {
     }
 
     public static File getPluginsFolder() {
-        File pluginFolder = resolvePluginsFolder(Bukkit.getServer());
-        if (pluginFolder != null) {
-            return pluginFolder;
-        }
-
-        File worldContainer = Bukkit.getWorldContainer();
-        if (worldContainer != null) {
-            return new File(worldContainer, "plugins");
-        }
-
-        File workingDirectory = new File("").getAbsoluteFile();
-        return new File(workingDirectory, "plugins");
+        return Bukkit.getPluginsFolder();
     }
 
     private static File[] listPluginFiles() {
@@ -1727,51 +1290,12 @@ public class BileUtils {
         return files;
     }
 
-    private static File resolvePluginsFolder(Server server) {
-        File serverFolder = invokePluginsFolderMethod(server);
-        if (serverFolder != null) {
-            return serverFolder;
-        }
-
-        File bukkitFolder = invokePluginsFolderMethod(Bukkit.class, null);
-        if (bukkitFolder != null) {
-            return bukkitFolder;
-        }
-
-        return null;
-    }
-
-    private static File invokePluginsFolderMethod(Server server) {
-        if (server == null) {
-            return null;
-        }
-
-        return invokePluginsFolderMethod(server.getClass(), server);
-    }
-
-    private static File invokePluginsFolderMethod(Class<?> owner, Object instance) {
-        if (owner == null) {
-            return null;
-        }
-
-        try {
-            Method method = owner.getMethod("getPluginsFolder");
-            Object resolved = method.invoke(instance);
-            if (resolved instanceof File folder) {
-                return folder;
-            }
-        } catch (Throwable ignored) {
-        }
-
-        return null;
-    }
-
     public static List<String> getDependencies(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
-        return getPluginDescription(file).getDepend();
+        return readPluginMetadata(file).requiredDependencies();
     }
 
     public static List<String> getSoftDependencies(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
-        return getPluginDescription(file).getSoftDepend();
+        return readPluginMetadata(file).optionalDependencies();
     }
 
     public static String getPluginVersion(File file) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
@@ -1791,20 +1315,29 @@ public class BileUtils {
      * should reschedule (hot-drop retries) instead of blocking the main thread.
      */
     private static PluginDescriptionFile readPluginDescription(File file) throws IOException, InvalidDescriptionException {
+        return readPluginMetadata(file).description();
+    }
+
+    private static PluginJarMetadata readPluginMetadata(File file) throws IOException, InvalidDescriptionException {
         IOException lastZipReadError = null;
 
         for (int attempt = 0; attempt <= ZIP_READ_RETRY_LIMIT; attempt++) {
             try (ZipFile z = new ZipFile(file)) {
                 ZipEntry pluginYml = z.getEntry("plugin.yml");
+                PluginJarMetadata pluginMetadata = null;
                 if (pluginYml != null) {
                     try (InputStream is = z.getInputStream(pluginYml)) {
-                        return new PluginDescriptionFile(is);
+                        PluginDescriptionFile description = new PluginDescriptionFile(is);
+                        pluginMetadata = new PluginJarMetadata(description, description.getDepend(), description.getSoftDepend());
                     }
                 }
 
                 ZipEntry paperYml = z.getEntry("paper-plugin.yml");
-                if (paperYml == null) {
+                if (paperYml == null && pluginMetadata == null) {
                     throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + file.getName());
+                }
+                if (paperYml == null) {
+                    return pluginMetadata;
                 }
 
                 byte[] paperBytes;
@@ -1812,12 +1345,8 @@ public class BileUtils {
                     paperBytes = readAllBytes(is);
                 }
 
-                try {
-                    return new PluginDescriptionFile(new ByteArrayInputStream(paperBytes));
-                } catch (InvalidDescriptionException invalidPaperAsPluginYml) {
-                    String converted = buildPluginYmlFromPaperPluginYml(paperBytes, file.getName());
-                    return new PluginDescriptionFile(new ByteArrayInputStream(converted.getBytes(StandardCharsets.UTF_8)));
-                }
+                PluginJarMetadata paperMetadata = readPaperPluginMetadata(paperBytes, file.getName());
+                return pluginMetadata == null ? paperMetadata : mergePluginMetadata(pluginMetadata, paperMetadata);
             } catch (IOException e) {
                 lastZipReadError = e;
                 if (!isTransientZipReadError(e) || attempt >= ZIP_READ_RETRY_LIMIT) {
@@ -1831,6 +1360,76 @@ public class BileUtils {
         }
 
         throw new IOException("Unable to read plugin jar " + file.getName());
+    }
+
+    private static PluginJarMetadata readPaperPluginMetadata(byte[] paperBytes, String sourceName) throws InvalidDescriptionException {
+        PluginDescriptionFile description = new PluginDescriptionFile(new ByteArrayInputStream(paperBytes));
+        YamlConfiguration paper = new YamlConfiguration();
+        try {
+            paper.loadFromString(new String(paperBytes, StandardCharsets.UTF_8));
+        } catch (InvalidConfigurationException e) {
+            throw new InvalidDescriptionException(e);
+        }
+
+        LinkedHashSet<String> requiredDependencies = new LinkedHashSet<>(description.getDepend());
+        LinkedHashSet<String> optionalDependencies = new LinkedHashSet<>(description.getSoftDepend());
+        readPaperDependencies(paper, "dependencies.bootstrap", sourceName, requiredDependencies, optionalDependencies);
+        readPaperDependencies(paper, "dependencies.server", sourceName, requiredDependencies, optionalDependencies);
+        return new PluginJarMetadata(description, new ArrayList<>(requiredDependencies), new ArrayList<>(optionalDependencies));
+    }
+
+    private static void readPaperDependencies(YamlConfiguration paper,
+                                              String path,
+                                              String sourceName,
+                                              LinkedHashSet<String> requiredDependencies,
+                                              LinkedHashSet<String> optionalDependencies) throws InvalidDescriptionException {
+        Object rawDependencies = paper.get(path);
+        if (rawDependencies == null) {
+            return;
+        }
+
+        ConfigurationSection dependencies = paper.getConfigurationSection(path);
+        if (dependencies == null) {
+            throw new InvalidDescriptionException(path + " must be a configuration section in " + sourceName);
+        }
+
+        for (String dependencyName : dependencies.getKeys(false)) {
+            ConfigurationSection dependency = dependencies.getConfigurationSection(dependencyName);
+            if (dependency == null) {
+                throw new InvalidDescriptionException(path + "." + dependencyName + " must be a configuration section in " + sourceName);
+            }
+
+            Object rawRequired = dependency.get("required");
+            if (rawRequired != null && !(rawRequired instanceof Boolean)) {
+                throw new InvalidDescriptionException(path + "." + dependencyName + ".required must be true or false in " + sourceName);
+            }
+
+            boolean required = rawRequired == null || (Boolean) rawRequired;
+            if (required) {
+                requiredDependencies.add(dependencyName);
+                optionalDependencies.remove(dependencyName);
+            } else if (!requiredDependencies.contains(dependencyName)) {
+                optionalDependencies.add(dependencyName);
+            }
+        }
+    }
+
+    private static PluginJarMetadata mergePluginMetadata(PluginJarMetadata primary, PluginJarMetadata secondary) {
+        LinkedHashSet<String> requiredDependencies = new LinkedHashSet<>(primary.requiredDependencies());
+        LinkedHashSet<String> optionalDependencies = new LinkedHashSet<>(primary.optionalDependencies());
+        for (String dependencyName : secondary.requiredDependencies()) {
+            requiredDependencies.add(dependencyName);
+            optionalDependencies.remove(dependencyName);
+        }
+        for (String dependencyName : secondary.optionalDependencies()) {
+            if (!requiredDependencies.contains(dependencyName)) {
+                optionalDependencies.add(dependencyName);
+            }
+        }
+        return new PluginJarMetadata(
+                primary.description(),
+                new ArrayList<>(requiredDependencies),
+                new ArrayList<>(optionalDependencies));
     }
 
     private static boolean isTransientZipReadError(IOException e) {
