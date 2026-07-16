@@ -23,6 +23,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.UnknownDependencyException;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,11 +32,16 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -44,13 +50,17 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 public class BileUtils {
     private static final int ZIP_READ_RETRY_LIMIT = 2;
+    private static final int UUID_TEXT_LENGTH = 36;
 
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
+    private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
     private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
@@ -71,6 +81,50 @@ public class BileUtils {
         }
     }
 
+    private static final class RuntimeLoadArtifact {
+        private final File sourceFile;
+        private final File runtimeFile;
+        private boolean retained;
+
+        private RuntimeLoadArtifact(File sourceFile, File runtimeFile) {
+            this.sourceFile = sourceFile;
+            this.runtimeFile = runtimeFile;
+        }
+
+        private File runtimeFile() {
+            return runtimeFile;
+        }
+
+        private boolean temporary() {
+            return !sameFile(sourceFile, runtimeFile);
+        }
+
+        private void retain(String pluginName) {
+            if (!temporary()) {
+                return;
+            }
+
+            File previous = RUNTIME_PLUGIN_FILES.put(key(pluginName), runtimeFile);
+            retained = true;
+            runtimeFile.deleteOnExit();
+            if (previous != null && !sameFile(previous, runtimeFile)) {
+                deleteRuntimePluginFile(previous);
+            }
+        }
+
+        private void discard() {
+            if (!retained && temporary()) {
+                deleteRuntimePluginFile(runtimeFile);
+            }
+        }
+    }
+
+    public static final class RestartRequiredException extends InvalidPluginException {
+        public RestartRequiredException(String message) {
+            super(message);
+        }
+    }
+
     private static void registerLoadedFileOverride(String pluginName, File sourceFile) {
         if (pluginName == null || sourceFile == null) {
             return;
@@ -85,6 +139,98 @@ public class BileUtils {
         }
 
         SOURCE_FILE_OVERRIDES.remove(key(pluginName));
+    }
+
+    private static void releaseRuntimePluginFile(String pluginName) {
+        if (pluginName == null) {
+            return;
+        }
+
+        deleteRuntimePluginFile(RUNTIME_PLUGIN_FILES.remove(key(pluginName)));
+    }
+
+    private static void deleteRuntimePluginFile(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(file.toPath());
+        } catch (IOException e) {
+            file.deleteOnExit();
+            if (BileTools.bile != null) {
+                BileTools.bile.getLogger().warning("Could not delete runtime plugin file " + file.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    public static void recoverRuntimePluginFiles() {
+        if (BileTools.bile == null) {
+            return;
+        }
+
+        File runtimeDirectory = new File(BileTools.bile.getDataFolder(), "runtime-plugins");
+        File[] runtimeFiles = runtimeDirectory.listFiles();
+        if (runtimeFiles == null) {
+            return;
+        }
+
+        Field pluginFileField = findFieldInHierarchy(JavaPlugin.class, "file");
+        if (pluginFileField == null) {
+            for (File runtimeFile : runtimeFiles) {
+                runtimeFile.deleteOnExit();
+            }
+            return;
+        }
+
+        Set<String> activeRuntimeFiles = new HashSet<>();
+        try {
+            for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+                if (!(plugin instanceof JavaPlugin)) {
+                    continue;
+                }
+
+                Object pluginFile = pluginFileField.get(plugin);
+                if (!(pluginFile instanceof File)) {
+                    continue;
+                }
+
+                File runtimeFile = (File) pluginFile;
+                if (!sameFile(runtimeFile.getParentFile(), runtimeDirectory)) {
+                    continue;
+                }
+
+                activeRuntimeFiles.add(cacheKey(runtimeFile));
+                runtimeFile.deleteOnExit();
+                RUNTIME_PLUGIN_FILES.put(key(plugin.getName()), runtimeFile);
+                clearLoadedFileOverride(plugin.getName());
+                File sourceFile = findRuntimeSourceFile(plugin.getName(), runtimeFile);
+                if (sourceFile != null && sourceFile.isFile()) {
+                    registerLoadedFileOverride(plugin.getName(), sourceFile);
+                } else {
+                    BileTools.bile.getLogger().warning("Could not recover the source jar for active runtime plugin " + plugin.getName());
+                }
+            }
+        } catch (Throwable e) {
+            for (File runtimeFile : runtimeFiles) {
+                runtimeFile.deleteOnExit();
+            }
+            BileTools.bile.getLogger().log(Level.WARNING, "Could not inspect active runtime plugin files", e);
+            return;
+        }
+
+        int removed = 0;
+        for (File runtimeFile : runtimeFiles) {
+            if (activeRuntimeFiles.contains(cacheKey(runtimeFile))) {
+                continue;
+            }
+            deleteRuntimePluginFile(runtimeFile);
+            removed++;
+        }
+
+        if (!activeRuntimeFiles.isEmpty() || removed > 0) {
+            BileTools.bile.getLogger().info("Runtime plugin files: active=" + activeRuntimeFiles.size() + ", staleRemoved=" + removed);
+        }
     }
 
     public static void delete(Plugin p) throws IOException {
@@ -117,37 +263,58 @@ public class BileUtils {
         String pluginName = p.getName();
         long startNs = System.nanoTime();
         File f = getPluginFile(p);
+        Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
+        Plugin reloaded = null;
+        boolean reloadComplete = false;
 
-        if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
-            backup(p);
+        try {
+            RuntimeLoadArtifact runtimeArtifact = prepareReloadArtifact(p, runtimeArtifacts);
+            prepareDependentReloadArtifacts(p, runtimeArtifacts, new HashSet<>());
+
+            if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
+                backup(p);
+            }
+
+            long unloadStartNs = System.nanoTime();
+            Set<File> x = unload(p, ReloadAware.PreUnloadReason.HOT_RELOAD);
+            long unloadMs = nanosToMillis(System.nanoTime() - unloadStartNs);
+
+            long loadStartNs = System.nanoTime();
+            load(f, true, runtimeArtifact, runtimeArtifacts);
+            long loadMs = nanosToMillis(System.nanoTime() - loadStartNs);
+            reloaded = Bukkit.getPluginManager().getPlugin(pluginName);
+            if (reloaded == null) {
+                throw new InvalidPluginException("Reloaded plugin " + pluginName + " was not registered");
+            }
+
+            long dependentsStartNs = System.nanoTime();
+            for (File i : x) {
+                if (i != null && i.isFile()) {
+                    load(i, true, runtimeArtifacts.get(cacheKey(i)), runtimeArtifacts);
+                }
+            }
+            long dependentsMs = nanosToMillis(System.nanoTime() - dependentsStartNs);
+
+            HealthCheckResult health = verifyPluginHealth(reloaded, f);
+            if (!health.ok()) {
+                throw new InvalidPluginException("Post-reload health check failed for " + pluginName + ": " + health.summary());
+            }
+
+            long totalMs = nanosToMillis(System.nanoTime() - startNs);
+            logTiming("reload " + pluginName, totalMs,
+                    "unload=" + unloadMs + "ms",
+                    "dependents=" + dependentsMs + "ms",
+                    "load=" + loadMs + "ms",
+                    "health=ok");
+            reloadComplete = true;
+        } finally {
+            if (!reloadComplete && reloaded != null) {
+                cleanupFailedPluginLoad(reloaded);
+            }
+            for (RuntimeLoadArtifact runtimeArtifact : runtimeArtifacts.values()) {
+                runtimeArtifact.discard();
+            }
         }
-
-        long unloadStartNs = System.nanoTime();
-        Set<File> x = unload(p, ReloadAware.PreUnloadReason.HOT_RELOAD);
-        long unloadMs = nanosToMillis(System.nanoTime() - unloadStartNs);
-
-        long dependentsStartNs = System.nanoTime();
-        for (File i : x) {
-            load(i);
-        }
-        long dependentsMs = nanosToMillis(System.nanoTime() - dependentsStartNs);
-
-        long loadStartNs = System.nanoTime();
-        load(f);
-        long loadMs = nanosToMillis(System.nanoTime() - loadStartNs);
-
-        Plugin reloaded = Bukkit.getPluginManager().getPlugin(pluginName);
-        HealthCheckResult health = verifyPluginHealth(reloaded != null ? reloaded : p, f);
-        if (!health.ok()) {
-            throw new InvalidPluginException("Post-reload health check failed for " + pluginName + ": " + health.summary());
-        }
-
-        long totalMs = nanosToMillis(System.nanoTime() - startNs);
-        logTiming("reload " + pluginName, totalMs,
-                "unload=" + unloadMs + "ms",
-                "dependents=" + dependentsMs + "ms",
-                "load=" + loadMs + "ms",
-                "health=ok");
     }
 
     public record HealthCheckResult(boolean ok, List<String> failures) {
@@ -255,8 +422,19 @@ public class BileUtils {
 
     @SuppressWarnings("unchecked")
     public static void load(File file) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
+        load(file, false, null, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void load(File file,
+                             boolean reloadContext,
+                             RuntimeLoadArtifact preparedArtifact,
+                             Map<String, RuntimeLoadArtifact> preparedArtifacts) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
         if (getPlugin(file) != null) {
             stp("Skipping " + file.getName() + " (already loaded)");
+            if (preparedArtifact != null) {
+                preparedArtifact.discard();
+            }
             return;
         }
 
@@ -270,6 +448,10 @@ public class BileUtils {
             return;
         }
 
+        RuntimeLoadArtifact runtimeArtifact = preparedArtifact;
+        Map<String, RuntimeLoadArtifact> dependentArtifacts = new LinkedHashMap<>();
+        Plugin target = null;
+        boolean loadComplete = false;
         try {
             invalidateJarMeta(file);
             stp("Loading " + f.getName() + " " + f.getVersion() + " from " + file.getName());
@@ -282,6 +464,10 @@ public class BileUtils {
             }
 
             Plugin existing = Bukkit.getPluginManager().getPlugin(f.getName());
+            boolean replacingLoadedPlugin = existing != null;
+            if (runtimeArtifact == null) {
+                runtimeArtifact = prepareRuntimeLoadArtifact(file, reloadContext || replacingLoadedPlugin);
+            }
             if (existing != null) {
                 File existingFile = getPluginFile(existing);
 
@@ -293,6 +479,8 @@ public class BileUtils {
                 String existingName = existingFile == null ? "unknown source" : existingFile.getName();
                 stp("Plugin " + existing.getName() + " is already loaded from " + existingName + ", replacing with " + file.getName());
 
+                prepareMissingDependencyArtifacts(file, dependentArtifacts, new HashSet<>());
+                prepareDependentReloadArtifacts(existing, dependentArtifacts, new HashSet<>());
                 Set<File> dependents = unload(existing, ReloadAware.PreUnloadReason.HOT_RELOAD);
                 for (File dep : dependents) {
                     if (dep != null && !sameFile(dep, file)) {
@@ -301,13 +489,20 @@ public class BileUtils {
                 }
             }
 
+            Map<String, RuntimeLoadArtifact> operationArtifacts = new LinkedHashMap<>();
+            if (preparedArtifacts != null) {
+                operationArtifacts.putAll(preparedArtifacts);
+            }
+            operationArtifacts.putAll(dependentArtifacts);
+
             for (String i : metadata.requiredDependencies()) {
                 if (Bukkit.getPluginManager().getPlugin(i) == null) {
                     stp(f.getName() + " depends on " + i);
                     File fx = getPluginFile(i);
 
                     if (fx != null) {
-                        load(fx);
+                        RuntimeLoadArtifact dependencyArtifact = preparedArtifactFor(fx, operationArtifacts);
+                        load(fx, dependencyArtifact != null, dependencyArtifact, operationArtifacts);
                     } else {
                         stp("Missing dependency " + i + " for " + f.getName() + ", aborting load");
                         return;
@@ -321,24 +516,35 @@ public class BileUtils {
 
                     if (fx != null) {
                         stp(f.getName() + " soft depends on " + i);
-                        load(fx);
+                        RuntimeLoadArtifact dependencyArtifact = preparedArtifactFor(fx, operationArtifacts);
+                        load(fx, dependencyArtifact != null, dependencyArtifact, operationArtifacts);
                     }
                 }
             }
 
-            stp("Calling loadPlugin for " + file.getName());
-            boolean paperOnlyJar = isPaperPlugin(file) && !jarHasPluginYml(file);
-            boolean paperRuntime = ServerPlatform.isPaperRuntime();
-            validateRuntimeCompatibility(paperOnlyJar, paperRuntime, file.getName());
-            Plugin target = Bukkit.getPluginManager().loadPlugin(file);
+            File runtimeFile = runtimeArtifact.runtimeFile();
+            if (runtimeArtifact.temporary()) {
+                stp("Paper startup entrypoints are not rerun; reloading " + file.getName() + " through its authored plugin.yml");
+                stp("Calling loadPlugin for " + file.getName() + " through its runtime plugin.yml view");
+            } else {
+                stp("Calling loadPlugin for " + file.getName());
+            }
+
+            try {
+                target = Bukkit.getPluginManager().loadPlugin(runtimeFile);
+            } finally {
+                if (target == null && ServerPlatform.isPaperRuntime()) {
+                    removePaperRuntimeProvider(f.getName(), runtimeFile);
+                }
+            }
 
             if (target == null) {
                 stp("loadPlugin returned null for " + file.getName());
                 throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
             }
 
+            registerLoadedFileOverride(target.getName(), file);
             boolean explicitOnLoad = shouldCallExplicitOnLoad();
-            clearLoadedFileOverride(target.getName());
 
             if (explicitOnLoad) {
                 stp("Calling onLoad for " + target.getName());
@@ -357,7 +563,6 @@ public class BileUtils {
 
             ensurePluginRegistered(target);
 
-            registerLoadedFileOverride(target.getName(), file);
             invalidateJarMeta(file);
             stp("Enabled " + target.getName() + " successfully");
 
@@ -365,7 +570,7 @@ public class BileUtils {
                 stp("Reloading " + deferredDependents.size() + " dependent plugin(s) after replacement of " + target.getName());
                 for (File dependent : deferredDependents) {
                     if (dependent != null && dependent.exists()) {
-                        load(dependent);
+                        load(dependent, true, dependentArtifacts.get(cacheKey(dependent)), dependentArtifacts);
                     }
                 }
             }
@@ -377,11 +582,37 @@ public class BileUtils {
 
             rebuildServerCommandGraph();
             logTiming("load " + target.getName(), nanosToMillis(System.nanoTime() - startNs), "health=ok");
+            runtimeArtifact.retain(target.getName());
+            loadComplete = true;
         } finally {
+            if (!loadComplete && target != null) {
+                cleanupFailedPluginLoad(target);
+            }
+            if (runtimeArtifact != null) {
+                runtimeArtifact.discard();
+            }
+            for (RuntimeLoadArtifact dependentArtifact : dependentArtifacts.values()) {
+                dependentArtifact.discard();
+            }
             visiting.remove(cycleKey);
             if (visiting.isEmpty()) {
                 LOAD_VISITING.remove();
             }
+        }
+    }
+
+    private static void cleanupFailedPluginLoad(Plugin plugin) {
+        try {
+            unload(plugin, ReloadAware.PreUnloadReason.HOT_UNLOAD);
+        } catch (Throwable e) {
+            if (BileTools.bile != null) {
+                BileTools.bile.getLogger().log(Level.SEVERE, "Could not clean up failed plugin load for " + plugin.getName(), e);
+            } else {
+                e.printStackTrace();
+            }
+        } finally {
+            clearLoadedFileOverride(plugin.getName());
+            releaseRuntimePluginFile(plugin.getName());
         }
     }
 
@@ -404,6 +635,348 @@ public class BileUtils {
             return a.getCanonicalFile().equals(b.getCanonicalFile());
         } catch (IOException ignored) {
             return a.getAbsolutePath().equalsIgnoreCase(b.getAbsolutePath());
+        }
+    }
+
+    private static RuntimeLoadArtifact prepareRuntimeLoadArtifact(File sourceFile,
+                                                                  boolean reloadContext) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        if (sourceFile == null || !sourceFile.isFile()) {
+            throw new InvalidPluginException("Cannot resolve plugin jar for runtime load");
+        }
+
+        boolean paperDescriptor;
+        boolean pluginDescriptor;
+        try (ZipFile zipFile = new ZipFile(sourceFile)) {
+            paperDescriptor = zipFile.getEntry("paper-plugin.yml") != null;
+            pluginDescriptor = zipFile.getEntry("plugin.yml") != null;
+        }
+
+        boolean paperRuntime = ServerPlatform.isPaperRuntime();
+        validateRuntimeCompatibility(paperDescriptor, pluginDescriptor, paperRuntime, reloadContext, sourceFile.getName());
+        if (!paperRuntime || !paperDescriptor) {
+            return new RuntimeLoadArtifact(sourceFile, sourceFile);
+        }
+
+        PluginDescriptionFile sourceDescription = readPluginMetadata(sourceFile).description();
+        validateNoPendingPaperUpdate(sourceDescription.getName(), sourceFile.getName());
+        if (ServerPlatform.isFoliaFamily()) {
+            validateFoliaRuntimeCompatibility(
+                    true,
+                    readPluginDescriptorFlag(sourceFile, "folia-supported"),
+                    sourceFile.getName());
+        }
+        if (BileTools.bile == null) {
+            throw new InvalidPluginException("Cannot prepare runtime plugin view before BileTools is initialized");
+        }
+
+        File runtimeDirectory = new File(BileTools.bile.getDataFolder(), "runtime-plugins");
+        File runtimeFile = createRuntimePluginView(sourceFile, runtimeDirectory);
+        try {
+            PluginDescriptionFile runtimeDescription = readPluginMetadata(runtimeFile).description();
+            if (!sourceDescription.getName().equals(runtimeDescription.getName())
+                    || !sourceDescription.getMain().equals(runtimeDescription.getMain())
+                    || !sourceDescription.getVersion().equals(runtimeDescription.getVersion())) {
+                throw new InvalidPluginException("Runtime plugin.yml view does not match " + sourceFile.getName());
+            }
+            return new RuntimeLoadArtifact(sourceFile, runtimeFile);
+        } catch (IOException | InvalidPluginException | InvalidDescriptionException e) {
+            deleteRuntimePluginFile(runtimeFile);
+            throw e;
+        }
+    }
+
+    static File createRuntimePluginView(File sourceFile, File runtimeDirectory) throws IOException {
+        Files.createDirectories(runtimeDirectory.toPath());
+        String baseName = encodeRuntimeSourceName(sourceFile.getName());
+        String runtimeName = baseName + "-" + UUID.randomUUID() + ".jar";
+        File partialFile = new File(runtimeDirectory, runtimeName + ".part");
+        File runtimeFile = new File(runtimeDirectory, runtimeName);
+        boolean paperDescriptorRemoved = false;
+        boolean complete = false;
+
+        try (ZipFile input = new ZipFile(sourceFile);
+             ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(partialFile.toPath()))) {
+            Enumeration<? extends ZipEntry> entries = input.entries();
+            byte[] buffer = new byte[8192];
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if ("paper-plugin.yml".equals(entry.getName())) {
+                    paperDescriptorRemoved = true;
+                    continue;
+                }
+
+                ZipEntry runtimeEntry = new ZipEntry(entry.getName());
+                if (entry.getTime() >= 0L) {
+                    runtimeEntry.setTime(entry.getTime());
+                }
+                if (entry.getComment() != null) {
+                    runtimeEntry.setComment(entry.getComment());
+                }
+                if (entry.getExtra() != null) {
+                    runtimeEntry.setExtra(entry.getExtra());
+                }
+                output.putNextEntry(runtimeEntry);
+                if (!entry.isDirectory()) {
+                    try (InputStream inputStream = input.getInputStream(entry)) {
+                        int read;
+                        while ((read = inputStream.read(buffer)) != -1) {
+                            output.write(buffer, 0, read);
+                        }
+                    }
+                }
+                output.closeEntry();
+            }
+        } catch (IOException e) {
+            deleteRuntimePluginFile(partialFile);
+            throw e;
+        }
+
+        try {
+            if (!paperDescriptorRemoved) {
+                throw new IOException("No paper-plugin.yml found in " + sourceFile.getName());
+            }
+            try {
+                Files.move(partialFile.toPath(), runtimeFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(partialFile.toPath(), runtimeFile.toPath());
+            }
+            complete = true;
+            return runtimeFile;
+        } finally {
+            deleteRuntimePluginFile(partialFile);
+            if (!complete) {
+                deleteRuntimePluginFile(runtimeFile);
+            }
+        }
+    }
+
+    private static RuntimeLoadArtifact prepareReloadArtifact(Plugin plugin,
+                                                             Map<String, RuntimeLoadArtifact> artifacts) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        File sourceFile = getPluginFile(plugin);
+        if (sourceFile == null || !sourceFile.isFile()) {
+            throw new InvalidPluginException("Cannot safely reload " + plugin.getName() + ": source jar could not be resolved");
+        }
+
+        String artifactKey = cacheKey(sourceFile);
+        RuntimeLoadArtifact existingArtifact = artifacts.get(artifactKey);
+        if (existingArtifact != null) {
+            return existingArtifact;
+        }
+
+        RuntimeLoadArtifact runtimeArtifact = prepareRuntimeLoadArtifact(sourceFile, true);
+        try {
+            PluginDescriptionFile runtimeDescription = readPluginMetadata(runtimeArtifact.runtimeFile()).description();
+            if (!plugin.getName().equalsIgnoreCase(runtimeDescription.getName())) {
+                throw new InvalidPluginException("Cannot replace dependent " + plugin.getName() + " with plugin "
+                        + runtimeDescription.getName() + " from " + sourceFile.getName());
+            }
+            artifacts.put(artifactKey, runtimeArtifact);
+            prepareMissingDependencyArtifacts(sourceFile, artifacts, new HashSet<>());
+            return runtimeArtifact;
+        } catch (IOException | InvalidPluginException | InvalidDescriptionException e) {
+            artifacts.remove(artifactKey);
+            runtimeArtifact.discard();
+            throw e;
+        }
+    }
+
+    private static RuntimeLoadArtifact prepareFreshLoadArtifact(File sourceFile,
+                                                                Map<String, RuntimeLoadArtifact> artifacts) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        String artifactKey = cacheKey(sourceFile);
+        RuntimeLoadArtifact existingArtifact = artifacts.get(artifactKey);
+        if (existingArtifact != null) {
+            return existingArtifact;
+        }
+
+        RuntimeLoadArtifact runtimeArtifact = prepareRuntimeLoadArtifact(sourceFile, false);
+        artifacts.put(artifactKey, runtimeArtifact);
+        return runtimeArtifact;
+    }
+
+    private static void prepareMissingDependencyArtifacts(File sourceFile,
+                                                          Map<String, RuntimeLoadArtifact> artifacts,
+                                                          Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        PluginJarMetadata metadata = readPluginMetadata(sourceFile);
+        if (!visited.add(key(metadata.description().getName()))) {
+            return;
+        }
+
+        for (String dependencyName : metadata.requiredDependencies()) {
+            if (Bukkit.getPluginManager().getPlugin(dependencyName) != null) {
+                continue;
+            }
+            File dependencyFile = getPluginFile(dependencyName);
+            if (dependencyFile == null || !dependencyFile.isFile()) {
+                throw new InvalidPluginException("Missing dependency " + dependencyName
+                        + " for " + metadata.description().getName());
+            }
+            prepareFreshLoadArtifact(dependencyFile, artifacts);
+            prepareMissingDependencyArtifacts(dependencyFile, artifacts, visited);
+        }
+
+        for (String dependencyName : metadata.optionalDependencies()) {
+            if (Bukkit.getPluginManager().getPlugin(dependencyName) != null) {
+                continue;
+            }
+            File dependencyFile = getPluginFile(dependencyName);
+            if (dependencyFile == null || !dependencyFile.isFile()) {
+                continue;
+            }
+            prepareFreshLoadArtifact(dependencyFile, artifacts);
+            prepareMissingDependencyArtifacts(dependencyFile, artifacts, visited);
+        }
+    }
+
+    private static File findRuntimeSourceFile(String pluginName, File runtimeFile) {
+        String sourceName = runtimeSourceBaseName(runtimeFile);
+        List<File> candidates = new ArrayList<>();
+        for (File candidate : listPluginFiles()) {
+            if (!isPluginJar(candidate)) {
+                continue;
+            }
+            try {
+                if (!pluginName.equalsIgnoreCase(getPluginName(candidate))) {
+                    continue;
+                }
+                candidates.add(candidate);
+                if (sourceName != null && sourceName.equals(candidate.getName())) {
+                    return candidate;
+                }
+            } catch (IOException | InvalidConfigurationException | InvalidDescriptionException ignored) {
+            }
+        }
+        return candidates.size() == 1 ? candidates.get(0) : null;
+    }
+
+    static String runtimeSourceBaseName(File runtimeFile) {
+        if (runtimeFile == null) {
+            return null;
+        }
+
+        String runtimeName = runtimeFile.getName();
+        int extensionStart = runtimeName.length() - ".jar".length();
+        int uuidStart = extensionStart - UUID_TEXT_LENGTH;
+        if (uuidStart <= 0 || extensionStart <= uuidStart || runtimeName.charAt(uuidStart - 1) != '-') {
+            return null;
+        }
+
+        try {
+            UUID.fromString(runtimeName.substring(uuidStart, extensionStart));
+            String encodedSourceName = runtimeName.substring(0, uuidStart - 1);
+            String sourceName = new String(Base64.getUrlDecoder().decode(encodedSourceName), StandardCharsets.UTF_8);
+            return encodedSourceName.equals(encodeRuntimeSourceName(sourceName)) ? sourceName : null;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private static String encodeRuntimeSourceName(String sourceName) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(sourceName.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void prepareDependentReloadArtifacts(Plugin root,
+                                                        Map<String, RuntimeLoadArtifact> artifacts,
+                                                        Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        if (root == null || !visited.add(key(root.getName()))) {
+            return;
+        }
+
+        for (Plugin candidate : Bukkit.getPluginManager().getPlugins()) {
+            if (candidate == root || !dependsOn(candidate, root)) {
+                continue;
+            }
+
+            prepareReloadArtifact(candidate, artifacts);
+            prepareDependentReloadArtifacts(candidate, artifacts, visited);
+        }
+    }
+
+    private static RuntimeLoadArtifact preparedArtifactFor(File file,
+                                                           Map<String, RuntimeLoadArtifact> artifacts) {
+        if (file == null || artifacts == null) {
+            return null;
+        }
+        return artifacts.get(cacheKey(file));
+    }
+
+    private static boolean dependsOn(Plugin candidate, Plugin dependency) {
+        String dependencyName = dependency.getName();
+        if (candidate.getDescription().getDepend().contains(dependencyName)
+                || candidate.getDescription().getSoftDepend().contains(dependencyName)) {
+            return true;
+        }
+        return dependencyName.equals("WorldEdit") && candidate.getName().equals("FastAsyncWorldEdit");
+    }
+
+    static boolean readPluginDescriptorFlag(File sourceFile,
+                                            String path) throws IOException, InvalidDescriptionException {
+        try (ZipFile zipFile = new ZipFile(sourceFile)) {
+            ZipEntry pluginDescriptor = zipFile.getEntry("plugin.yml");
+            if (pluginDescriptor == null) {
+                return false;
+            }
+
+            YamlConfiguration configuration = new YamlConfiguration();
+            try (InputStream input = zipFile.getInputStream(pluginDescriptor)) {
+                configuration.loadFromString(new String(readAllBytes(input), StandardCharsets.UTF_8));
+            } catch (InvalidConfigurationException e) {
+                throw new InvalidDescriptionException(e);
+            }
+
+            Object value = configuration.get(path);
+            if (value == null) {
+                return false;
+            }
+            if (!(value instanceof Boolean)) {
+                throw new InvalidDescriptionException(path + " must be true or false in " + sourceFile.getName());
+            }
+            return (Boolean) value;
+        }
+    }
+
+    private static void validateNoPendingPaperUpdate(String pluginName, String sourceName) throws RestartRequiredException {
+        File updateFolder;
+        try {
+            updateFolder = Bukkit.getUpdateFolderFile();
+        } catch (Throwable ignored) {
+            return;
+        }
+
+        if (updateFolder == null || !updateFolder.isDirectory() || sameFile(updateFolder, Bukkit.getPluginsFolder())) {
+            return;
+        }
+
+        File[] updates = updateFolder.listFiles();
+        if (updates == null) {
+            return;
+        }
+
+        for (File update : updates) {
+            if (update == null || !update.isFile()) {
+                continue;
+            }
+            try {
+                if (pluginName.equalsIgnoreCase(readPaperPreferredPluginName(update))) {
+                    throw new RestartRequiredException("Cannot reload " + sourceName
+                            + " while Paper has a pending update for " + pluginName + "; a full server restart is required");
+                }
+            } catch (IOException | InvalidDescriptionException ignored) {
+            }
+        }
+    }
+
+    static String readPaperPreferredPluginName(File file) throws IOException, InvalidDescriptionException {
+        try (ZipFile zipFile = new ZipFile(file)) {
+            ZipEntry descriptor = zipFile.getEntry("paper-plugin.yml");
+            if (descriptor == null) {
+                descriptor = zipFile.getEntry("plugin.yml");
+            }
+            if (descriptor == null) {
+                throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + file.getName());
+            }
+            try (InputStream input = zipFile.getInputStream(descriptor)) {
+                return new PluginDescriptionFile(input).getName();
+            }
         }
     }
 
@@ -519,6 +1092,119 @@ public class BileUtils {
         }
     }
 
+    private static void removePaperRuntimeProvider(String pluginName, File runtimeFile) {
+        removePaperLaunchProviders(pluginName, runtimeFile, true, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void removePaperLaunchProviders(String pluginName,
+                                                   File runtimeFile,
+                                                   boolean closeProviderFile,
+                                                   boolean includeBootstrapper) {
+        try {
+            Class<?> handlerClass = Class.forName("io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler");
+            Field instanceField = handlerClass.getField("INSTANCE");
+            Object handler = instanceField.get(null);
+            Class<?> entrypointClass = Class.forName("io.papermc.paper.plugin.entrypoint.Entrypoint");
+            Method getMethod = handlerClass.getMethod("get", entrypointClass);
+            List<String> entrypointNames = includeBootstrapper
+                    ? List.of("PLUGIN", "BOOTSTRAPPER")
+                    : List.of("PLUGIN");
+            for (String entrypointName : entrypointNames) {
+                Field entrypointField = entrypointClass.getField(entrypointName);
+                Object entrypoint = entrypointField.get(null);
+                Object storage = getMethod.invoke(handler, entrypoint);
+                Field providersField = findFieldInHierarchy(storage.getClass(), "providers");
+                Object providersObject = providersField == null ? null : providersField.get(storage);
+                if (!(providersObject instanceof List)) {
+                    continue;
+                }
+
+                List<Object> providers = (List<Object>) providersObject;
+                Iterator<Object> iterator = providers.iterator();
+                while (iterator.hasNext()) {
+                    Object provider = iterator.next();
+                    if (!paperProviderMatches(provider, pluginName, runtimeFile)) {
+                        continue;
+                    }
+
+                    iterator.remove();
+                    if (closeProviderFile) {
+                        removePaperProviderDependency(provider);
+                        closePaperProviderFile(provider);
+                    }
+                }
+            }
+        } catch (ClassNotFoundException ignored) {
+        } catch (Throwable e) {
+            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
+                BileTools.bile.getLogger().log(Level.WARNING, "Could not remove Paper runtime provider tracking", e);
+            }
+        }
+    }
+
+    private static void closePaperProviderFile(Object provider) {
+        try {
+            Object providerFile = invokeCompatibleMethod(provider, "file");
+            if (providerFile instanceof AutoCloseable) {
+                ((AutoCloseable) providerFile).close();
+            }
+        } catch (Throwable e) {
+            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
+                BileTools.bile.getLogger().log(Level.WARNING, "Could not close Paper runtime provider file", e);
+            }
+        }
+    }
+
+    private static void removePaperProviderDependency(Object provider) {
+        try {
+            PluginManager pluginManager = Bukkit.getPluginManager();
+            if (pluginManager == null) {
+                return;
+            }
+            Field paperPluginManagerField = findFieldInHierarchy(pluginManager.getClass(), "paperPluginManager");
+            Object paperPluginManager = paperPluginManagerField == null ? null : paperPluginManagerField.get(pluginManager);
+            Field instanceManagerField = paperPluginManager == null
+                    ? null
+                    : findFieldInHierarchy(paperPluginManager.getClass(), "instanceManager");
+            Object instanceManager = instanceManagerField == null ? null : instanceManagerField.get(paperPluginManager);
+            Field dependencyTreeField = instanceManager == null
+                    ? null
+                    : findFieldInHierarchy(instanceManager.getClass(), "dependencyTree");
+            Object dependencyTree = dependencyTreeField == null ? null : dependencyTreeField.get(instanceManager);
+            if (dependencyTree != null) {
+                invokeCompatibleMethod(dependencyTree, "remove", provider);
+            }
+        } catch (Throwable e) {
+            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
+                BileTools.bile.getLogger().log(Level.WARNING, "Could not remove Paper runtime dependency metadata", e);
+            }
+        }
+    }
+
+    private static boolean paperProviderMatches(Object provider, String pluginName, File runtimeFile) {
+        if (runtimeFile != null) {
+            try {
+                Object source = invokeCompatibleMethod(provider, "getSource");
+                if (source != null && sameFile(new File(source.toString()), runtimeFile)) {
+                    return true;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (pluginName != null) {
+            try {
+                Object metadata = invokeCompatibleMethod(provider, "getMeta");
+                Object name = invokeCompatibleMethod(metadata, "getName");
+                return name != null && pluginName.equalsIgnoreCase(name.toString());
+            } catch (Throwable ignored) {
+            }
+        }
+
+        return false;
+    }
+
     private static Object invokeCompatibleMethod(Object target, String methodName, Object... args) throws Exception {
         Method method = findCompatibleMethod(target.getClass(), methodName, args);
         return method.invoke(target, args);
@@ -619,6 +1305,7 @@ public class BileUtils {
         try {
             long startNs = System.nanoTime();
             File file = getPluginFile(plugin);
+            File runtimeFile = RUNTIME_PLUGIN_FILES.get(key(plugin.getName()));
             stp("Unloading " + plugin.getName());
 
             if (file == null) {
@@ -767,6 +1454,8 @@ public class BileUtils {
                 }
             }
 
+            removePaperLaunchProviders(plugin.getName(), runtimeFile, true, true);
+            releaseRuntimePluginFile(plugin.getName());
             if (file != null) {
                 refreshPluginJarHandle(file);
             }
@@ -1014,17 +1703,34 @@ public class BileUtils {
         }
     }
 
-    private static boolean jarHasPluginYml(File file) {
-        try (ZipFile z = new ZipFile(file)) {
-            return z.getEntry("plugin.yml") != null;
-        } catch (Throwable ignored) {
-            return false;
+    static void validateRuntimeCompatibility(boolean paperDescriptor,
+                                             boolean pluginDescriptor,
+                                             boolean paperRuntime,
+                                             boolean reloadContext,
+                                             String sourceName) throws InvalidPluginException {
+        if (!paperDescriptor) {
+            return;
+        }
+        if (!pluginDescriptor && !paperRuntime) {
+            throw new InvalidPluginException("Cannot load " + sourceName
+                    + ": paper-plugin.yml-only jars require a Paper-compatible server startup");
+        }
+        if (!pluginDescriptor) {
+            throw new RestartRequiredException("Cannot reload " + sourceName
+                    + ": Paper-only plugins cannot register during runtime; a full server restart is required");
+        }
+        if (paperRuntime && !reloadContext) {
+            throw new RestartRequiredException("Cannot hot-load " + sourceName
+                    + ": Paper plugin entrypoints require startup; install the jar and perform a full server restart");
         }
     }
 
-    static void validateRuntimeCompatibility(boolean paperOnlyJar, boolean paperRuntime, String sourceName) throws InvalidPluginException {
-        if (paperOnlyJar && !paperRuntime) {
-            throw new InvalidPluginException("Cannot load " + sourceName + ": paper-plugin.yml-only jars require a Paper-compatible runtime");
+    static void validateFoliaRuntimeCompatibility(boolean foliaRuntime,
+                                                  boolean foliaSupported,
+                                                  String sourceName) throws RestartRequiredException {
+        if (foliaRuntime && !foliaSupported) {
+            throw new RestartRequiredException("Cannot reload " + sourceName
+                    + " through plugin.yml on Folia: folia-supported is not true; a full server restart is required");
         }
     }
 

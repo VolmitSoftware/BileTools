@@ -12,26 +12,139 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class BileUtilsTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void validateRuntimeCompatibility_rejectsPaperOnlyJarOutsidePaper() throws InvalidPluginException {
-        BileUtils.validateRuntimeCompatibility(true, true, "Example.jar");
-        BileUtils.validateRuntimeCompatibility(false, false, "Example.jar");
-        BileUtils.validateRuntimeCompatibility(false, true, "Example.jar");
+    public void validateRuntimeCompatibility_limitsPaperRuntimeLoadsToDualDescriptorReloads() throws InvalidPluginException {
+        BileUtils.validateRuntimeCompatibility(false, true, false, false, "Example.jar");
+        BileUtils.validateRuntimeCompatibility(false, true, true, false, "Example.jar");
+        BileUtils.validateRuntimeCompatibility(true, true, false, false, "Example.jar");
+        BileUtils.validateRuntimeCompatibility(true, true, true, true, "Example.jar");
 
-        InvalidPluginException exception = assertThrows(InvalidPluginException.class,
-                () -> BileUtils.validateRuntimeCompatibility(true, false, "Example.jar"));
+        BileUtils.RestartRequiredException firstLoad = assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateRuntimeCompatibility(true, true, true, false, "Example.jar"));
         assertEquals(
-                "Cannot load Example.jar: paper-plugin.yml-only jars require a Paper-compatible runtime",
-                exception.getMessage());
+                "Cannot hot-load Example.jar: Paper plugin entrypoints require startup; install the jar and perform a full server restart",
+                firstLoad.getMessage());
+
+        BileUtils.RestartRequiredException paperOnly = assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateRuntimeCompatibility(true, false, true, true, "Example.jar"));
+        assertEquals(
+                "Cannot reload Example.jar: Paper-only plugins cannot register during runtime; a full server restart is required",
+                paperOnly.getMessage());
+
+        InvalidPluginException unsupportedServer = assertThrows(InvalidPluginException.class,
+                () -> BileUtils.validateRuntimeCompatibility(true, false, false, true, "Example.jar"));
+        assertEquals(
+                "Cannot load Example.jar: paper-plugin.yml-only jars require a Paper-compatible server startup",
+                unsupportedServer.getMessage());
+    }
+
+    @Test
+    public void validateFoliaRuntimeCompatibility_requiresAuthoredPluginSupport() throws InvalidPluginException {
+        BileUtils.validateFoliaRuntimeCompatibility(false, false, "Example.jar");
+        BileUtils.validateFoliaRuntimeCompatibility(true, true, "Example.jar");
+
+        BileUtils.RestartRequiredException unsupported = assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateFoliaRuntimeCompatibility(true, false, "Example.jar"));
+        assertEquals(
+                "Cannot reload Example.jar through plugin.yml on Folia: folia-supported is not true; a full server restart is required",
+                unsupported.getMessage());
+    }
+
+    @Test
+    public void createRuntimePluginView_removesOnlyPaperDescriptor() throws Exception {
+        File pluginJar = temporaryFolder.newFile("Dual+Example.jar");
+        File runtimeDirectory = temporaryFolder.newFolder("runtime");
+        String pluginDescriptor = """
+                name: DualExample
+                version: 2.0.0
+                main: example.Plugin
+                api-version: 26.2
+                folia-supported: true
+                depend: [RuntimeDependency]
+                """;
+        String paperDescriptor = """
+                name: DualExample
+                version: 2.0.0
+                main: example.Plugin
+                api-version: 26.2
+                bootstrapper: example.Bootstrap
+                dependencies:
+                  bootstrap:
+                    StartupDependency:
+                      required: true
+                """;
+        byte[] binaryResource = new byte[]{0, 1, 2, 3, 127, -1};
+
+        try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(pluginJar))) {
+            output.putNextEntry(new ZipEntry("plugin.yml"));
+            output.write(pluginDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            output.putNextEntry(new ZipEntry("paper-plugin.yml"));
+            output.write(paperDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            output.putNextEntry(new ZipEntry("example/resource.bin"));
+            output.write(binaryResource);
+            output.closeEntry();
+        }
+
+        File runtimeJar = BileUtils.createRuntimePluginView(pluginJar, runtimeDirectory);
+
+        assertFalse(pluginJar.getCanonicalFile().equals(runtimeJar.getCanonicalFile()));
+        try (ZipFile source = new ZipFile(pluginJar); ZipFile runtime = new ZipFile(runtimeJar)) {
+            assertTrue(source.getEntry("paper-plugin.yml") != null);
+            assertTrue(source.getEntry("plugin.yml") != null);
+            assertFalse(runtime.getEntry("paper-plugin.yml") != null);
+            assertTrue(runtime.getEntry("plugin.yml") != null);
+            byte[] sourcePluginDescriptor = source.getInputStream(source.getEntry("plugin.yml")).readAllBytes();
+            byte[] runtimePluginDescriptor = runtime.getInputStream(runtime.getEntry("plugin.yml")).readAllBytes();
+            byte[] runtimeResource = runtime.getInputStream(runtime.getEntry("example/resource.bin")).readAllBytes();
+            assertArrayEquals(sourcePluginDescriptor, runtimePluginDescriptor);
+            assertArrayEquals(binaryResource, runtimeResource);
+        }
+        assertEquals(List.of("RuntimeDependency"), BileUtils.getDependencies(runtimeJar));
+        assertTrue(BileUtils.readPluginDescriptorFlag(runtimeJar, "folia-supported"));
+        assertEquals("Dual+Example.jar", BileUtils.runtimeSourceBaseName(runtimeJar));
+    }
+
+    @Test
+    public void readPaperPreferredPluginName_acceptsNonJarUpdatesAndPrefersPaperDescriptor() throws Exception {
+        File updateArchive = temporaryFolder.newFile("Example.update");
+        String pluginDescriptor = """
+                name: LegacyName
+                version: 1.0.0
+                main: example.Plugin
+                api-version: 26.2
+                """;
+        String paperDescriptor = """
+                name: PaperName
+                version: 1.0.0
+                main: example.Plugin
+                api-version: 26.2
+                """;
+
+        try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(updateArchive))) {
+            output.putNextEntry(new ZipEntry("plugin.yml"));
+            output.write(pluginDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            output.putNextEntry(new ZipEntry("paper-plugin.yml"));
+            output.write(paperDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        assertEquals("PaperName", BileUtils.readPaperPreferredPluginName(updateArchive));
     }
 
     @Test

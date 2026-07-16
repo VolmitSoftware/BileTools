@@ -129,7 +129,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         getLogger().info("Runtime platform: " + ServerPlatform.summary());
         if (ServerPlatform.isFoliaFamily()) {
             getLogger().info("Folia/Canvas detected: using GlobalRegionScheduler; classic Bukkit scheduler is avoided.");
-            getLogger().warning("Hot-reload of third-party plugins on Folia/Canvas is best-effort; plugins without folia-supported may still break.");
+            getLogger().warning("Hot-reload on Folia/Canvas requires an authored plugin.yml with folia-supported: true.");
         } else if (!ServerPlatform.isPaperFamily()) {
             getLogger().info("Spigot-compatible mode: paper-plugin.yml-only jars are rejected; dual-descriptor jars load through plugin.yml.");
         }
@@ -149,6 +149,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         cd = 10;
         bile = this;
+        BileUtils.recoverRuntimePluginFiles();
         tag = ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY;
         mod = new HashMap<>();
         las = new HashMap<>();
@@ -264,6 +265,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     }
                     getLogger().info("Hot dropped " + file.getName() + " successfully");
                     notifyBileUsers(tag + "Hot Dropped " + ChatColor.WHITE + file.getName(), true);
+                } catch (BileUtils.RestartRequiredException e) {
+                    getLogger().warning(e.getMessage());
+                    notifyBileUsers(tag + ChatColor.YELLOW + file.getName()
+                            + ChatColor.GRAY + " requires a full server restart.", false);
                 } catch (Throwable e) {
                     if (attemptsRemaining > 0 && isTransientJarState(e)) {
                         getLogger().info("Hot drop deferred for " + file.getName() + ": " + rootMessage(e) + " (" + attemptsRemaining + " retries left)");
@@ -659,6 +664,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
                         + ChatColor.GRAY + " (" + totalMs + "ms)", true);
+            } catch (BileUtils.RestartRequiredException e) {
+                getLogger().warning(e.getMessage());
+                notifyBileUsers(tag + ChatColor.YELLOW + pluginName
+                        + ChatColor.GRAY + " requires a full server restart.", false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName, e);
                 markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
@@ -735,6 +744,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
                         + ChatColor.GRAY + " (" + totalMs + "ms)", true);
+            } catch (BileUtils.RestartRequiredException e) {
+                getLogger().warning(e.getMessage());
+                notifyBileUsers(tag + ChatColor.YELLOW + pluginName
+                        + ChatColor.GRAY + " requires a full server restart.", false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName + " after remote deploy", e);
                 markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
@@ -1274,6 +1287,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from "
                         + ChatColor.WHITE + pluginFile.getName() + ChatColor.GRAY + " (" + totalMs + "ms)");
+            } catch (BileUtils.RestartRequiredException e) {
+                getLogger().warning(e.getMessage());
+                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
+                        + ChatColor.GRAY + " requires a full server restart.");
             } catch (Throwable e) {
                 sendCommandMessage(sender, tag + "Couldn't load \"" + pluginName + "\".");
                 getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
@@ -1329,6 +1346,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " ("
                         + ChatColor.WHITE + fileName + ChatColor.GRAY + ", " + totalMs + "ms)");
+            } catch (BileUtils.RestartRequiredException e) {
+                getLogger().warning(e.getMessage());
+                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
+                        + ChatColor.GRAY + " requires a full server restart.");
             } catch (Throwable e) {
                 markPluginDirty(pluginName, "manual reload failure: " + rootMessage(e));
                 sendCommandMessage(sender, tag + "Couldn't reload \"" + pluginName + "\".");
@@ -1401,6 +1422,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "install " + pluginName, () -> BileUtils.load(out));
                 clearPluginDirty(pluginName);
                 sendCommandMessage(sender, tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
+            } catch (BileUtils.RestartRequiredException e) {
+                getLogger().warning(e.getMessage());
+                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
+                        + ChatColor.GRAY + " was installed and requires a full server restart.");
             } catch (Throwable e) {
                 sendCommandMessage(sender, tag + "Couldn't install \"" + pluginName + "\".");
                 getLogger().log(Level.SEVERE, "Failed to install library plugin " + pluginName + "@" + version, e);
