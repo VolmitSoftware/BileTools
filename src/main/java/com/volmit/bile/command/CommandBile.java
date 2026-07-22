@@ -5,8 +5,11 @@ import art.arcane.volmlib.util.director.DirectorParameterHandler;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
+import art.arcane.volmlib.util.localization.TextKey;
 import com.volmit.bile.BileTools;
 import com.volmit.bile.BileUtils;
+import com.volmit.bile.localization.BileLocalization;
+import com.volmit.bile.localization.BileMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
@@ -16,7 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-@Director(name = "biletools", aliases = {"bile", "bi", "b", "volmit", "vomit", "vom"}, description = "BileTools command root")
+@Director(name = "biletools", aliases = {"bile", "bi", "b", "volmit", "vomit", "vom"}, description = "BileTools command root", descriptionKey = "bile.command.root")
 public class CommandBile {
     private final BileTools plugin;
 
@@ -24,51 +27,51 @@ public class CommandBile {
         this.plugin = plugin;
     }
 
-    @Director(name = "load", description = "Load a plugin jar from plugins directory")
+    @Director(name = "load", description = "Load a plugin jar from the plugins directory", descriptionKey = "bile.command.load")
     public void load(
-            @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "bile.parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         plugin.loadPlugin(sender, pluginName);
     }
 
-    @Director(name = "unload", description = "Unload an installed plugin")
+    @Director(name = "unload", description = "Unload an installed plugin", descriptionKey = "bile.command.unload")
     public void unload(
-            @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "bile.parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         plugin.unloadPlugin(sender, pluginName);
     }
 
-    @Director(name = "reload", description = "Reload an installed plugin")
+    @Director(name = "reload", description = "Reload an installed plugin", descriptionKey = "bile.command.reload")
     public void reload(
-            @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "bile.parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         plugin.reloadPlugin(sender, pluginName);
     }
 
-    @Director(name = "uninstall", description = "Delete plugin jar from plugins directory")
+    @Director(name = "uninstall", description = "Delete a plugin jar from the plugins directory", descriptionKey = "bile.command.uninstall")
     public void uninstall(
-            @Param(name = "plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "bile.parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         plugin.uninstallPlugin(sender, pluginName);
     }
 
-    @Director(name = "install", description = "Install plugin from Bile library")
+    @Director(name = "install", description = "Install a plugin from the Bile library", descriptionKey = "bile.command.install")
     public void install(
-            @Param(name = "plugin", customHandler = LibraryPluginNameHandler.class) String pluginName,
-            @Param(name = "version", defaultValue = "latest", customHandler = LibraryVersionHandler.class) String version,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Library plugin name", descriptionKey = "bile.parameter.library_plugin", customHandler = LibraryPluginNameHandler.class) String pluginName,
+            @Param(name = "version", description = "Library plugin version", descriptionKey = "bile.parameter.version", defaultValue = "latest", customHandler = LibraryVersionHandler.class) String version,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         plugin.installLibraryPlugin(sender, pluginName, version);
     }
 
-    @Director(name = "library", description = "List library plugins or versions for one plugin")
+    @Director(name = "library", description = "List library plugins or versions for one plugin", descriptionKey = "bile.command.library")
     public void library(
-            @Param(name = "plugin", defaultValue = "*", customHandler = LibraryPluginNameHandler.class) String pluginName,
-            @Param(name = "sender", contextual = true) CommandSender sender
+            @Param(name = "plugin", description = "Library plugin name", descriptionKey = "bile.parameter.library_plugin", defaultValue = "*", customHandler = LibraryPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", description = "Command sender", descriptionKey = "bile.parameter.sender", contextual = true) CommandSender sender
     ) {
         if (pluginName == null || pluginName.trim().isEmpty() || "*".equals(pluginName.trim())) {
             plugin.listLibrary(sender);
@@ -113,7 +116,7 @@ public class CommandBile {
         @Override
         public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DirectorParsingException("Plugin name cannot be empty");
+                throw new DirectorParsingException(localized(BileMessages.ERROR_PLUGIN_NAME_REQUIRED));
             }
 
             String value = in.trim();
@@ -167,7 +170,7 @@ public class CommandBile {
         @Override
         public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DirectorParsingException("Library plugin name cannot be empty");
+                throw new DirectorParsingException(localized(BileMessages.ERROR_LIBRARY_PLUGIN_NAME_REQUIRED));
             }
 
             String value = in.trim();
@@ -234,7 +237,7 @@ public class CommandBile {
         @Override
         public String parse(String in, boolean force) throws DirectorParsingException {
             if (in == null || in.trim().isEmpty()) {
-                throw new DirectorParsingException("Version cannot be empty");
+                throw new DirectorParsingException(localized(BileMessages.ERROR_VERSION_REQUIRED));
             }
 
             return in.trim();
@@ -244,5 +247,13 @@ public class CommandBile {
         public boolean supports(Class<?> type) {
             return type == String.class;
         }
+    }
+
+    private static String localized(TextKey key) {
+        BileTools active = BileTools.bile;
+        if (active == null || active.getLocalization() == null) {
+            return BileLocalization.english(key);
+        }
+        return active.getLocalization().text(key);
     }
 }

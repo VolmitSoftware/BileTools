@@ -1,6 +1,7 @@
 package com.volmit.bile;
 
-import net.md_5.bungee.api.ChatColor;
+import art.arcane.volmlib.util.localization.MessageArgs;
+import com.volmit.bile.localization.BileMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -86,8 +87,13 @@ public class SlaveBileServer extends Thread {
                         continue;
                     }
                     PlatformTasks.runForPlayer(BileTools.bile, player, () ->
-                            player.sendMessage(BileTools.bile.tag + "Receiving " + ChatColor.WHITE + received.getName()
-                                    + ChatColor.GRAY + " from " + ChatColor.WHITE + host));
+                            player.sendMessage(BileTools.bile.getLocalization().text(
+                                    BileMessages.REMOTE_RECEIVING,
+                                    MessageArgs.builder()
+                                            .untrusted("file", received.getName())
+                                            .untrusted("host", host)
+                                            .build()
+                            )));
                 }
             });
         } catch (Throwable e) {

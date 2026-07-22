@@ -1,0 +1,100 @@
+"locale": "he_IL"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "חזרה לקבוצת פקודות האב"
+        "back": "חזרה"
+        "previous":
+          "hover": "העמוד הקודם"
+        "next":
+          "hover": "העמוד הבא"
+        "page": "עמוד"
+      "no_subcommands": "אין פקודות משנה בעמוד זה."
+      "no_description": "לא סופק תיאור"
+      "aliases": "כינויים"
+      "command_group": "קבוצת פקודות. לחצו כדי לפתוח."
+      "no_parameters": "אין פרמטרים. לחצו כדי למלא את הפקודה מראש."
+      "parameters": "פרמטרים"
+      "parameter":
+        "required": "נדרש"
+        "optional": "אופציונלי"
+        "default": "ברירת מחדל"
+    "runtime":
+      "error":
+        "invalid_origin": "לא ניתן להריץ פקודה זו ממקור זה."
+        "unknown_parameter": "מפתח פרמטר לא ידוע: {key}"
+        "unexpected_argument": "ארגומנט לא צפוי \"{argument}\". פרמטרים אופציונליים חייבים להינתן עם מפתח, לדוגמה seed=123"
+        "conversion_failed": "לא ניתן להמיר את \"{value}\" ל-{type} עבור {parameter}"
+        "default_parse_failed": "לא ניתן לנתח את ערך ברירת המחדל של הפרמטר {parameter}"
+        "missing_argument": "חסר ארגומנט \"{parameter}\" ({type})"
+        "execution_failed": "הפעלת הפקודה {command} נכשלה: {reason}"
+      "usage": "שימוש: {usage}"
+  "bile":
+    "command":
+      "root": "קבוצת הפקודות של BileTools"
+      "load": "טעינת קובץ JAR של תוסף מתיקיית התוספים"
+      "unload": "פריקת תוסף מותקן מהזיכרון"
+      "reload": "טעינה מחדש של תוסף מותקן"
+      "uninstall": "מחיקת קובץ JAR של תוסף מתיקיית התוספים"
+      "install": "התקנת תוסף מספריית Bile"
+      "library": "הצגת תוספי הספרייה או הגרסאות של תוסף"
+    "parameter":
+      "installed_plugin": "שם התוסף המותקן"
+      "library_plugin": "שם התוסף בספרייה"
+      "version": "גרסת התוסף בספרייה"
+      "sender": "שולח הפקודה"
+    "error":
+      "plugin_name_required": "שם התוסף לא יכול להיות ריק"
+      "library_plugin_name_required": "שם התוסף בספרייה לא יכול להיות ריק"
+      "version_required": "הגרסה לא יכולה להיות ריקה"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7נדרשת הרשאה &f{permission}&7 או OP."
+      "unknown_command": "&a[&8Bile&a]: &7פקודה לא ידועה \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7מקבל את &f{file}&7 מאת &f{host}&7."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7התוסף &f{plugin}&7 נפרס אל &f{count}&7 שרתים מרוחקים."
+          "one": "&a[&8Bile&a]: &7התוסף &f{plugin}&7 נפרס אל &f{count}&7 שרת מרוחק."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7פריסה חמה הושלמה: &f{file}&7."
+        "failed": "&a[&8Bile&a]: &7הפריסה החמה נכשלה: &c{file}&7."
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 דורש הפעלה מלאה מחדש של השרת."
+      "reload":
+        "success": "&a[&8Bile&a]: &7נטען מחדש: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7הטעינה מחדש נכשלה: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7הטעינה מחדש נוספה לתור: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7נטען מחדש: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+        "command_failed": "&a[&8Bile&a]: &7הטעינה מחדש נכשלה: \"&f{plugin}&7\"."
+      "unload":
+        "success": "&a[&8Bile&a]: &7נפרק מהזיכרון: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7הפריקה מהזיכרון נכשלה: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7הפריקה מהזיכרון נוספה לתור: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7נפרק מהזיכרון: &f{plugin}&7 (&f{file}&7)."
+        "command_failed": "&a[&8Bile&a]: &7הפריקה מהזיכרון נכשלה: \"&f{plugin}&7\"."
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 סומן כפגום לאחר כשל במחזור החיים. הטעינות האוטומטיות שלו הושהו."
+      "reloading_context": "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7 (&f{context}&7)."
+      "load":
+        "queued": "&a[&8Bile&a]: &7הטעינה נוספה לתור: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7נטען: &f{plugin}&7 מתוך &f{file}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7הטעינה נכשלה: \"&f{plugin}&7\"."
+      "plugin_not_found": "&a[&8Bile&a]: &7התוסף לא נמצא: \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7."
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7הסרת ההתקנה נוספה לתור: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7הוסרה ההתקנה של &f{plugin}&7 מתוך &f{file}&7."
+        "delete_failed": "&a[&8Bile&a]: &7התוסף נפרק מהזיכרון, אך לא ניתן למחוק את &c{file}&7. יש למחוק את הקובץ לפני התקנת התוסף מחדש."
+        "failed": "&a[&8Bile&a]: &7הסרת ההתקנה נכשלה: \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7התוסף לא נמצא בספרייה: \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7הגרסה \"&f{version}&7\" לא נמצאה עבור \"&f{plugin}&7\"."
+        "install_queued": "&a[&8Bile&a]: &7התקנה מהספרייה נוספה לתור: &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7הותקן מהספרייה: &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 הותקן ודורש הפעלה מלאה מחדש של השרת."
+        "install_failed": "&a[&8Bile&a]: &7ההתקנה נכשלה: \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7הספרייה ריקה."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} מותקנת) &f{latestVersion}&7 (העדכנית)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (העדכנית)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (העדכנית)"

@@ -1,0 +1,100 @@
+"locale": "pl_PL"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "Wróć do nadrzędnej grupy poleceń"
+        "back": "Wstecz"
+        "previous":
+          "hover": "Poprzednia strona"
+        "next":
+          "hover": "Następna strona"
+        "page": "Strona"
+      "no_subcommands": "Na tej stronie nie ma podpoleceń."
+      "no_description": "Nie podano opisu"
+      "aliases": "Aliasy"
+      "command_group": "Grupa poleceń. Kliknij, aby otworzyć."
+      "no_parameters": "Brak parametrów. Kliknij, aby wstępnie uzupełnić polecenie."
+      "parameters": "Parametry"
+      "parameter":
+        "required": "wymagany"
+        "optional": "opcjonalny"
+        "default": "domyślny"
+    "runtime":
+      "error":
+        "invalid_origin": "Tego polecenia nie można wykonać z tego źródła."
+        "unknown_parameter": "Nieznany klucz parametru: {key}"
+        "unexpected_argument": "Nieoczekiwany argument \"{argument}\". Parametry opcjonalne muszą mieć klucz, np. seed=123"
+        "conversion_failed": "Nie można przekonwertować \"{value}\" na {type} dla {parameter}"
+        "default_parse_failed": "Nie można odczytać wartości domyślnej parametru {parameter}"
+        "missing_argument": "Brak argumentu \"{parameter}\" ({type})"
+        "execution_failed": "Nie udało się wykonać polecenia {command}: {reason}"
+      "usage": "Użycie: {usage}"
+  "bile":
+    "command":
+      "root": "Grupa komend BileTools"
+      "load": "Wczytaj plik JAR wtyczki z katalogu plugins"
+      "unload": "Wyładuj zainstalowaną wtyczkę"
+      "reload": "Przeładuj zainstalowaną wtyczkę"
+      "uninstall": "Usuń plik JAR wtyczki z katalogu plugins"
+      "install": "Zainstaluj wtyczkę z biblioteki Bile"
+      "library": "Wyświetl wtyczki biblioteki lub wersje wybranej wtyczki"
+    "parameter":
+      "installed_plugin": "Nazwa zainstalowanej wtyczki"
+      "library_plugin": "Nazwa wtyczki biblioteki"
+      "version": "Wersja wtyczki biblioteki"
+      "sender": "Nadawca komendy"
+    "error":
+      "plugin_name_required": "Nazwa wtyczki nie może być pusta"
+      "library_plugin_name_required": "Nazwa wtyczki biblioteki nie może być pusta"
+      "version_required": "Wersja nie może być pusta"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7Potrzebujesz &f{permission}&7 lub uprawnień OP."
+      "unknown_command": "&a[&8Bile&a]: &7Nieznana komenda \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7Odbieranie &f{file}&7 z &f{host}&7."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7&f{plugin}&7 wdrożono na &f{count}&7 zdalnych serwerach."
+          "one": "&a[&8Bile&a]: &7&f{plugin}&7 wdrożono na &f{count}&7 zdalnym serwerze."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7Wdrożenie na gorąco zakończone: &f{file}&7."
+        "failed": "&a[&8Bile&a]: &7Wdrożenie na gorąco nie powiodło się: &c{file}&7."
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 wymaga pełnego ponownego uruchomienia serwera."
+      "reload":
+        "success": "&a[&8Bile&a]: &7Przeładowano: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Przeładowanie nie powiodło się: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Przeładowanie w kolejce: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Przeładowano: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+        "command_failed": "&a[&8Bile&a]: &7Przeładowanie nie powiodło się: \"&f{plugin}&7\"."
+      "unload":
+        "success": "&a[&8Bile&a]: &7Wyładowano: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Wyładowanie nie powiodło się: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Wyładowanie w kolejce: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Wyładowano: &f{plugin}&7 (&f{file}&7)."
+        "command_failed": "&a[&8Bile&a]: &7Wyładowanie nie powiodło się: \"&f{plugin}&7\"."
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 oznaczono jako uszkodzoną po błędzie cyklu życia. Automatyczne przeładowania tej wtyczki są wstrzymane."
+      "reloading_context": "&a[&8Bile&a]: &7Przeładowywanie: &f{plugin}&7 (&f{context}&7)."
+      "load":
+        "queued": "&a[&8Bile&a]: &7Wczytanie w kolejce: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7Wczytano: &f{plugin}&7 z &f{file}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Wczytanie nie powiodło się: \"&f{plugin}&7\"."
+      "plugin_not_found": "&a[&8Bile&a]: &7Nie znaleziono wtyczki: \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7Przeładowywanie: &f{plugin}&7."
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7Odinstalowanie w kolejce: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7Odinstalowano &f{plugin}&7 z &f{file}&7."
+        "delete_failed": "&a[&8Bile&a]: &7Wtyczka została wyładowana, ale nie udało się usunąć &c{file}&7. Usuń plik przed ponowną instalacją wtyczki."
+        "failed": "&a[&8Bile&a]: &7Odinstalowanie nie powiodło się: \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7Nie znaleziono wtyczki w bibliotece: \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7Nie znaleziono wersji \"&f{version}&7\" dla \"&f{plugin}&7\"."
+        "install_queued": "&a[&8Bile&a]: &7Instalacja z biblioteki w kolejce: &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7Zainstalowano z biblioteki: &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 została zainstalowana i wymaga pełnego ponownego uruchomienia serwera."
+        "install_failed": "&a[&8Bile&a]: &7Instalacja nie powiodła się: \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7Biblioteka jest pusta."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} zainstalowana) &f{latestVersion}&7 (najnowsza)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (najnowsza)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (najnowsza)"

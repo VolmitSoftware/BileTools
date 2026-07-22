@@ -1,17 +1,19 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.util.director.DirectorEngineOptions;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
 import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
 import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
-import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
 import art.arcane.volmlib.integration.ReloadAware;
+import art.arcane.volmlib.util.localization.MessageArgs;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
 import com.volmit.bile.config.BileConfig;
-import net.md_5.bungee.api.ChatColor;
+import com.volmit.bile.localization.BileLocalization;
+import com.volmit.bile.localization.BileMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -76,13 +78,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private final AtomicBoolean coalesceFlushScheduled = new AtomicBoolean(false);
     private File folder;
     private File backoff;
-    public String tag;
     private Sound sx;
     private int cd = 10;
     private volatile boolean tickerActive;
     private volatile boolean watcherBusy;
     private volatile DirectorRuntimeEngine director;
-    private volatile DirectorVisualCommand helpRoot;
+    private BileLocalization localization;
     private final AtomicBoolean selfReloadQueued = new AtomicBoolean(false);
     private final Set<String> queuedOperationKeys = ConcurrentHashMap.newKeySet();
     private final ExecutorService pluginOperationExecutor = Executors.newSingleThreadExecutor(runnable -> {
@@ -125,6 +126,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             this.getLogger().log(Level.SEVERE, "Unable to read the config...", e);
         }
 
+        bile = this;
+        localization = new BileLocalization(getDataFolder(), getLogger());
         SplashScreen.print(this);
         getLogger().info("Runtime platform: " + ServerPlatform.summary());
         if (ServerPlatform.isFoliaFamily()) {
@@ -148,9 +151,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         cd = 10;
-        bile = this;
         BileUtils.recoverRuntimePluginFiles();
-        tag = ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY;
         mod = new HashMap<>();
         las = new HashMap<>();
         sig = new HashMap<>();
@@ -264,11 +265,16 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                         clearPluginDirty(resolvedName);
                     }
                     getLogger().info("Hot dropped " + file.getName() + " successfully");
-                    notifyBileUsers(tag + "Hot Dropped " + ChatColor.WHITE + file.getName(), true);
+                    notifyBileUsers(localization.text(
+                            BileMessages.HOT_DROP_SUCCESS,
+                            MessageArgs.builder().untrusted("file", file.getName()).build()
+                    ), true);
                 } catch (BileUtils.RestartRequiredException e) {
                     getLogger().warning(e.getMessage());
-                    notifyBileUsers(tag + ChatColor.YELLOW + file.getName()
-                            + ChatColor.GRAY + " requires a full server restart.", false);
+                    notifyBileUsers(localization.text(
+                            BileMessages.RESTART_REQUIRED,
+                            MessageArgs.builder().untrusted("plugin", file.getName()).build()
+                    ), false);
                 } catch (Throwable e) {
                     if (attemptsRemaining > 0 && isTransientJarState(e)) {
                         getLogger().info("Hot drop deferred for " + file.getName() + ": " + rootMessage(e) + " (" + attemptsRemaining + " retries left)");
@@ -277,7 +283,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     }
 
                     getLogger().log(Level.SEVERE, "Failed to hot drop " + file.getName(), e);
-                    notifyBileUsers(tag + "Failed to hot drop " + ChatColor.RED + file.getName(), false);
+                    notifyBileUsers(localization.text(
+                            BileMessages.HOT_DROP_FAILED,
+                            MessageArgs.builder().untrusted("file", file.getName()).build()
+                    ), false);
                 }
             });
         } catch (Throwable e) {
@@ -291,7 +300,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
             for (Player k : Bukkit.getOnlinePlayers()) {
                 if (k.hasPermission("bile.use")) {
-                    k.sendMessage(tag + "Failed to hot drop " + ChatColor.RED + file.getName());
+                    k.sendMessage(localization.text(
+                            BileMessages.HOT_DROP_FAILED,
+                            MessageArgs.builder().untrusted("file", file.getName()).build()
+                    ));
                 }
             }
         }
@@ -340,6 +352,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     public void onTick() {
+        localization.update();
         if (cd > 0) {
             cd--;
         }
@@ -648,7 +661,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         enqueuePluginOperation(key, () -> {
             Plugin targetPlugin = BileUtils.getPluginByName(pluginName);
             if (targetPlugin == null) {
-                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
                 return;
             }
 
@@ -662,16 +678,26 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "reload " + pluginName, () -> BileUtils.reload(targetPlugin));
                 clearPluginDirty(pluginName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
-                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
-                        + ChatColor.GRAY + " (" + totalMs + "ms)", true);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", pluginName)
+                                .untrusted("milliseconds", totalMs)
+                                .build()
+                ), true);
             } catch (BileUtils.RestartRequiredException e) {
                 getLogger().warning(e.getMessage());
-                notifyBileUsers(tag + ChatColor.YELLOW + pluginName
-                        + ChatColor.GRAY + " requires a full server restart.", false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RESTART_REQUIRED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName, e);
                 markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
-                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
             }
         });
     }
@@ -703,11 +729,19 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "unload " + pluginName, () -> BileUtils.unload(targetPlugin));
                 clearPluginDirty(pluginName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
-                notifyBileUsers(tag + "Unloaded " + ChatColor.WHITE + pluginName
-                        + ChatColor.GRAY + " (" + totalMs + "ms)", false);
+                notifyBileUsers(localization.text(
+                        BileMessages.UNLOAD_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", pluginName)
+                                .untrusted("milliseconds", totalMs)
+                                .build()
+                ), false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to unload " + pluginName + " after file removal", e);
-                notifyBileUsers(tag + "Failed to Unload " + ChatColor.RED + pluginName, false);
+                notifyBileUsers(localization.text(
+                        BileMessages.UNLOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
             }
         });
     }
@@ -728,7 +762,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
             Plugin targetPlugin = BileUtils.getPluginByName(pluginName);
             if (targetPlugin == null) {
-                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
                 return;
             }
 
@@ -742,16 +779,26 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "reload " + pluginName + " after remote deploy", () -> BileUtils.reload(targetPlugin));
                 clearPluginDirty(pluginName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
-                notifyBileUsers(tag + "Reloaded " + ChatColor.WHITE + pluginName
-                        + ChatColor.GRAY + " (" + totalMs + "ms)", true);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", pluginName)
+                                .untrusted("milliseconds", totalMs)
+                                .build()
+                ), true);
             } catch (BileUtils.RestartRequiredException e) {
                 getLogger().warning(e.getMessage());
-                notifyBileUsers(tag + ChatColor.YELLOW + pluginName
-                        + ChatColor.GRAY + " requires a full server restart.", false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RESTART_REQUIRED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
             } catch (Throwable e) {
                 getLogger().log(Level.SEVERE, "Failed to reload " + pluginName + " after remote deploy", e);
                 markPluginDirty(pluginName, "health or lifecycle failure: " + rootMessage(e));
-                notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+                notifyBileUsers(localization.text(
+                        BileMessages.RELOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ), false);
             }
         });
     }
@@ -803,11 +850,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             getLogger().warning("Remote deploy failed for " + pluginName + ": " + e.getMessage());
         }
 
-        notifyBileUsers(
-                tag + "Deployed " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " to "
-                        + targets.size() + " remote server(s)",
-                false
-        );
+        notifyBileUsers(localization.text(
+                BileMessages.REMOTE_DEPLOYED,
+                MessageArgs.builder()
+                        .untrusted("plugin", pluginName)
+                        .untrusted("count", targets.size())
+                        .build()
+        ), false);
     }
 
     private void notifyBileUsers(String message, boolean playSound) {
@@ -898,7 +947,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         String key = pluginName.toLowerCase(Locale.ROOT);
         if (dirtyPlugins.add(key)) {
             getLogger().severe("Marked plugin dirty: " + pluginName + " (" + reason + "). Further auto-ops blocked until a successful manual lifecycle or clear.");
-            notifyBileUsers(tag + ChatColor.RED + pluginName + ChatColor.GRAY + " marked dirty after lifecycle failure. Auto reloads paused for it.", false);
+            notifyBileUsers(localization.text(
+                    BileMessages.DIRTY_PLUGIN_PAUSED,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()
+            ), false);
         }
     }
 
@@ -917,12 +969,21 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         String context = (source == null || source.trim().isEmpty()) ? "reload request" : source.trim();
         String pluginName = getName();
 
-        notifyBileUsers(tag + "Reloading " + ChatColor.WHITE + pluginName + ChatColor.GRAY + " (" + context + ")", false);
+        notifyBileUsers(localization.text(
+                BileMessages.RELOADING_CONTEXT,
+                MessageArgs.builder()
+                        .untrusted("plugin", pluginName)
+                        .untrusted("context", context)
+                        .build()
+        ), false);
 
         if (!runGlobalLater(() -> performSelfReload(pluginName, context), 1L)) {
             selfReloadQueued.set(false);
             getLogger().warning("Failed to schedule self-reload for " + pluginName + " (" + context + ")");
-            notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+            notifyBileUsers(localization.text(
+                    BileMessages.RELOAD_FAILED,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()
+            ), false);
         }
     }
 
@@ -932,7 +993,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         } catch (Throwable e) {
             selfReloadQueued.set(false);
             getLogger().log(Level.SEVERE, "Failed to self-reload " + pluginName + " (" + context + ")", e);
-            notifyBileUsers(tag + "Failed to Reload " + ChatColor.RED + pluginName, false);
+            notifyBileUsers(localization.text(
+                    BileMessages.RELOAD_FAILED,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()
+            ), false);
         }
     }
 
@@ -1160,30 +1224,17 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
             director = DirectorEngineFactory.create(
                     new CommandBile(this),
-                    null,
-                    buildDirectorContexts(),
-                    null,
-                    null,
-                    null
+                    DirectorEngineOptions.builder()
+                            .contexts(buildDirectorContexts())
+                            .textResolver(localization.directorResolver())
+                            .build()
             );
             return director;
         }
     }
 
-    public DirectorVisualCommand getHelpRoot() {
-        DirectorVisualCommand local = helpRoot;
-        if (local != null) {
-            return local;
-        }
-
-        synchronized (this) {
-            if (helpRoot != null) {
-                return helpRoot;
-            }
-
-            helpRoot = DirectorVisualCommand.createRoot(getDirector());
-            return helpRoot;
-        }
+    public BileLocalization getLocalization() {
+        return localization;
     }
 
     private DirectorContextRegistry buildDirectorContexts() {
@@ -1232,11 +1283,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         if (!sender.hasPermission(ROOT_PERMISSION)) {
-            sender.sendMessage(tag + "You need " + ROOT_PERMISSION + " or OP.");
+            sender.sendMessage(localization.text(
+                    BileMessages.PERMISSION_DENIED,
+                    MessageArgs.builder().untrusted("permission", ROOT_PERMISSION).build()
+            ));
             return true;
         }
 
-        if (BileFancyMenu.sendIfHelpRequested(sender, getHelpRoot(), args)) {
+        if (BileFancyMenu.sendIfHelpRequested(sender, getDirector(), args, localization.directorResolver())) {
             BileFancyMenu.playSuccessSound(sender);
             return true;
         }
@@ -1249,7 +1303,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         BileFancyMenu.playFailureSound(sender);
         if (result.getMessage() == null || result.getMessage().trim().isEmpty()) {
-            sender.sendMessage(tag + "Unknown command \"" + String.join(" ", args) + "\".");
+            sender.sendMessage(localization.text(
+                    BileMessages.UNKNOWN_COMMAND,
+                    MessageArgs.builder().untrusted("command", String.join(" ", args)).build()
+            ));
         }
         return true;
     }
@@ -1270,12 +1327,18 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     public void loadPlugin(CommandSender sender, String pluginName) {
-        sendCommandMessage(sender, tag + "Queued load for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        sendCommandMessage(sender, localization.text(
+                BileMessages.LOAD_QUEUED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ));
         enqueuePluginOperation("cmd-load:" + pluginName, () -> {
             try {
                 File pluginFile = BileUtils.getPluginFile(pluginName);
                 if (pluginFile == null) {
-                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.PLUGIN_NOT_FOUND,
+                            MessageArgs.builder().untrusted("plugin", pluginName).build()
+                    ));
                     return;
                 }
 
@@ -1285,26 +1348,43 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 String resolvedName = loaded == null ? pluginName : loaded.getName();
                 clearPluginDirty(resolvedName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
-                sendCommandMessage(sender, tag + "Loaded " + ChatColor.WHITE + resolvedName + ChatColor.GRAY + " from "
-                        + ChatColor.WHITE + pluginFile.getName() + ChatColor.GRAY + " (" + totalMs + "ms)");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LOAD_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", resolvedName)
+                                .untrusted("file", pluginFile.getName())
+                                .untrusted("milliseconds", totalMs)
+                                .build()
+                ));
             } catch (BileUtils.RestartRequiredException e) {
                 getLogger().warning(e.getMessage());
-                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
-                        + ChatColor.GRAY + " requires a full server restart.");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.RESTART_REQUIRED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
             } catch (Throwable e) {
-                sendCommandMessage(sender, tag + "Couldn't load \"" + pluginName + "\".");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LOAD_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
                 getLogger().log(Level.SEVERE, "Failed to load plugin " + pluginName, e);
             }
         });
     }
 
     public void unloadPlugin(CommandSender sender, String pluginName) {
-        sendCommandMessage(sender, tag + "Queued unload for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        sendCommandMessage(sender, localization.text(
+                BileMessages.UNLOAD_QUEUED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ));
         enqueuePluginOperation("cmd-unload:" + pluginName, () -> {
             try {
                 Plugin plugin = BileUtils.getPluginByName(pluginName);
                 if (plugin == null) {
-                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.PLUGIN_NOT_FOUND,
+                            MessageArgs.builder().untrusted("plugin", pluginName).build()
+                    ));
                     return;
                 }
 
@@ -1313,28 +1393,46 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(name, "unload " + pluginName, () -> BileUtils.unload(plugin));
                 clearPluginDirty(name);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
-                sendCommandMessage(sender, tag + "Unloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " (" + ChatColor.WHITE + fileName + ChatColor.GRAY + ")");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.UNLOAD_COMMAND_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", name)
+                                .untrusted("file", fileName)
+                                .build()
+                ));
             } catch (Throwable e) {
-                sendCommandMessage(sender, tag + "Couldn't unload \"" + pluginName + "\".");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.UNLOAD_COMMAND_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
                 getLogger().log(Level.SEVERE, "Failed to unload plugin " + pluginName, e);
             }
         });
     }
 
     public void reloadPlugin(CommandSender sender, String pluginName) {
-        sendCommandMessage(sender, tag + "Queued reload for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        sendCommandMessage(sender, localization.text(
+                BileMessages.RELOAD_QUEUED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ));
         enqueuePluginOperation("cmd-reload:" + pluginName, () -> {
             try {
                 Plugin plugin = BileUtils.getPluginByName(pluginName);
                 if (plugin == null) {
-                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.PLUGIN_NOT_FOUND,
+                            MessageArgs.builder().untrusted("plugin", pluginName).build()
+                    ));
                     return;
                 }
 
                 String name = plugin.getName();
                 if (plugin == this) {
                     queueSelfReload("command");
-                    sendCommandMessage(sender, tag + "Reloading " + ChatColor.WHITE + name + ChatColor.GRAY + ".");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.RELOADING,
+                            MessageArgs.builder().untrusted("plugin", name).build()
+                    ));
                     return;
                 }
 
@@ -1344,27 +1442,44 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 clearPluginDirty(name);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
-                sendCommandMessage(sender, tag + "Reloaded " + ChatColor.WHITE + name + ChatColor.GRAY + " ("
-                        + ChatColor.WHITE + fileName + ChatColor.GRAY + ", " + totalMs + "ms)");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.RELOAD_COMMAND_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", name)
+                                .untrusted("file", fileName)
+                                .untrusted("milliseconds", totalMs)
+                                .build()
+                ));
             } catch (BileUtils.RestartRequiredException e) {
                 getLogger().warning(e.getMessage());
-                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
-                        + ChatColor.GRAY + " requires a full server restart.");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.RESTART_REQUIRED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
             } catch (Throwable e) {
                 markPluginDirty(pluginName, "manual reload failure: " + rootMessage(e));
-                sendCommandMessage(sender, tag + "Couldn't reload \"" + pluginName + "\".");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.RELOAD_COMMAND_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
                 getLogger().log(Level.SEVERE, "Failed to reload plugin " + pluginName, e);
             }
         });
     }
 
     public void uninstallPlugin(CommandSender sender, String pluginName) {
-        sendCommandMessage(sender, tag + "Queued uninstall for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        sendCommandMessage(sender, localization.text(
+                BileMessages.UNINSTALL_QUEUED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ));
         enqueuePluginOperation("cmd-uninstall:" + pluginName, () -> {
             try {
                 File pluginFile = BileUtils.getPluginFile(pluginName);
                 if (pluginFile == null) {
-                    sendCommandMessage(sender, tag + "Couldn't find \"" + pluginName + "\".");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.PLUGIN_NOT_FOUND,
+                            MessageArgs.builder().untrusted("plugin", pluginName).build()
+                    ));
                     return;
                 }
 
@@ -1372,12 +1487,24 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(name, "uninstall " + pluginName, () -> BileUtils.delete(pluginFile));
                 clearPluginDirty(name);
 
-                sendCommandMessage(sender, tag + "Uninstalled " + ChatColor.WHITE + name + ChatColor.GRAY + " from " + ChatColor.WHITE + pluginFile.getName());
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.UNINSTALL_SUCCESS,
+                        MessageArgs.builder()
+                                .untrusted("plugin", name)
+                                .untrusted("file", pluginFile.getName())
+                                .build()
+                ));
                 if (pluginFile.exists()) {
-                    sendCommandMessage(sender, tag + "But it looks like we can't delete it. You may need to delete " + ChatColor.RED + pluginFile.getName() + ChatColor.GRAY + " before installing it again.");
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.UNINSTALL_DELETE_FAILED,
+                            MessageArgs.builder().untrusted("file", pluginFile.getName()).build()
+                    ));
                 }
             } catch (Throwable e) {
-                sendCommandMessage(sender, tag + "Couldn't uninstall \"" + pluginName + "\".");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.UNINSTALL_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
                 getLogger().log(Level.SEVERE, "Failed to uninstall plugin " + pluginName, e);
             }
         });
@@ -1386,7 +1513,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     public void installLibraryPlugin(CommandSender sender, String pluginName, String version) {
         File libraryPlugin = new File(new File(getDataFolder(), "library"), pluginName);
         if (!libraryPlugin.exists() || !libraryPlugin.isDirectory()) {
-            sender.sendMessage(tag + "Couldn't find \"" + pluginName + "\" in library.");
+            sendCommandMessage(sender, localization.text(
+                    BileMessages.LIBRARY_PLUGIN_NOT_FOUND,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()
+            ));
             return;
         }
 
@@ -1409,11 +1539,20 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         if (selected == null) {
-            sender.sendMessage(tag + "Couldn't find version \"" + version + "\" for \"" + pluginName + "\".");
+            sendCommandMessage(sender, localization.text(
+                    BileMessages.LIBRARY_VERSION_NOT_FOUND,
+                    MessageArgs.builder()
+                            .untrusted("version", version)
+                            .untrusted("plugin", pluginName)
+                            .build()
+            ));
             return;
         }
 
-        sendCommandMessage(sender, tag + "Queued library install for " + ChatColor.WHITE + pluginName + ChatColor.GRAY + ".");
+        sendCommandMessage(sender, localization.text(
+                BileMessages.LIBRARY_INSTALL_QUEUED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ));
         File selectedVersion = selected;
         enqueuePluginOperation("cmd-install:" + pluginName, () -> {
             try {
@@ -1421,13 +1560,21 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 BileUtils.copy(selectedVersion, out);
                 executePluginLifecycle(pluginName, "install " + pluginName, () -> BileUtils.load(out));
                 clearPluginDirty(pluginName);
-                sendCommandMessage(sender, tag + "Installed " + ChatColor.WHITE + out.getName() + ChatColor.GRAY + " from library.");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LIBRARY_INSTALL_SUCCESS,
+                        MessageArgs.builder().untrusted("file", out.getName()).build()
+                ));
             } catch (BileUtils.RestartRequiredException e) {
                 getLogger().warning(e.getMessage());
-                sendCommandMessage(sender, tag + ChatColor.YELLOW + pluginName
-                        + ChatColor.GRAY + " was installed and requires a full server restart.");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LIBRARY_INSTALL_RESTART_REQUIRED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
             } catch (Throwable e) {
-                sendCommandMessage(sender, tag + "Couldn't install \"" + pluginName + "\".");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LIBRARY_INSTALL_FAILED,
+                        MessageArgs.builder().untrusted("plugin", pluginName).build()
+                ));
                 getLogger().log(Level.SEVERE, "Failed to install library plugin " + pluginName + "@" + version, e);
             }
         });
@@ -1437,7 +1584,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         File library = new File(getDataFolder(), "library");
         File[] plugins = library.listFiles();
         if (plugins == null || plugins.length == 0) {
-            sender.sendMessage(tag + "Library is empty.");
+            sendCommandMessage(sender, localization.text(BileMessages.LIBRARY_EMPTY));
             return;
         }
 
@@ -1473,9 +1620,22 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
 
             if (installed) {
-                sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.GREEN + "(" + installedVersion + " installed) " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LIBRARY_INSTALLED_ENTRY,
+                        MessageArgs.builder()
+                                .untrusted("plugin", pluginDir.getName())
+                                .untrusted("installedVersion", installedVersion)
+                                .untrusted("latestVersion", latest.getName().replace(".jar", ""))
+                                .build()
+                ));
             } else {
-                sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+                sendCommandMessage(sender, localization.text(
+                        BileMessages.LIBRARY_ENTRY,
+                        MessageArgs.builder()
+                                .untrusted("plugin", pluginDir.getName())
+                                .untrusted("latestVersion", latest.getName().replace(".jar", ""))
+                                .build()
+                ));
             }
         }
     }
@@ -1483,7 +1643,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     public void listLibrary(CommandSender sender, String pluginName) {
         File pluginDir = new File(new File(getDataFolder(), "library"), pluginName);
         if (!pluginDir.exists() || !pluginDir.isDirectory()) {
-            sender.sendMessage(tag + "Couldn't find " + pluginName + " in library.");
+            sendCommandMessage(sender, localization.text(
+                    BileMessages.LIBRARY_PLUGIN_NOT_FOUND,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()
+            ));
             return;
         }
 
@@ -1492,13 +1655,22 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         if (versions != null) {
             for (File version : versions) {
                 if (version != null && version.isFile() && version.getName().toLowerCase(Locale.ROOT).endsWith(".jar")) {
-                    sender.sendMessage(tag + version.getName().replace(".jar", ""));
+                    sendCommandMessage(sender, localization.text(
+                            BileMessages.LIBRARY_VERSION_ENTRY,
+                            MessageArgs.builder().untrusted("version", version.getName().replace(".jar", "")).build()
+                    ));
                 }
             }
         }
 
         if (latest != null) {
-            sender.sendMessage(tag + pluginDir.getName() + " " + ChatColor.WHITE + latest.getName().replace(".jar", "") + ChatColor.GRAY + " (latest)");
+            sendCommandMessage(sender, localization.text(
+                    BileMessages.LIBRARY_LATEST_ENTRY,
+                    MessageArgs.builder()
+                            .untrusted("plugin", pluginDir.getName())
+                            .untrusted("version", latest.getName().replace(".jar", ""))
+                            .build()
+            ));
         }
     }
 

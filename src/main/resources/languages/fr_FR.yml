@@ -1,0 +1,100 @@
+"locale": "fr_FR"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "Revenir au groupe de commandes parent"
+        "back": "Retour"
+        "previous":
+          "hover": "Page précédente"
+        "next":
+          "hover": "Page suivante"
+        "page": "Page"
+      "no_subcommands": "Aucune sous-commande sur cette page."
+      "no_description": "Aucune description fournie"
+      "aliases": "Alias"
+      "command_group": "Groupe de commandes. Cliquez pour ouvrir."
+      "no_parameters": "Aucun paramètre. Cliquez pour préremplir la commande."
+      "parameters": "Paramètres"
+      "parameter":
+        "required": "requis"
+        "optional": "facultatif"
+        "default": "par défaut"
+    "runtime":
+      "error":
+        "invalid_origin": "Cette commande ne peut pas être exécutée depuis cette origine."
+        "unknown_parameter": "Clé de paramètre inconnue : {key}"
+        "unexpected_argument": "Argument inattendu \"{argument}\". Les paramètres facultatifs doivent être nommés, par ex. seed=123"
+        "conversion_failed": "Impossible de convertir \"{value}\" en {type} pour {parameter}"
+        "default_parse_failed": "Impossible d'analyser la valeur par défaut du paramètre {parameter}"
+        "missing_argument": "Argument manquant \"{parameter}\" ({type})"
+        "execution_failed": "Échec de l'exécution de la commande {command} : {reason}"
+      "usage": "Utilisation: {usage}"
+  "bile":
+    "command":
+      "root": "Groupe de commandes BileTools"
+      "load": "Charger un fichier JAR de plugin depuis le dossier des plugins"
+      "unload": "Décharger un plugin installé"
+      "reload": "Recharger un plugin installé"
+      "uninstall": "Supprimer un fichier JAR de plugin du dossier des plugins"
+      "install": "Installer un plugin depuis la bibliothèque Bile"
+      "library": "Lister les plugins de la bibliothèque ou les versions d'un plugin"
+    "parameter":
+      "installed_plugin": "Nom du plugin installé"
+      "library_plugin": "Nom du plugin de la bibliothèque"
+      "version": "Version du plugin de la bibliothèque"
+      "sender": "Émetteur de la commande"
+    "error":
+      "plugin_name_required": "Le nom du plugin ne peut pas être vide"
+      "library_plugin_name_required": "Le nom du plugin de la bibliothèque ne peut pas être vide"
+      "version_required": "La version ne peut pas être vide"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7Vous devez avoir &f{permission}&7 ou être OP."
+      "unknown_command": "&a[&8Bile&a]: &7Commande inconnue \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7Réception de &f{file}&7 depuis &f{host}&7."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7Déployé &f{plugin}&7 sur &f{count}&7 serveurs distants."
+          "one": "&a[&8Bile&a]: &7Déployé &f{plugin}&7 sur &f{count}&7 serveur distant."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7Déploiement à chaud terminé : &f{file}&7."
+        "failed": "&a[&8Bile&a]: &7Échec du déploiement à chaud : &c{file}&7."
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 nécessite un redémarrage complet du serveur."
+      "reload":
+        "success": "&a[&8Bile&a]: &7Rechargé : &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Échec du rechargement : &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Rechargement mis en attente : &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Rechargé : &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+        "command_failed": "&a[&8Bile&a]: &7Échec du rechargement : \"&f{plugin}&7\"."
+      "unload":
+        "success": "&a[&8Bile&a]: &7Déchargé : &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Échec du déchargement : &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Déchargement mis en attente : &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Déchargé : &f{plugin}&7 (&f{file}&7)."
+        "command_failed": "&a[&8Bile&a]: &7Échec du déchargement : \"&f{plugin}&7\"."
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 a été marqué comme défectueux après un échec de cycle de vie. Ses rechargements automatiques sont suspendus."
+      "reloading_context": "&a[&8Bile&a]: &7Rechargement en cours : &f{plugin}&7 (&f{context}&7)."
+      "load":
+        "queued": "&a[&8Bile&a]: &7Chargement mis en attente : &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7Chargé : &f{plugin}&7 depuis &f{file}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Échec du chargement : \"&f{plugin}&7\"."
+      "plugin_not_found": "&a[&8Bile&a]: &7Plugin introuvable : \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7Rechargement en cours : &f{plugin}&7."
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7Désinstallation mise en attente : &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7Désinstallé &f{plugin}&7 depuis &f{file}&7."
+        "delete_failed": "&a[&8Bile&a]: &7Le plugin a été déchargé, mais &c{file}&7 n'a pas pu être supprimé. Supprimez le fichier avant de réinstaller le plugin."
+        "failed": "&a[&8Bile&a]: &7Échec de la désinstallation : \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7Plugin introuvable dans la bibliothèque : \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7Version \"&f{version}&7\" introuvable pour \"&f{plugin}&7\"."
+        "install_queued": "&a[&8Bile&a]: &7Installation depuis la bibliothèque mise en attente : &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7Installé depuis la bibliothèque : &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 a été installé et nécessite un redémarrage complet du serveur."
+        "install_failed": "&a[&8Bile&a]: &7Échec de l'installation : \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7La bibliothèque est vide."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} installée) &f{latestVersion}&7 (dernière)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (dernière)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (dernière)"

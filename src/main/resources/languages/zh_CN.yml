@@ -1,0 +1,100 @@
+"locale": "zh_CN"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "返回上级命令组"
+        "back": "返回"
+        "previous":
+          "hover": "上一页"
+        "next":
+          "hover": "下一页"
+        "page": "页"
+      "no_subcommands": "此页面没有子命令。"
+      "no_description": "未提供说明"
+      "aliases": "别名"
+      "command_group": "命令组。点击打开。"
+      "no_parameters": "无参数。点击预填命令。"
+      "parameters": "参数"
+      "parameter":
+        "required": "必填"
+        "optional": "可选"
+        "default": "默认"
+    "runtime":
+      "error":
+        "invalid_origin": "无法从此来源运行该命令。"
+        "unknown_parameter": "未知参数键: {key}"
+        "unexpected_argument": "意外参数 \"{argument}\"。可选参数必须使用键指定，例如 seed=123"
+        "conversion_failed": "无法将 \"{value}\" 转换为 {parameter} 所需的 {type}"
+        "default_parse_failed": "无法解析参数 {parameter} 的默认值"
+        "missing_argument": "缺少参数 \"{parameter}\" ({type})"
+        "execution_failed": "执行命令 {command} 失败: {reason}"
+      "usage": "用法: {usage}"
+  "bile":
+    "command":
+      "root": "BileTools 命令组"
+      "load": "从 plugins 目录加载插件 JAR 文件"
+      "unload": "卸载已安装的插件"
+      "reload": "重载已安装的插件"
+      "uninstall": "从 plugins 目录删除插件 JAR 文件"
+      "install": "从 Bile 库安装插件"
+      "library": "列出库中的插件或某个插件的版本"
+    "parameter":
+      "installed_plugin": "已安装的插件名称"
+      "library_plugin": "库插件名称"
+      "version": "库插件版本"
+      "sender": "命令发送者"
+    "error":
+      "plugin_name_required": "插件名称不能为空"
+      "library_plugin_name_required": "库插件名称不能为空"
+      "version_required": "版本不能为空"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7你需要 &f{permission}&7 权限或 OP."
+      "unknown_command": "&a[&8Bile&a]: &7未知命令 \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7正在从 &f{host}&7 接收 &f{file}&7."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7已将 &f{plugin}&7 部署到 &f{count}&7 台远程服务器."
+          "one": "&a[&8Bile&a]: &7已将 &f{plugin}&7 部署到 &f{count}&7 台远程服务器."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7热部署已完成：&f{file}&7。"
+        "failed": "&a[&8Bile&a]: &7热部署失败：&c{file}&7。"
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 需要完整重启服务器."
+      "reload":
+        "success": "&a[&8Bile&a]: &7已重载：&f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7重载失败：&c{plugin}&7。"
+        "queued": "&a[&8Bile&a]: &7已加入重载队列：&f{plugin}&7。"
+        "command_success": "&a[&8Bile&a]: &7已重载：&f{plugin}&7(&f{file}&7，&f{milliseconds}&7ms)。"
+        "command_failed": "&a[&8Bile&a]: &7重载失败：\"&f{plugin}&7\"。"
+      "unload":
+        "success": "&a[&8Bile&a]: &7已卸载：&f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7卸载失败：&c{plugin}&7。"
+        "queued": "&a[&8Bile&a]: &7已加入卸载队列：&f{plugin}&7。"
+        "command_success": "&a[&8Bile&a]: &7已卸载：&f{plugin}&7(&f{file}&7)。"
+        "command_failed": "&a[&8Bile&a]: &7卸载失败：\"&f{plugin}&7\"。"
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 因生命周期故障被标记为异常。该插件的自动重载已暂停。"
+      "reloading_context": "&a[&8Bile&a]: &7正在重载：&f{plugin}&7(&f{context}&7)。"
+      "load":
+        "queued": "&a[&8Bile&a]: &7已加入加载队列：&f{plugin}&7。"
+        "success": "&a[&8Bile&a]: &7已从 &f{file}&7 加载 &f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7加载失败：\"&f{plugin}&7\"。"
+      "plugin_not_found": "&a[&8Bile&a]: &7未找到插件: \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7正在重载：&f{plugin}&7。"
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7已加入移除队列: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7已从 &f{file}&7 移除 &f{plugin}&7."
+        "delete_failed": "&a[&8Bile&a]: &7插件已卸载，但无法删除 &c{file}&7. 请在重新安装插件前删除该文件."
+        "failed": "&a[&8Bile&a]: &7移除失败: \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7库中未找到插件: \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7未找到 \"&f{plugin}&7\" 的版本 \"&f{version}&7\"."
+        "install_queued": "&a[&8Bile&a]: &7已加入库安装队列: &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7已从库安装: &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 已安装，需要完整重启服务器."
+        "install_failed": "&a[&8Bile&a]: &7安装失败: \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7库为空."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} 已安装) &f{latestVersion}&7 (最新)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (最新)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (最新)"

@@ -1,6 +1,10 @@
 # BileTools
 Tools for making garbage
 
+## Language and localization
+
+Canonical English is defined in the typed Java catalog at `src/main/java/com/volmit/bile/localization/BileMessages.java`; BileTools does not ship a second English message resource. Complete bundles are included for German, Spanish, Finnish, French, Hebrew, Italian, Japanese, Korean, Lithuanian, Dutch, Polish, Portuguese, Russian, Turkish, Vietnamese, Simplified Chinese, and Traditional Chinese. Set `locale` in `language.yml` to select one. Any message entries added to that file are sparse server-specific overrides; omitted entries resolve from the selected bundle and then code-owned English.
+
 ## What the hell does this do?
 * Any plugin jar files modified while loaded (maven compile or export or even drag/drop) are automatically reloaded. So now all you have to do is smack the run button and bam, its already in the game without reloading, dragging or really doing anything. Psst... Works best with multiple monitors.
 * New Plugins are hot-dropped into the server when they are added to the plugins folder

@@ -1,0 +1,100 @@
+"locale": "tr_TR"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "Üst komut grubuna dön"
+        "back": "Geri"
+        "previous":
+          "hover": "Önceki sayfa"
+        "next":
+          "hover": "Sonraki sayfa"
+        "page": "Sayfa"
+      "no_subcommands": "Bu sayfada alt komut yok."
+      "no_description": "Açıklama sağlanmadı"
+      "aliases": "Takma adlar"
+      "command_group": "Komut grubu. Açmak için tıklayın."
+      "no_parameters": "Parametre yok. Komutu önceden doldurmak için tıklayın."
+      "parameters": "Parametreler"
+      "parameter":
+        "required": "gerekli"
+        "optional": "isteğe bağlı"
+        "default": "varsayılan"
+    "runtime":
+      "error":
+        "invalid_origin": "Bu komut bu kaynaktan çalıştırılamaz."
+        "unknown_parameter": "Bilinmeyen parametre anahtarı: {key}"
+        "unexpected_argument": "Beklenmeyen bağımsız değişken \"{argument}\". İsteğe bağlı parametreler anahtarla belirtilmelidir, ör. seed=123"
+        "conversion_failed": "\"{value}\", {parameter} için {type} türüne dönüştürülemiyor"
+        "default_parse_failed": "{parameter} parametresinin varsayılan değeri ayrıştırılamıyor"
+        "missing_argument": "Eksik bağımsız değişken \"{parameter}\" ({type})"
+        "execution_failed": "{command} komutu çalıştırılamadı: {reason}"
+      "usage": "Kullanım: {usage}"
+  "bile":
+    "command":
+      "root": "BileTools komut grubu"
+      "load": "plugins dizininden bir eklenti JAR dosyası yükle"
+      "unload": "Yüklü bir eklentiyi bellekten kaldır"
+      "reload": "Yüklü bir eklentiyi yeniden yükle"
+      "uninstall": "plugins dizininden eklenti JAR dosyasını sil"
+      "install": "Bile kütüphanesinden bir eklenti yükle"
+      "library": "Kütüphane eklentilerini veya bir eklentinin sürümlerini listele"
+    "parameter":
+      "installed_plugin": "Yüklü eklenti adı"
+      "library_plugin": "Kütüphane eklentisi adı"
+      "version": "Kütüphane eklentisi sürümü"
+      "sender": "Komut gönderen"
+    "error":
+      "plugin_name_required": "Eklenti adı boş olamaz"
+      "library_plugin_name_required": "Kütüphane eklentisi adı boş olamaz"
+      "version_required": "Sürüm boş olamaz"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7&f{permission}&7 izni veya OP gerekli."
+      "unknown_command": "&a[&8Bile&a]: &7Bilinmeyen komut \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7&f{host}&7 üzerinden &f{file}&7 alınıyor."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7&f{plugin}&7, &f{count}&7 uzak sunucuya dağıtıldı."
+          "one": "&a[&8Bile&a]: &7&f{plugin}&7, &f{count}&7 uzak sunucuya dağıtıldı."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7Çalışırken dağıtım tamamlandı: &f{file}&7."
+        "failed": "&a[&8Bile&a]: &7Çalışırken dağıtım başarısız: &c{file}&7."
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 sunucunun tamamen yeniden başlatılmasını gerektiriyor."
+      "reload":
+        "success": "&a[&8Bile&a]: &7Yeniden yüklendi: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Yeniden yükleme başarısız: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Yeniden yükleme sıraya alındı: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Yeniden yüklendi: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+        "command_failed": "&a[&8Bile&a]: &7Yeniden yükleme başarısız: \"&f{plugin}&7\"."
+      "unload":
+        "success": "&a[&8Bile&a]: &7Bellekten kaldırıldı: &f{plugin}&7 (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Bellekten kaldırma başarısız: &c{plugin}&7."
+        "queued": "&a[&8Bile&a]: &7Bellekten kaldırma sıraya alındı: &f{plugin}&7."
+        "command_success": "&a[&8Bile&a]: &7Bellekten kaldırıldı: &f{plugin}&7 (&f{file}&7)."
+        "command_failed": "&a[&8Bile&a]: &7Bellekten kaldırma başarısız: \"&f{plugin}&7\"."
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 yaşam döngüsü hatasından sonra bozuk olarak işaretlendi. Bu eklentinin otomatik yeniden yüklemeleri duraklatıldı."
+      "reloading_context": "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7 (&f{context}&7)."
+      "load":
+        "queued": "&a[&8Bile&a]: &7Yükleme sıraya alındı: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7Yüklendi: &f{plugin}&7, &f{file}&7 dosyasından (&f{milliseconds}&7ms)."
+        "failed": "&a[&8Bile&a]: &7Yükleme başarısız: \"&f{plugin}&7\"."
+      "plugin_not_found": "&a[&8Bile&a]: &7Eklenti bulunamadı: \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7."
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7Kaldırma sıraya alındı: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7&f{plugin}&7, &f{file}&7 dosyasından kaldırıldı."
+        "delete_failed": "&a[&8Bile&a]: &7Eklenti bellekten kaldırıldı ancak &c{file}&7 silinemedi. Eklentiyi yeniden yüklemeden önce dosyayı silin."
+        "failed": "&a[&8Bile&a]: &7Kaldırma başarısız: \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7Eklenti kütüphanede bulunamadı: \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7\"&f{plugin}&7\" için \"&f{version}&7\" sürümü bulunamadı."
+        "install_queued": "&a[&8Bile&a]: &7Kütüphane kurulumu sıraya alındı: &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7Kütüphaneden yüklendi: &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 yüklendi ve sunucunun tamamen yeniden başlatılmasını gerektiriyor."
+        "install_failed": "&a[&8Bile&a]: &7Yükleme başarısız: \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7Kütüphane boş."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} yüklü) &f{latestVersion}&7 (en yeni)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (en yeni)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (en yeni)"

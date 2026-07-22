@@ -1,0 +1,100 @@
+"locale": "zh_TW"
+"messages":
+  "director":
+    "help":
+      "navigation":
+        "parent":
+          "hover": "返回上層命令群組"
+        "back": "返回"
+        "previous":
+          "hover": "上一頁"
+        "next":
+          "hover": "下一頁"
+        "page": "頁面"
+      "no_subcommands": "此頁面沒有子命令。"
+      "no_description": "未提供說明"
+      "aliases": "別名"
+      "command_group": "命令群組。點擊以開啟。"
+      "no_parameters": "無參數。點擊以預先填入命令。"
+      "parameters": "參數"
+      "parameter":
+        "required": "必填"
+        "optional": "選填"
+        "default": "預設"
+    "runtime":
+      "error":
+        "invalid_origin": "無法從此來源執行該指令。"
+        "unknown_parameter": "未知參數鍵: {key}"
+        "unexpected_argument": "意外參數 \"{argument}\"。選用參數必須使用鍵指定，例如 seed=123"
+        "conversion_failed": "無法將 \"{value}\" 轉換為 {parameter} 所需的 {type}"
+        "default_parse_failed": "無法解析參數 {parameter} 的預設值"
+        "missing_argument": "缺少參數 \"{parameter}\" ({type})"
+        "execution_failed": "執行指令 {command} 失敗: {reason}"
+      "usage": "用法: {usage}"
+  "bile":
+    "command":
+      "root": "BileTools 指令群組"
+      "load": "從 plugins 目錄載入外掛 JAR 檔案"
+      "unload": "卸載已安裝的外掛"
+      "reload": "重新載入已安裝的外掛"
+      "uninstall": "從 plugins 目錄刪除外掛 JAR 檔案"
+      "install": "從 Bile 程式庫安裝外掛"
+      "library": "列出程式庫中的外掛或某個外掛的版本"
+    "parameter":
+      "installed_plugin": "已安裝的外掛名稱"
+      "library_plugin": "程式庫外掛名稱"
+      "version": "程式庫外掛版本"
+      "sender": "指令傳送者"
+    "error":
+      "plugin_name_required": "外掛名稱不能為空"
+      "library_plugin_name_required": "程式庫外掛名稱不能為空"
+      "version_required": "版本不能為空"
+    "message":
+      "permission_denied": "&a[&8Bile&a]: &7你需要 &f{permission}&7 權限或 OP."
+      "unknown_command": "&a[&8Bile&a]: &7未知指令 \"&f{command}&7\"."
+      "remote":
+        "receiving": "&a[&8Bile&a]: &7正在從 &f{host}&7 接收 &f{file}&7."
+        "deployed":
+          "other": "&a[&8Bile&a]: &7已將 &f{plugin}&7 部署到 &f{count}&7 台遠端伺服器."
+          "one": "&a[&8Bile&a]: &7已將 &f{plugin}&7 部署到 &f{count}&7 台遠端伺服器."
+      "hot_drop":
+        "success": "&a[&8Bile&a]: &7熱部署已完成：&f{file}&7。"
+        "failed": "&a[&8Bile&a]: &7熱部署失敗：&c{file}&7。"
+      "restart_required": "&a[&8Bile&a]: &e{plugin}&7 需要完整重新啟動伺服器."
+      "reload":
+        "success": "&a[&8Bile&a]: &7已重新載入：&f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7重新載入失敗：&c{plugin}&7。"
+        "queued": "&a[&8Bile&a]: &7已加入重新載入佇列：&f{plugin}&7。"
+        "command_success": "&a[&8Bile&a]: &7已重新載入：&f{plugin}&7(&f{file}&7，&f{milliseconds}&7ms)。"
+        "command_failed": "&a[&8Bile&a]: &7重新載入失敗：\"&f{plugin}&7\"。"
+      "unload":
+        "success": "&a[&8Bile&a]: &7已卸載：&f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7卸載失敗：&c{plugin}&7。"
+        "queued": "&a[&8Bile&a]: &7已加入卸載佇列：&f{plugin}&7。"
+        "command_success": "&a[&8Bile&a]: &7已卸載：&f{plugin}&7(&f{file}&7)。"
+        "command_failed": "&a[&8Bile&a]: &7卸載失敗：\"&f{plugin}&7\"。"
+      "dirty_plugin_paused": "&a[&8Bile&a]: &c{plugin}&7 因生命週期故障被標記為異常。該外掛的自動重新載入已暫停。"
+      "reloading_context": "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7(&f{context}&7)。"
+      "load":
+        "queued": "&a[&8Bile&a]: &7已加入載入佇列：&f{plugin}&7。"
+        "success": "&a[&8Bile&a]: &7已從 &f{file}&7 載入 &f{plugin}&7(&f{milliseconds}&7ms)。"
+        "failed": "&a[&8Bile&a]: &7載入失敗：\"&f{plugin}&7\"。"
+      "plugin_not_found": "&a[&8Bile&a]: &7找不到外掛: \"&f{plugin}&7\"."
+      "reloading": "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7。"
+      "uninstall":
+        "queued": "&a[&8Bile&a]: &7已加入解除安裝佇列: &f{plugin}&7."
+        "success": "&a[&8Bile&a]: &7已從 &f{file}&7 解除安裝 &f{plugin}&7."
+        "delete_failed": "&a[&8Bile&a]: &7外掛已卸載，但無法刪除 &c{file}&7. 請在重新安裝外掛前刪除該檔案."
+        "failed": "&a[&8Bile&a]: &7解除安裝失敗: \"&f{plugin}&7\"."
+      "library":
+        "plugin_not_found": "&a[&8Bile&a]: &7程式庫中找不到外掛: \"&f{plugin}&7\"."
+        "version_not_found": "&a[&8Bile&a]: &7找不到 \"&f{plugin}&7\" 的版本 \"&f{version}&7\"."
+        "install_queued": "&a[&8Bile&a]: &7已加入程式庫安裝佇列: &f{plugin}&7."
+        "install_success": "&a[&8Bile&a]: &7已從程式庫安裝: &f{file}&7."
+        "install_restart_required": "&a[&8Bile&a]: &e{plugin}&7 已安裝，需要完整重新啟動伺服器."
+        "install_failed": "&a[&8Bile&a]: &7安裝失敗: \"&f{plugin}&7\"."
+        "empty": "&a[&8Bile&a]: &7程式庫為空."
+        "installed_entry": "&a[&8Bile&a]: &7{plugin} &a({installedVersion} 已安裝) &f{latestVersion}&7 (最新)"
+        "entry": "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (最新)"
+        "version_entry": "&a[&8Bile&a]: &7{version}"
+        "latest_entry": "&a[&8Bile&a]: &7{plugin} &f{version}&7 (最新)"
