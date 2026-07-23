@@ -263,6 +263,9 @@ public class BileUtils {
         String pluginName = p.getName();
         long startNs = System.nanoTime();
         File f = getPluginFile(p);
+        if (p.getClass().getClassLoader() == BileUtils.class.getClassLoader()) {
+            preloadOwnClasses(p, f);
+        }
         Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
         Plugin reloaded = null;
         boolean reloadComplete = false;
@@ -315,6 +318,36 @@ public class BileUtils {
                 runtimeArtifact.discard();
             }
         }
+    }
+
+    private static void preloadOwnClasses(Plugin plugin, File file) {
+        ClassLoader loader = plugin.getClass().getClassLoader();
+        if (loader == null || file == null || !file.isFile()) {
+            return;
+        }
+
+        long startNs = System.nanoTime();
+        int loaded = 0;
+        try (ZipFile jar = new ZipFile(file)) {
+            Enumeration<? extends ZipEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                String name = entry.getName();
+                if (!name.endsWith(".class") || name.startsWith("META-INF/") || name.endsWith("module-info.class")) {
+                    continue;
+                }
+
+                String className = name.substring(0, name.length() - 6).replace('/', '.');
+                try {
+                    Class.forName(className, false, loader);
+                    loaded++;
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        logTiming("preload " + plugin.getName(), nanosToMillis(System.nanoTime() - startNs), "classes=" + loaded);
     }
 
     public record HealthCheckResult(boolean ok, List<String> failures) {
