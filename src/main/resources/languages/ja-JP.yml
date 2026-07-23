@@ -13,14 +13,15 @@
         "page": "ページ"
       "no_subcommands": "このページにサブコマンドはありません。"
       "no_description": "説明はありません"
-      "aliases": "エイリアス"
       "command_group": "コマンドグループ。クリックして開きます。"
+      "category": "コマンド分類"
       "no_parameters": "パラメーターはありません。クリックしてコマンドを入力します。"
-      "parameters": "パラメーター"
+      "parameters_hover": "パラメータにカーソルを合わせると詳細が表示されます。"
       "parameter":
-        "required": "必須"
-        "optional": "任意"
-        "default": "デフォルト"
+        "required": "このパラメータは必須です。"
+        "optional": "このパラメータは任意です。"
+        "default": "未指定の場合は \"{value}\" になります。"
+        "type": "このパラメータの型は {type} です。"
     "runtime":
       "error":
         "invalid_origin": "この実行元からはコマンドを実行できません。"

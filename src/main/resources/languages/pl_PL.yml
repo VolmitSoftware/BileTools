@@ -13,14 +13,15 @@
         "page": "Strona"
       "no_subcommands": "Na tej stronie nie ma podpoleceń."
       "no_description": "Nie podano opisu"
-      "aliases": "Aliasy"
       "command_group": "Grupa poleceń. Kliknij, aby otworzyć."
+      "category": "Kategoria poleceń"
       "no_parameters": "Brak parametrów. Kliknij, aby wstępnie uzupełnić polecenie."
-      "parameters": "Parametry"
+      "parameters_hover": "Najedź kursorem na parametry, aby dowiedzieć się więcej."
       "parameter":
-        "required": "wymagany"
-        "optional": "opcjonalny"
-        "default": "domyślny"
+        "required": "Ten parametr jest wymagany."
+        "optional": "Ten parametr jest opcjonalny."
+        "default": "Domyślnie \"{value}\", jeśli nie określono."
+        "type": "Ten parametr jest typu {type}."
     "runtime":
       "error":
         "invalid_origin": "Tego polecenia nie można wykonać z tego źródła."

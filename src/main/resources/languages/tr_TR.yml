@@ -13,14 +13,15 @@
         "page": "Sayfa"
       "no_subcommands": "Bu sayfada alt komut yok."
       "no_description": "Açıklama sağlanmadı"
-      "aliases": "Takma adlar"
       "command_group": "Komut grubu. Açmak için tıklayın."
+      "category": "Komut kategorisi"
       "no_parameters": "Parametre yok. Komutu önceden doldurmak için tıklayın."
-      "parameters": "Parametreler"
+      "parameters_hover": "Daha fazla bilgi için imleci parametrelerin üzerine getirin."
       "parameter":
-        "required": "gerekli"
-        "optional": "isteğe bağlı"
-        "default": "varsayılan"
+        "required": "Bu parametre zorunludur."
+        "optional": "Bu parametre isteğe bağlıdır."
+        "default": "Belirtilmezse varsayılan değer \"{value}\" olur."
+        "type": "Bu parametrenin türü {type}."
     "runtime":
       "error":
         "invalid_origin": "Bu komut bu kaynaktan çalıştırılamaz."

@@ -13,14 +13,15 @@
         "page": "頁面"
       "no_subcommands": "此頁面沒有子命令。"
       "no_description": "未提供說明"
-      "aliases": "別名"
       "command_group": "命令群組。點擊以開啟。"
+      "category": "指令類別"
       "no_parameters": "無參數。點擊以預先填入命令。"
-      "parameters": "參數"
+      "parameters_hover": "將滑鼠懸停在參數上以瞭解更多。"
       "parameter":
-        "required": "必填"
-        "optional": "選填"
-        "default": "預設"
+        "required": "此參數為必填項。"
+        "optional": "此參數為可選項。"
+        "default": "未指定時預設為 \"{value}\"。"
+        "type": "此參數的類型為 {type}。"
     "runtime":
       "error":
         "invalid_origin": "無法從此來源執行該指令。"

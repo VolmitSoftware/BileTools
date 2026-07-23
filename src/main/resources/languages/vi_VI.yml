@@ -13,14 +13,15 @@
         "page": "Trang"
       "no_subcommands": "Không có lệnh con trên trang này."
       "no_description": "Không có mô tả"
-      "aliases": "Bí danh"
       "command_group": "Nhóm lệnh. Nhấp để mở."
+      "category": "Danh mục lệnh"
       "no_parameters": "Không có tham số. Nhấp để điền sẵn lệnh."
-      "parameters": "Tham số"
+      "parameters_hover": "Di chuột qua các tham số để tìm hiểu thêm."
       "parameter":
-        "required": "bắt buộc"
-        "optional": "tùy chọn"
-        "default": "mặc định"
+        "required": "Tham số này là bắt buộc."
+        "optional": "Tham số này là tùy chọn."
+        "default": "Mặc định là \"{value}\" nếu không được chỉ định."
+        "type": "Tham số này có kiểu {type}."
     "runtime":
       "error":
         "invalid_origin": "Không thể chạy lệnh này từ nguồn này."

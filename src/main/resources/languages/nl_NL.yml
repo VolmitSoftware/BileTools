@@ -13,14 +13,15 @@
         "page": "Pagina"
       "no_subcommands": "Geen subopdrachten op deze pagina."
       "no_description": "Geen beschrijving opgegeven"
-      "aliases": "Aliassen"
       "command_group": "Opdrachtgroep. Klik om te openen."
+      "category": "Commandocategorie"
       "no_parameters": "Geen parameters. Klik om de opdracht vooraf in te vullen."
-      "parameters": "Parameters"
+      "parameters_hover": "Beweeg de muis over de parameters voor meer informatie."
       "parameter":
-        "required": "verplicht"
-        "optional": "optioneel"
-        "default": "standaard"
+        "required": "Deze parameter is verplicht."
+        "optional": "Deze parameter is optioneel."
+        "default": "Standaard \"{value}\" indien niet opgegeven."
+        "type": "Deze parameter is van het type {type}."
     "runtime":
       "error":
         "invalid_origin": "Deze opdracht kan niet vanuit deze bron worden uitgevoerd."

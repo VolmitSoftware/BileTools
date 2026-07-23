@@ -13,14 +13,15 @@
         "page": "עמוד"
       "no_subcommands": "אין פקודות משנה בעמוד זה."
       "no_description": "לא סופק תיאור"
-      "aliases": "כינויים"
       "command_group": "קבוצת פקודות. לחצו כדי לפתוח."
+      "category": "קטגוריית פקודות"
       "no_parameters": "אין פרמטרים. לחצו כדי למלא את הפקודה מראש."
-      "parameters": "פרמטרים"
+      "parameters_hover": "רחפו מעל הפרמטרים כדי ללמוד עוד."
       "parameter":
-        "required": "נדרש"
-        "optional": "אופציונלי"
-        "default": "ברירת מחדל"
+        "required": "פרמטר זה הוא חובה."
+        "optional": "פרמטר זה הוא אופציונלי."
+        "default": "ברירת המחדל היא \"{value}\" אם לא הוגדר."
+        "type": "פרמטר זה הוא מסוג {type}."
     "runtime":
       "error":
         "invalid_origin": "לא ניתן להריץ פקודה זו ממקור זה."

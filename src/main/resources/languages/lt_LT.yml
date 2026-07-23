@@ -13,14 +13,15 @@
         "page": "Puslapis"
       "no_subcommands": "Šiame puslapyje nėra antrinių komandų."
       "no_description": "Aprašymas nepateiktas"
-      "aliases": "Slapyvardžiai"
       "command_group": "Komandų grupė. Spustelėkite, kad atidarytumėte."
+      "category": "Komandų kategorija"
       "no_parameters": "Parametrų nėra. Spustelėkite, kad iš anksto užpildytumėte komandą."
-      "parameters": "Parametrai"
+      "parameters_hover": "Užveskite pelės žymeklį ant parametrų, kad sužinotumėte daugiau."
       "parameter":
-        "required": "privalomas"
-        "optional": "pasirenkamas"
-        "default": "numatytasis"
+        "required": "Šis parametras yra privalomas."
+        "optional": "Šis parametras yra neprivalomas."
+        "default": "Jei nenurodyta, numatytoji reikšmė yra \"{value}\"."
+        "type": "Šio parametro tipas yra {type}."
     "runtime":
       "error":
         "invalid_origin": "Šios komandos negalima vykdyti iš šio šaltinio."

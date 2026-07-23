@@ -13,14 +13,15 @@
         "page": "페이지"
       "no_subcommands": "이 페이지에는 하위 명령어가 없습니다."
       "no_description": "설명이 없습니다"
-      "aliases": "별칭"
       "command_group": "명령어 그룹입니다. 클릭하여 엽니다."
+      "category": "명령어 카테고리"
       "no_parameters": "매개변수가 없습니다. 클릭하여 명령어를 미리 입력합니다."
-      "parameters": "매개변수"
+      "parameters_hover": "매개변수 위에 마우스를 올리면 자세한 내용을 볼 수 있습니다."
       "parameter":
-        "required": "필수"
-        "optional": "선택 사항"
-        "default": "기본값"
+        "required": "이 매개변수는 필수입니다."
+        "optional": "이 매개변수는 선택 사항입니다."
+        "default": "지정하지 않으면 기본값은 \"{value}\"입니다."
+        "type": "이 매개변수의 유형은 {type}입니다."
     "runtime":
       "error":
         "invalid_origin": "이 실행 위치에서는 이 명령어를 실행할 수 없습니다."

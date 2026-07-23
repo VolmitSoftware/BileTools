@@ -51,6 +51,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -65,8 +66,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
     private static final char[] HEX = "0123456789abcdef".toCharArray();
 
-    private SlaveBileServer srv;
+    private volatile SlaveBileServer srv;
     public static BileTools bile;
+    private BileToolsIntegrationService integrationService;
+    private final AtomicLong reloadsTotal = new AtomicLong();
+    private volatile long lastReloadMs;
     private HashMap<File, Long> mod;
     private HashMap<File, Long> las;
     private HashMap<File, String> sig;
@@ -173,6 +177,36 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         tickerActive = true;
         scheduleTicker(10L);
+
+        integrationService = new BileToolsIntegrationService(this);
+        integrationService.register();
+    }
+
+    public int watchedJarCount() {
+        HashMap<File, Long> tracked = mod;
+        return tracked == null ? 0 : tracked.size();
+    }
+
+    public int dirtyPluginCount() {
+        return dirtyPlugins.size();
+    }
+
+    public long reloadsTotal() {
+        return reloadsTotal.get();
+    }
+
+    public long lastReloadMs() {
+        return lastReloadMs;
+    }
+
+    public boolean remoteSlaveOnline() {
+        SlaveBileServer server = srv;
+        return server != null && server.isServerSocketOpen();
+    }
+
+    private void recordReloadSuccess(long totalMs) {
+        reloadsTotal.incrementAndGet();
+        lastReloadMs = totalMs;
     }
 
     public boolean isBackoff(Player p) {
@@ -204,6 +238,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void freezeForUnload() {
+        if (integrationService != null) {
+            integrationService.unregister();
+            integrationService = null;
+        }
+
         tickerActive = false;
         queuedOperationKeys.clear();
         pendingFingerprints.clear();
@@ -264,6 +303,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     if (resolvedName != null) {
                         clearPluginDirty(resolvedName);
                     }
+                    reloadsTotal.incrementAndGet();
                     getLogger().info("Hot dropped " + file.getName() + " successfully");
                     notifyBileUsers(localization.text(
                             BileMessages.HOT_DROP_SUCCESS,
@@ -678,6 +718,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "reload " + pluginName, () -> BileUtils.reload(targetPlugin));
                 clearPluginDirty(pluginName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                recordReloadSuccess(totalMs);
                 notifyBileUsers(localization.text(
                         BileMessages.RELOAD_SUCCESS,
                         MessageArgs.builder()
@@ -779,6 +820,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(pluginName, "reload " + pluginName + " after remote deploy", () -> BileUtils.reload(targetPlugin));
                 clearPluginDirty(pluginName);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                recordReloadSuccess(totalMs);
                 notifyBileUsers(localization.text(
                         BileMessages.RELOAD_SUCCESS,
                         MessageArgs.builder()
@@ -1441,6 +1483,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 executePluginLifecycle(name, "reload " + pluginName, () -> BileUtils.reload(plugin));
                 clearPluginDirty(name);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
+                recordReloadSuccess(totalMs);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, localization.text(
                         BileMessages.RELOAD_COMMAND_SUCCESS,

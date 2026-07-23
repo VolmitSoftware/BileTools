@@ -13,14 +13,15 @@
         "page": "Seite"
       "no_subcommands": "Auf dieser Seite gibt es keine Unterbefehle."
       "no_description": "Keine Beschreibung vorhanden"
-      "aliases": "Aliase"
       "command_group": "Befehlsgruppe. Zum Öffnen klicken."
+      "category": "Befehlskategorie"
       "no_parameters": "Keine Parameter. Klicken, um den Befehl vorab auszufüllen."
-      "parameters": "Parameter"
+      "parameters_hover": "Bewege den Mauszeiger über die Parameter, um mehr zu erfahren."
       "parameter":
-        "required": "erforderlich"
-        "optional": "optional"
-        "default": "Standard"
+        "required": "Dieser Parameter ist erforderlich."
+        "optional": "Dieser Parameter ist optional."
+        "default": "Standardmäßig \"{value}\", wenn nicht angegeben."
+        "type": "Dieser Parameter hat den Typ {type}."
     "runtime":
       "error":
         "invalid_origin": "Dieser Befehl kann von diesem Ursprung aus nicht ausgeführt werden."

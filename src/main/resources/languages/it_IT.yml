@@ -13,14 +13,15 @@
         "page": "Pagina"
       "no_subcommands": "Nessun sottocomando in questa pagina."
       "no_description": "Nessuna descrizione fornita"
-      "aliases": "Alias"
       "command_group": "Gruppo di comandi. Fai clic per aprire."
+      "category": "Categoria di comandi"
       "no_parameters": "Nessun parametro. Fai clic per precompilare il comando."
-      "parameters": "Parametri"
+      "parameters_hover": "Passa il cursore sui parametri per saperne di più."
       "parameter":
-        "required": "obbligatorio"
-        "optional": "facoltativo"
-        "default": "predefinito"
+        "required": "Questo parametro è obbligatorio."
+        "optional": "Questo parametro è facoltativo."
+        "default": "Il valore predefinito è \"{value}\" se non definito."
+        "type": "Questo parametro è di tipo {type}."
     "runtime":
       "error":
         "invalid_origin": "Questo comando non può essere eseguito da questa origine."

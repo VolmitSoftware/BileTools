@@ -13,14 +13,15 @@
         "page": "页"
       "no_subcommands": "此页面没有子命令。"
       "no_description": "未提供说明"
-      "aliases": "别名"
       "command_group": "命令组。点击打开。"
+      "category": "命令类别"
       "no_parameters": "无参数。点击预填命令。"
-      "parameters": "参数"
+      "parameters_hover": "将鼠标悬停在参数上以了解更多。"
       "parameter":
-        "required": "必填"
-        "optional": "可选"
-        "default": "默认"
+        "required": "此参数为必填项。"
+        "optional": "此参数为可选项。"
+        "default": "未指定时默认为 \"{value}\"。"
+        "type": "此参数的类型为 {type}。"
     "runtime":
       "error":
         "invalid_origin": "无法从此来源运行该命令。"
