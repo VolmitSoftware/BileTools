@@ -6,9 +6,11 @@ runTask = "2.3.1"
 
 # Libraries
 paper = "26.2.build.60-beta"
+bstats = "3.2.1"
 
 [libraries]
 paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
+bstats = { module = "org.bstats:bstats-bukkit", version.ref = "bstats" }
 
 [plugins]
 lombok = { id = "io.freefair.lombok", version.ref = "lombok" }

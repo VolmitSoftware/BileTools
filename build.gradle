@@ -53,6 +53,7 @@ dependencies {
         changing = true
         transitive = false
     }
+    implementation libs.bstats
     testImplementation libs.paper
     testImplementation 'junit:junit:4.13.2'
 }
@@ -64,7 +65,12 @@ configurations.configureEach {
 
 tasks.named('shadowJar') {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    minimize()
+    // bStats internals are reflection/callable driven, keep the minimizer off them.
+    minimize {
+        exclude(dependency('org.bstats:.*:.*'))
+    }
+    // bStats refuses to enable unless its package is relocated. VolmLib stays unrelocated on purpose.
+    relocate('org.bstats', 'com.volmit.bile.libs.bstats')
 }
 
 tasks.named('build') {

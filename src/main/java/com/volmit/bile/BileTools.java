@@ -14,6 +14,9 @@ import com.volmit.bile.command.CommandBile;
 import com.volmit.bile.config.BileConfig;
 import com.volmit.bile.localization.BileLocalization;
 import com.volmit.bile.localization.BileMessages;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
+import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -65,8 +68,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final long PLUGIN_OPERATION_TIMEOUT_SECONDS = 120L;
     private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
     private static final char[] HEX = "0123456789abcdef".toCharArray();
+    // bstats.org registration is pending; 0 keeps metrics off entirely.
+    private static final int BSTATS_PLUGIN_ID = 0;
 
     private volatile SlaveBileServer srv;
+    private volatile Metrics metrics;
     public static BileTools bile;
     private BileToolsIntegrationService integrationService;
     private final AtomicLong reloadsTotal = new AtomicLong();
@@ -180,6 +186,31 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         integrationService = new BileToolsIntegrationService(this);
         integrationService.register();
+
+        setupMetrics();
+    }
+
+    private void setupMetrics() {
+        if (BSTATS_PLUGIN_ID <= 0) {
+            return;
+        }
+
+        try {
+            Metrics active = new Metrics(this, BSTATS_PLUGIN_ID);
+            // Charts run on the bStats daemon thread: every accessor below reads an atomic,
+            // a concurrent set, a volatile, or a plain int snapshot. Null skips a cycle.
+            active.addCustomChart(new SingleLineChart("watched_jars", this::watchedJarCount));
+            active.addCustomChart(new SingleLineChart("reloads_total", () -> (int) Math.min(Integer.MAX_VALUE, reloadsTotal())));
+            active.addCustomChart(new SingleLineChart("dirty_plugins", this::dirtyPluginCount));
+            active.addCustomChart(new SimplePie("server_platform", () -> {
+                ServerPlatform.Family family = ServerPlatform.family();
+                return family == null ? null : family.name();
+            }));
+            active.addCustomChart(new SimplePie("remote_slave", () -> String.valueOf(remoteSlaveOnline())));
+            metrics = active;
+        } catch (RuntimeException e) {
+            getLogger().log(Level.WARNING, "Failed to initialize BileTools metrics", e);
+        }
     }
 
     public int watchedJarCount() {
@@ -238,6 +269,16 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void freezeForUnload() {
+        Metrics activeMetrics = metrics;
+        metrics = null;
+        if (activeMetrics != null) {
+            try {
+                activeMetrics.shutdown();
+            } catch (Throwable e) {
+                getLogger().log(Level.WARNING, "Error during bStats shutdown", e);
+            }
+        }
+
         if (integrationService != null) {
             integrationService.unregister();
             integrationService = null;
