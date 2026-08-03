@@ -64,6 +64,7 @@ public class BileUtils {
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
     private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
+    private static volatile boolean pluginsFolderApiMissing;
 
     private static String key(String pluginName) {
         return pluginName.toLowerCase(Locale.ROOT);
@@ -439,7 +440,11 @@ public class BileUtils {
     }
 
     public static void stp(String s) {
-        Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY + s);
+        try {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY + s);
+        } catch (Throwable ignored) {
+            System.out.println("[Bile]: " + s);
+        }
     }
 
     public static boolean isPaperPlugin(File file) {
@@ -975,7 +980,7 @@ public class BileUtils {
             return;
         }
 
-        if (updateFolder == null || !updateFolder.isDirectory() || sameFile(updateFolder, Bukkit.getPluginsFolder())) {
+        if (updateFolder == null || !updateFolder.isDirectory() || sameFile(updateFolder, getPluginsFolder())) {
             return;
         }
 
@@ -1471,11 +1476,11 @@ public class BileUtils {
                 }
             }
 
+            scrubBrigadierNodes(plugin);
             scrubPluginCommands(plugin, commandMap, commands);
             scrubPluginServices(plugin);
             scrubPluginMessenger(plugin);
             removePaperPluginTracking(plugin);
-            scrubBrigadierNodes(plugin);
 
             ClassLoader cl = plugin.getClass().getClassLoader();
 
@@ -1541,7 +1546,13 @@ public class BileUtils {
     }
 
     /**
-     * Best-effort removal of plugin command nodes from Paper's Brigadier/dispatcher graph.
+     * Removes the plugin's Brigadier-API command nodes from Paper's internal dispatcher
+     * (the authoritative store CraftServer#syncCommands copies from). Must run BEFORE the
+     * plugin becomes unresolvable and BEFORE any walk of the SimpleCommandMap view: on modern
+     * Paper, knownCommands is a live BukkitBrigForwardingMap whose iteration wraps every node
+     * via APICommandMeta.plugin() -> PluginManager.getPlugin(name) -> requireNonNull, so a
+     * node owned by an unresolvable plugin NPEs the whole walk. Nodes whose owner no longer
+     * resolves are also dropped so one bad unload cannot poison every later command-map walk.
      * Safe no-op on Spigot or when internals move.
      */
     private static void scrubBrigadierNodes(Plugin plugin) {
@@ -1549,53 +1560,127 @@ public class BileUtils {
             return;
         }
 
-        try {
-            Object server = Bukkit.getServer();
-            // CraftServer#syncCommands rebuilds brigadier from SimpleCommandMap after our scrub.
-            Method syncCommands = findPublicMethod(server.getClass(), "syncCommands");
-            if (syncCommands != null) {
-                // Deferred to rebuildServerCommandGraph; mark intent only if needed later.
-                return;
+        Object root = resolveApiDispatcherRoot();
+        if (root == null) {
+            return;
+        }
+
+        java.util.function.Predicate<String> ownerResolvable = (String ownerName) -> {
+            try {
+                PluginManager pluginManager = Bukkit.getPluginManager();
+                return pluginManager == null || pluginManager.getPlugin(ownerName) != null;
+            } catch (Throwable ignored) {
+                return true;
             }
+        };
+
+        List<String> removed = removeApiNodesFromRoot(root, plugin.getName(), ownerResolvable);
+        if (!removed.isEmpty()) {
+            stp("Scrubbed brigadier nodes for " + plugin.getName() + ": " + String.join(", ", removed));
+        }
+    }
+
+    /**
+     * Locates the root node of Paper's API command dispatcher, or null when unavailable.
+     */
+    private static Object resolveApiDispatcherRoot() {
+        try {
+            Object dispatcher = null;
+            Object paperCommands = readStaticFieldNoThrow("io.papermc.paper.command.brigadier.PaperCommands", "INSTANCE");
+            if (paperCommands != null) {
+                dispatcher = invokeNoThrow(paperCommands, "getDispatcherInternal");
+            }
+            if (dispatcher == null) {
+                Object forwardingMap = readStaticFieldNoThrow("io.papermc.paper.command.brigadier.bukkit.BukkitBrigForwardingMap", "INSTANCE");
+                if (forwardingMap != null) {
+                    dispatcher = invokeNoThrow(forwardingMap, "getDispatcher");
+                }
+            }
+            return dispatcher == null ? null : invokeNoThrow(dispatcher, "getRoot");
         } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Walks a Brigadier root node reflectively and removes every child whose apiCommandMeta
+     * names the given plugin, plus orphaned children whose owner fails ownerResolvable.
+     * Children without apiCommandMeta (vanilla / classic Bukkit commands) are never touched.
+     * Returns the removed node names.
+     */
+    static List<String> removeApiNodesFromRoot(Object root, String pluginName, java.util.function.Predicate<String> ownerResolvable) {
+        List<String> removed = new ArrayList<>();
+        if (root == null || pluginName == null || ownerResolvable == null) {
+            return removed;
         }
 
         try {
-            // Fallback: walk common Paper command registrant fields and drop plugin-owned nodes.
-            Object paperCommands = invokeStaticNoThrow("io.papermc.paper.command.brigadier.PaperCommands", "getInstance");
-            if (paperCommands == null) {
-                paperCommands = invokeStaticNoThrow("io.papermc.paper.command.brigadier.PaperBrigadier", "get");
-            }
-            if (paperCommands == null) {
-                return;
+            Object children = invokeNoThrow(root, "getChildren");
+            if (!(children instanceof java.util.Collection<?> nodes)) {
+                return removed;
             }
 
-            for (Field field : getAllFields(paperCommands.getClass())) {
-                if (!Map.class.isAssignableFrom(field.getType())) {
+            List<String> names = new ArrayList<>();
+            for (Object node : nodes) {
+                if (node == null) {
                     continue;
                 }
-                field.setAccessible(true);
-                Object value = field.get(paperCommands);
-                if (!(value instanceof Map<?, ?> map)) {
+                String owner = readApiNodeOwner(node);
+                if (owner == null) {
                     continue;
                 }
+                if (!owner.equalsIgnoreCase(pluginName) && ownerResolvable.test(owner)) {
+                    continue;
+                }
+                Object nodeName = invokeNoThrow(node, "getName");
+                if (nodeName instanceof String name) {
+                    names.add(name);
+                }
+            }
 
-                List<Object> keys = new ArrayList<>();
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    Object mapValue = entry.getValue();
-                    if (mapValue == null) {
-                        continue;
-                    }
-                    String text = mapValue.toString().toLowerCase(Locale.ROOT);
-                    if (text.contains(plugin.getName().toLowerCase(Locale.ROOT))) {
-                        keys.add(entry.getKey());
-                    }
-                }
-                for (Object key : keys) {
-                    map.remove(key);
+            for (String name : names) {
+                try {
+                    invokeCompatibleMethod(root, "removeCommand", name);
+                    removed.add(name);
+                } catch (Throwable ignored) {
                 }
             }
         } catch (Throwable ignored) {
+        }
+        return removed;
+    }
+
+    /**
+     * Reads the owning plugin name from a Brigadier node's apiCommandMeta, or null for
+     * nodes without API meta (vanilla / classic commands).
+     */
+    private static String readApiNodeOwner(Object node) {
+        try {
+            Field metaField = findFieldInHierarchy(node.getClass(), "apiCommandMeta");
+            Object meta = metaField == null ? null : metaField.get(node);
+            Object pluginMeta = meta == null ? null : invokeNoThrow(meta, "pluginMeta");
+            Object name = pluginMeta == null ? null : invokeNoThrow(pluginMeta, "getName");
+            return name instanceof String owner ? owner : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object invokeNoThrow(Object target, String methodName) {
+        try {
+            return invokeCompatibleMethod(target, methodName);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object readStaticFieldNoThrow(String className, String fieldName) {
+        try {
+            Class<?> type = Class.forName(className);
+            Field field = type.getField(fieldName);
+            return field.get(null);
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
@@ -1642,27 +1727,7 @@ public class BileUtils {
         return null;
     }
 
-    private static List<Field> getAllFields(Class<?> type) {
-        List<Field> fields = new ArrayList<>();
-        Class<?> current = type;
-        while (current != null && current != Object.class) {
-            fields.addAll(Arrays.asList(current.getDeclaredFields()));
-            current = current.getSuperclass();
-        }
-        return fields;
-    }
-
-    private static Object invokeStaticNoThrow(String className, String methodName) {
-        try {
-            Class<?> type = Class.forName(className);
-            Method method = type.getMethod(methodName);
-            return method.invoke(null);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static void scrubPluginCommands(Plugin plugin, SimpleCommandMap commandMap, Map<String, Command> commands) {
+    static void scrubPluginCommands(Plugin plugin, SimpleCommandMap commandMap, Map<String, Command> commands) {
         if (plugin == null || commandMap == null || commands == null) {
             return;
         }
@@ -1670,26 +1735,33 @@ public class BileUtils {
         List<String> toRemove = new ArrayList<>();
         String pluginKey = plugin.getName().toLowerCase(Locale.ROOT);
 
-        for (Map.Entry<String, Command> entry : commands.entrySet()) {
-            Command command = entry.getValue();
-            if (command instanceof PluginCommand pluginCommand) {
-                if (pluginCommand.getPlugin() == plugin) {
-                    try {
-                        pluginCommand.unregister(commandMap);
-                    } catch (Throwable ignored) {
+        try {
+            // On modern Paper this map is a live BukkitBrigForwardingMap; walking it wraps every
+            // dispatcher node and can throw if a node's owner is unresolvable. Never let that
+            // abort the unload - the declared-name removal below still covers the plugin.
+            for (Map.Entry<String, Command> entry : commands.entrySet()) {
+                Command command = entry.getValue();
+                if (command instanceof PluginCommand pluginCommand) {
+                    if (pluginCommand.getPlugin() == plugin) {
+                        try {
+                            pluginCommand.unregister(commandMap);
+                        } catch (Throwable ignored) {
+                        }
+                        toRemove.add(entry.getKey());
+                        continue;
                     }
-                    toRemove.add(entry.getKey());
-                    continue;
                 }
-            }
 
-            String mapKey = entry.getKey();
-            if (mapKey != null) {
-                String lower = mapKey.toLowerCase(Locale.ROOT);
-                if (lower.startsWith(pluginKey + ":")) {
-                    toRemove.add(mapKey);
+                String mapKey = entry.getKey();
+                if (mapKey != null) {
+                    String lower = mapKey.toLowerCase(Locale.ROOT);
+                    if (lower.startsWith(pluginKey + ":")) {
+                        toRemove.add(mapKey);
+                    }
                 }
             }
+        } catch (Throwable t) {
+            stp("Command map walk for " + plugin.getName() + " aborted (" + t.getClass().getSimpleName() + "); falling back to declared command names");
         }
 
         try {
@@ -1702,7 +1774,12 @@ public class BileUtils {
         }
 
         for (String key : toRemove) {
-            Command removed = commands.remove(key);
+            Command removed;
+            try {
+                removed = commands.remove(key);
+            } catch (Throwable ignored) {
+                continue;
+            }
             if (removed instanceof PluginCommand pluginCommand && pluginCommand.getPlugin() == plugin) {
                 try {
                     pluginCommand.unregister(commandMap);
@@ -2012,7 +2089,34 @@ public class BileUtils {
     }
 
     public static File getPluginsFolder() {
-        return Bukkit.getPluginsFolder();
+        if (!pluginsFolderApiMissing) {
+            try {
+                return Bukkit.getPluginsFolder();
+            } catch (NoSuchMethodError ignored) {
+                // Spigot: Bukkit#getPluginsFolder is Paper-only
+                pluginsFolderApiMissing = true;
+            }
+        }
+
+        File updateFolder;
+        try {
+            updateFolder = Bukkit.getUpdateFolderFile();
+        } catch (Throwable ignored) {
+            updateFolder = null;
+        }
+
+        return derivePluginsFolder(updateFolder);
+    }
+
+    // Spigot fallback: the update folder resolves inside the plugins folder
+    static File derivePluginsFolder(File updateFolder) {
+        if (updateFolder != null) {
+            File parent = updateFolder.getParentFile();
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return new File("plugins");
     }
 
     private static File[] listPluginFiles() {

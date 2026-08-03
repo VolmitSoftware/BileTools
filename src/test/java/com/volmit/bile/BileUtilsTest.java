@@ -1,7 +1,11 @@
 package com.volmit.bile;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,8 +13,18 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.StringReader;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -286,5 +300,163 @@ public class BileUtilsTest {
         assertEquals(
                 "dependencies.bootstrap.RegistryPlugin.required must be true or false in InvalidBootstrapExample.jar",
                 exception.getMessage());
+    }
+
+    @Test
+    public void derivePluginsFolder_usesUpdateFolderParentWithSpigotDefaultFallback() throws Exception {
+        File pluginsFolder = temporaryFolder.newFolder("plugins");
+        assertEquals(pluginsFolder, BileUtils.derivePluginsFolder(new File(pluginsFolder, "update")));
+        assertEquals(new File("plugins"), BileUtils.derivePluginsFolder(new File("update")));
+        assertEquals(new File("plugins"), BileUtils.derivePluginsFolder(null));
+    }
+
+    @Test
+    public void scrubPluginCommands_survivesPoisonedCommandMapIteration_andRemovesDeclaredCommands() throws Exception {
+        Plugin plugin = fakePlugin("Iris", """
+                name: Iris
+                version: 1.0.0
+                main: example.Plugin
+                commands:
+                  iris: {}
+                """);
+
+        Map<String, Command> commands = poisonedCommandMap();
+        commands.put("iris", namedCommand("iris"));
+        commands.put("iris:iris", namedCommand("iris:iris"));
+        commands.put("other", namedCommand("other"));
+
+        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null, new HashMap<>()), commands);
+
+        assertFalse(commands.containsKey("iris"));
+        assertFalse(commands.containsKey("iris:iris"));
+        assertTrue(commands.containsKey("other"));
+    }
+
+    @Test
+    public void removeApiNodesFromRoot_removesOwnedAndOrphanedNodes_keepsResolvableAndVanilla() {
+        FakeRoot root = new FakeRoot();
+        root.add(new FakeNode("iris", new FakeMeta(new FakePluginMeta("Iris"))));
+        root.add(new FakeNode("iris:iris", new FakeMeta(new FakePluginMeta("Iris"))));
+        root.add(new FakeNode("adapt", new FakeMeta(new FakePluginMeta("Adapt"))));
+        root.add(new FakeNode("ghost", new FakeMeta(new FakePluginMeta("Ghost"))));
+        root.add(new FakeNode("version", null));
+
+        List<String> removed = BileUtils.removeApiNodesFromRoot(root, "Iris", owner -> owner.equals("Adapt"));
+
+        assertEquals(List.of("iris", "iris:iris", "ghost"), removed);
+        assertEquals(List.of("adapt", "version"), root.childNames());
+    }
+
+    private static Plugin fakePlugin(String name, String descriptorYaml) throws Exception {
+        PluginDescriptionFile description = new PluginDescriptionFile(new StringReader(descriptorYaml));
+        return (Plugin) Proxy.newProxyInstance(BileUtilsTest.class.getClassLoader(), new Class<?>[]{Plugin.class},
+                (Object proxy, Method method, Object[] args) -> switch (method.getName()) {
+                    case "getName" -> name;
+                    case "getDescription" -> description;
+                    case "toString" -> name;
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == args[0];
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
+    }
+
+    private static Command namedCommand(String name) {
+        return new Command(name) {
+            @Override
+            public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Mimics Paper's BukkitBrigForwardingMap when the dispatcher holds a node whose owning
+     * plugin is no longer resolvable: any entry iteration explodes with an NPE from wrapNode.
+     */
+    private static Map<String, Command> poisonedCommandMap() {
+        return new HashMap<>() {
+            @Override
+            public Set<Map.Entry<String, Command>> entrySet() {
+                return new AbstractSet<>() {
+                    @Override
+                    public Iterator<Map.Entry<String, Command>> iterator() {
+                        return new Iterator<>() {
+                            @Override
+                            public boolean hasNext() {
+                                throw new NullPointerException("wrapNode: owning plugin not resolvable");
+                            }
+
+                            @Override
+                            public Map.Entry<String, Command> next() {
+                                throw new NullPointerException("wrapNode: owning plugin not resolvable");
+                            }
+                        };
+                    }
+
+                    @Override
+                    public int size() {
+                        return 0;
+                    }
+                };
+            }
+        };
+    }
+
+    public static final class FakeRoot {
+        private final Map<String, FakeNode> children = new LinkedHashMap<>();
+
+        void add(FakeNode node) {
+            children.put(node.getName(), node);
+        }
+
+        public Collection<FakeNode> getChildren() {
+            return children.values();
+        }
+
+        public void removeCommand(String name) {
+            children.remove(name);
+        }
+
+        List<String> childNames() {
+            return List.copyOf(children.keySet());
+        }
+    }
+
+    public static final class FakeNode {
+        private final String name;
+        private final FakeMeta apiCommandMeta;
+
+        FakeNode(String name, FakeMeta apiCommandMeta) {
+            this.name = name;
+            this.apiCommandMeta = apiCommandMeta;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static final class FakeMeta {
+        private final FakePluginMeta pluginMeta;
+
+        FakeMeta(FakePluginMeta pluginMeta) {
+            this.pluginMeta = pluginMeta;
+        }
+
+        public FakePluginMeta pluginMeta() {
+            return pluginMeta;
+        }
+    }
+
+    public static final class FakePluginMeta {
+        private final String name;
+
+        FakePluginMeta(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
