@@ -3,6 +3,7 @@ version: ${version}
 main: ${main}
 api-version: ${apiVersion}
 folia-supported: true
+website: VolmitSoftware.com
 commands:
   biletools:
     aliases: [bile, bi, b, volmit, vomit, vom]
