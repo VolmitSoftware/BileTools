@@ -68,8 +68,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final long PLUGIN_OPERATION_TIMEOUT_SECONDS = 120L;
     private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
     private static final char[] HEX = "0123456789abcdef".toCharArray();
-    // bstats.org registration is pending; 0 keeps metrics off entirely.
-    private static final int BSTATS_PLUGIN_ID = 0;
+    // bstats.org plugin id
+    private static final int BSTATS_PLUGIN_ID = 33192;
 
     private volatile SlaveBileServer srv;
     private volatile Metrics metrics;
