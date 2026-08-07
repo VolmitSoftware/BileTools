@@ -18,7 +18,7 @@ public final class SplashScreen {
         String releaseTrain = getReleaseTrain(pluginVersion);
         String serverVersion = getServerVersion();
         String startupDate = getStartupDate();
-        String supportedMcVersion = "26.2";
+        String supportedMcVersion = "26.1.2 - 26.2";
 
         String splash =
                 "\n"
