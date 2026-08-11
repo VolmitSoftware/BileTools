@@ -27,7 +27,10 @@ public final class ServerPlatform {
         UNKNOWN
     }
 
-    private static final boolean PAPER_RUNTIME = classPresent("io.papermc.paper.ServerBuildInfo");
+    private static final boolean PAPER_RUNTIME = detectPaperRuntime(
+            classPresent("io.papermc.paper.plugin.configuration.PluginMeta"),
+            classPresent("io.papermc.paper.ServerBuildInfo"),
+            classPresent("io.papermc.paper.plugin.manager.PaperPluginManagerImpl"));
     private static final boolean PAPER_SERVER = PAPER_RUNTIME;
     private static final boolean PURPUR = classPresent("org.purpurmc.purpur.PurpurConfig")
             || classPresent("org.purpurmc.purpur.PurpurServer");
@@ -57,17 +60,12 @@ public final class ServerPlatform {
                 return cachedFamily;
             }
 
-            if (isFoliaFamily()) {
-                cachedFamily = (CANVAS || brandContains("canvas")) ? Family.CANVAS : Family.FOLIA;
-            } else if (LEAF) {
-                cachedFamily = Family.LEAF;
-            } else if (PURPUR) {
-                cachedFamily = Family.PURPUR;
-            } else if (PAPER_SERVER) {
-                cachedFamily = Family.PAPER;
-            } else {
-                cachedFamily = Family.SPIGOT;
-            }
+            cachedFamily = classify(
+                    isFoliaFamily(),
+                    CANVAS || brandContains("canvas"),
+                    LEAF,
+                    PURPUR,
+                    PAPER_SERVER);
 
             return cachedFamily;
         }
@@ -80,6 +78,29 @@ public final class ServerPlatform {
 
     public static boolean isPaperRuntime() {
         return PAPER_RUNTIME;
+    }
+
+    static boolean detectPaperRuntime(boolean pluginMetaPresent,
+                                      boolean serverBuildInfoPresent,
+                                      boolean pluginManagerPresent) {
+        return pluginMetaPresent || serverBuildInfoPresent || pluginManagerPresent;
+    }
+
+    static Family classify(boolean folia,
+                           boolean canvas,
+                           boolean leaf,
+                           boolean purpur,
+                           boolean paper) {
+        if (folia) {
+            return canvas ? Family.CANVAS : Family.FOLIA;
+        }
+        if (leaf) {
+            return Family.LEAF;
+        }
+        if (purpur) {
+            return Family.PURPUR;
+        }
+        return paper ? Family.PAPER : Family.SPIGOT;
     }
 
     /**

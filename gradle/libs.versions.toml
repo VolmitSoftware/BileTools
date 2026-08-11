@@ -5,11 +5,17 @@ shadow = "9.0.0-rc3"
 runTask = "2.3.1"
 
 # Libraries
-paper = "26.1.2.build.74-stable"
+paper = "1.20.1-R0.1-SNAPSHOT"
+paperCurrent = "26.1.2.build.74-stable"
+spigot = "1.20.1-R0.1-SNAPSHOT"
+spigotCurrent = "26.2-R0.1-SNAPSHOT"
 bstats = "3.2.1"
 
 [libraries]
 paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
+paperCurrent = { module = "io.papermc.paper:paper-api", version.ref = "paperCurrent" }
+spigot = { module = "org.spigotmc:spigot-api", version.ref = "spigot" }
+spigotCurrent = { module = "org.spigotmc:spigot-api", version.ref = "spigotCurrent" }
 bstats = { module = "org.bstats:bstats-bukkit", version.ref = "bstats" }
 
 [plugins]

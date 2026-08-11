@@ -14,16 +14,18 @@ Canonical English is defined in the typed Java catalog at `src/main/java/com/vol
 
 | Runtime | Support | Notes |
 |---------|---------|--------|
-| **Paper** | Primary | Public PluginManager load path; hot-unload remains best-effort |
-| **Purpur** | Primary | Paper-family (same load/unload paths) |
+| **Paper 1.20.1+** | Primary | Public PluginManager load path; hot-unload remains best-effort |
+| **Purpur 1.20.1+** | Primary | Paper-family (same load/unload paths) |
 | **Leaf** | Primary | Paper-family fork; treated like Paper |
-| **Folia** | Supported | `folia-supported: true`; GlobalRegionScheduler only; hot-reload is best-effort |
+| **Folia 1.20.1+** | Supported | `folia-supported: true`; GlobalRegionScheduler only; hot-reload is best-effort |
 | **Canvas** | Supported | Folia fork; same regionized scheduling rules as Folia |
-| **Spigot** | Best-effort | `paper-plugin.yml`-only jars are rejected; dual-descriptor jars load through `plugin.yml`; compiled against Paper 26.2 |
+| **Spigot 1.20.1+** | Best-effort | `paper-plugin.yml`-only jars are rejected; dual-descriptor jars load through `plugin.yml` |
 
-* `plugin.yml` `api-version`: `26.2`
-* Compile target: Paper API `26.2` (see `gradle/libs.versions.toml`)
-* Runtime JVM: `Java 25+`
+* One jar supports Minecraft `1.20.1` through current `26.x` servers
+* `plugin.yml` `api-version`: `1.20`
+* Production compile floor: Paper and Spigot API `1.20.1` with current `26.x` compatibility compile gates
+* Runtime JVM: Java 17 on `1.20.1`; newer servers still require the JVM version mandated by that server (Java 25 on `26.x`)
+* Build JVM: Java 25+
 * Lifecycle mutations always run on the global/main thread (never on PluginOps / network threads)
 * On Folia/Canvas, player sounds/messages that touch entities are routed through the entity scheduler
 

@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.compile.JavaCompile
+
 plugins {
     id 'java-library'
     alias libs.plugins.lombok
@@ -5,7 +7,7 @@ plugins {
 }
 
 version = '3.0.0-26.2'
-def apiVersion = '26.1'
+def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
 
@@ -33,6 +35,8 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -41,14 +45,29 @@ repositories {
     maven { url = 'https://jitpack.io' }
 }
 
-tasks.compileJava {
+tasks.named('compileJava', JavaCompile) {
     options.compilerArgs.add('-parameters')
     options.encoding = 'UTF-8'
-    options.release.set(25)
+    options.release.set(17)
+}
+
+tasks.named('compileTestJava', JavaCompile) {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(17)
+}
+
+configurations {
+    spigotCompatibility
+    currentPaperCompatibility
+    currentSpigotCompatibility
 }
 
 dependencies {
     compileOnly libs.paper
+    spigotCompatibility libs.spigot
+    currentPaperCompatibility libs.paperCurrent
+    currentSpigotCompatibility libs.spigotCurrent
     implementation(volmLibCoordinate) {
         changing = true
         transitive = false
@@ -63,6 +82,42 @@ configurations.configureEach {
     resolutionStrategy.cacheDynamicVersionsFor(0, "seconds")
 }
 
+tasks.register('compileSpigotCompatibility', JavaCompile) {
+    source = sourceSets.main.java
+    classpath = files(sourceSets.main.compileClasspath.filter { File dependency ->
+        !dependency.name.startsWith('paper-api-')
+    }) + configurations.spigotCompatibility
+    destinationDirectory.set(layout.buildDirectory.dir('classes/java/spigotCompatibility'))
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(17)
+}
+
+tasks.register('compileCurrentPaperCompatibility', JavaCompile) {
+    source = sourceSets.main.java
+    classpath = files(sourceSets.main.compileClasspath.filter { File dependency ->
+        !dependency.name.startsWith('paper-api-')
+    }) + configurations.currentPaperCompatibility
+    destinationDirectory.set(layout.buildDirectory.dir('classes/java/currentPaperCompatibility'))
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
+tasks.register('compileCurrentSpigotCompatibility', JavaCompile) {
+    source = sourceSets.main.java
+    classpath = files(sourceSets.main.compileClasspath.filter { File dependency ->
+        !dependency.name.startsWith('paper-api-')
+    }) + configurations.currentSpigotCompatibility
+    destinationDirectory.set(layout.buildDirectory.dir('classes/java/currentSpigotCompatibility'))
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
 tasks.named('shadowJar') {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     // bStats internals are reflection/callable driven, keep the minimizer off them.
@@ -73,8 +128,60 @@ tasks.named('shadowJar') {
     relocate('org.bstats', 'com.volmit.bile.libs.bstats')
 }
 
+tasks.register('verifyCompatibilityArtifact') {
+    dependsOn tasks.named('shadowJar')
+
+    doLast {
+        File artifact = tasks.named('shadowJar').get().archiveFile.get().asFile
+        java.util.zip.ZipFile archive = new java.util.zip.ZipFile(artifact)
+        try {
+            java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = archive.entries()
+            while (entries.hasMoreElements()) {
+                java.util.zip.ZipEntry entry = entries.nextElement()
+                if (!entry.name.endsWith('.class')) {
+                    continue
+                }
+
+                java.io.DataInputStream input = new java.io.DataInputStream(archive.getInputStream(entry))
+                try {
+                    long magic = Integer.toUnsignedLong(input.readInt())
+                    if (magic != 0xCAFEBABEL) {
+                        throw new GradleException("Invalid class file in ${artifact.name}: ${entry.name}")
+                    }
+                    input.readUnsignedShort()
+                    int majorVersion = input.readUnsignedShort()
+                    if (majorVersion > 61) {
+                        throw new GradleException("${entry.name} requires class version ${majorVersion}; BileTools must remain Java 17 compatible")
+                    }
+                } finally {
+                    input.close()
+                }
+            }
+
+            java.util.zip.ZipEntry descriptor = archive.getEntry('plugin.yml')
+            if (descriptor == null) {
+                throw new GradleException("${artifact.name} does not contain plugin.yml")
+            }
+            String pluginYml = archive.getInputStream(descriptor).getText('UTF-8')
+            if (!pluginYml.readLines().contains('api-version: 1.20')) {
+                throw new GradleException("${artifact.name} does not declare api-version: 1.20")
+            }
+        } finally {
+            archive.close()
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('compileSpigotCompatibility')
+    dependsOn tasks.named('compileCurrentPaperCompatibility')
+    dependsOn tasks.named('compileCurrentSpigotCompatibility')
+    dependsOn tasks.named('verifyCompatibilityArtifact')
+}
+
 tasks.named('build') {
     dependsOn tasks.named('shadowJar')
+    dependsOn tasks.named('verifyCompatibilityArtifact')
 }
 
 tasks.register('biletools', Copy) {

@@ -64,7 +64,7 @@ public class BileUtils {
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
     private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
-    private static volatile boolean pluginsFolderApiMissing;
+    private static final Method PLUGINS_FOLDER_API = findPublicMethod(Bukkit.class, "getPluginsFolder");
 
     private static String key(String pluginName) {
         return pluginName.toLowerCase(Locale.ROOT);
@@ -477,7 +477,7 @@ public class BileUtils {
         }
 
         long startNs = System.nanoTime();
-        PluginJarMetadata metadata = readPluginMetadata(file);
+        PluginJarMetadata metadata = readRuntimePluginMetadata(file);
         PluginDescriptionFile f = metadata.description();
         String cycleKey = key(f.getName());
         Set<String> visiting = LOAD_VISITING.get();
@@ -542,20 +542,8 @@ public class BileUtils {
                         RuntimeLoadArtifact dependencyArtifact = preparedArtifactFor(fx, operationArtifacts);
                         load(fx, dependencyArtifact != null, dependencyArtifact, operationArtifacts);
                     } else {
-                        stp("Missing dependency " + i + " for " + f.getName() + ", aborting load");
-                        return;
-                    }
-                }
-            }
-
-            for (String i : metadata.optionalDependencies()) {
-                if (Bukkit.getPluginManager().getPlugin(i) == null) {
-                    File fx = getPluginFile(i);
-
-                    if (fx != null) {
-                        stp(f.getName() + " soft depends on " + i);
-                        RuntimeLoadArtifact dependencyArtifact = preparedArtifactFor(fx, operationArtifacts);
-                        load(fx, dependencyArtifact != null, dependencyArtifact, operationArtifacts);
+                        throw new UnknownDependencyException(
+                                "Missing dependency " + i + " for " + f.getName());
                     }
                 }
             }
@@ -834,7 +822,7 @@ public class BileUtils {
     private static void prepareMissingDependencyArtifacts(File sourceFile,
                                                           Map<String, RuntimeLoadArtifact> artifacts,
                                                           Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
-        PluginJarMetadata metadata = readPluginMetadata(sourceFile);
+        PluginJarMetadata metadata = readRuntimePluginMetadata(sourceFile);
         if (!visited.add(key(metadata.description().getName()))) {
             return;
         }
@@ -852,17 +840,6 @@ public class BileUtils {
             prepareMissingDependencyArtifacts(dependencyFile, artifacts, visited);
         }
 
-        for (String dependencyName : metadata.optionalDependencies()) {
-            if (Bukkit.getPluginManager().getPlugin(dependencyName) != null) {
-                continue;
-            }
-            File dependencyFile = getPluginFile(dependencyName);
-            if (dependencyFile == null || !dependencyFile.isFile()) {
-                continue;
-            }
-            prepareFreshLoadArtifact(dependencyFile, artifacts);
-            prepareMissingDependencyArtifacts(dependencyFile, artifacts, visited);
-        }
     }
 
     private static File findRuntimeSourceFile(String pluginName, File runtimeFile) {
@@ -873,7 +850,7 @@ public class BileUtils {
                 continue;
             }
             try {
-                if (!pluginName.equalsIgnoreCase(getPluginName(candidate))) {
+                if (!pluginArchiveMatchesName(candidate, pluginName, ServerPlatform.isPaperRuntime())) {
                     continue;
                 }
                 candidates.add(candidate);
@@ -937,13 +914,59 @@ public class BileUtils {
         return artifacts.get(cacheKey(file));
     }
 
-    private static boolean dependsOn(Plugin candidate, Plugin dependency) {
+    private static boolean dependsOn(Plugin candidate,
+                                     Plugin dependency) throws IOException, InvalidDescriptionException {
         String dependencyName = dependency.getName();
-        if (candidate.getDescription().getDepend().contains(dependencyName)
-                || candidate.getDescription().getSoftDepend().contains(dependencyName)) {
+        File sourceFile = getPluginFile(candidate);
+        if (declaresDependency(candidate.getDescription(), sourceFile, dependencyName)) {
             return true;
         }
+        for (String providedName : dependency.getDescription().getProvides()) {
+            if (declaresDependency(candidate.getDescription(), sourceFile, providedName)) {
+                return true;
+            }
+        }
         return dependencyName.equals("WorldEdit") && candidate.getName().equals("FastAsyncWorldEdit");
+    }
+
+    static boolean declaresDependency(PluginDescriptionFile runtimeDescription,
+                                      File sourceFile,
+                                      String dependencyName) throws IOException, InvalidDescriptionException {
+        return declaresDependency(
+                runtimeDescription,
+                sourceFile,
+                dependencyName,
+                ServerPlatform.isPaperRuntime());
+    }
+
+    static boolean declaresDependency(PluginDescriptionFile runtimeDescription,
+                                      File sourceFile,
+                                      String dependencyName,
+                                      boolean paperRuntime) throws IOException, InvalidDescriptionException {
+        if (paperRuntime && sourceFile != null && sourceFile.isFile()) {
+            PluginJarMetadata sourceMetadata = readPluginMetadata(sourceFile);
+            if (containsPluginName(sourceMetadata.requiredDependencies(), dependencyName)
+                    || containsPluginName(sourceMetadata.optionalDependencies(), dependencyName)) {
+                return true;
+            }
+        }
+
+        return runtimeDescription != null
+                && (containsPluginName(runtimeDescription.getDepend(), dependencyName)
+                || containsPluginName(runtimeDescription.getSoftDepend(), dependencyName));
+    }
+
+    private static boolean containsPluginName(List<String> pluginNames, String pluginName) {
+        if (pluginName == null) {
+            return false;
+        }
+
+        for (String candidate : pluginNames) {
+            if (pluginName.equalsIgnoreCase(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean readPluginDescriptorFlag(File sourceFile,
@@ -1328,7 +1351,7 @@ public class BileUtils {
 
     @SuppressWarnings("unchecked")
     public static Set<File> unload(Plugin plugin, ReloadAware.PreUnloadReason reason) {
-        Set<File> deps = new HashSet<>();
+        Set<File> deps = new LinkedHashSet<>();
         if (plugin == null) {
             return deps;
         }
@@ -1350,32 +1373,36 @@ public class BileUtils {
                 stp("Could not resolve source jar for " + plugin.getName() + ", skipping file reset");
             }
 
-            for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
-                if (i.equals(plugin)) {
+            for (Plugin candidate : Bukkit.getPluginManager().getPlugins()) {
+                if (candidate.equals(plugin)) {
                     continue;
                 }
 
-                if (i.getDescription().getSoftDepend().contains(plugin.getName())) {
-                    stp(i.getName() + " soft depends on " + plugin.getName() + ". Playing it safe.");
-                    deps.add(getPluginFile(i));
+                boolean dependent;
+                try {
+                    dependent = dependsOn(candidate, plugin);
+                } catch (IOException | InvalidDescriptionException e) {
+                    String message = "Could not inspect dependencies for " + candidate.getName()
+                            + " while unloading " + plugin.getName();
+                    stp(message);
+                    throw new IllegalStateException(message, e);
+                }
+                if (!dependent) {
+                    continue;
                 }
 
-                if (i.getDescription().getDepend().contains(plugin.getName())) {
-                    stp(i.getName() + " depends on " + plugin.getName() + ". Playing it safe.");
-                    deps.add(getPluginFile(i));
+                File dependentFile = getPluginFile(candidate);
+                if (dependentFile == null) {
+                    String message = "Could not resolve source jar for dependent plugin " + candidate.getName()
+                            + " while unloading " + plugin.getName();
+                    stp(message);
+                    throw new IllegalStateException(message);
                 }
+                stp(candidate.getName() + " depends on " + plugin.getName() + ". Playing it safe.");
+                deps.add(dependentFile);
             }
 
-            if (plugin.getName().equals("WorldEdit")) {
-                Plugin fa = Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
-
-                if (fa != null) {
-                    stp(fa.getName() + " (kind of) depends on " + plugin.getName() + ". Playing it safe.");
-                    deps.add(getPluginFile(fa));
-                }
-            }
-
-            for (File i : new HashSet<>(deps)) {
+            for (File i : new ArrayList<>(deps)) {
                 Plugin dependent = getPlugin(i);
                 if (dependent != null) {
                     deps.addAll(unload(dependent, reason));
@@ -2043,7 +2070,7 @@ public class BileUtils {
         for (File i : listPluginFiles()) {
             if (isPluginJar(i)) {
                 try {
-                    if (plugin.getName().equals(getPluginName(i))) {
+                    if (pluginArchiveMatchesName(i, plugin.getName(), ServerPlatform.isPaperRuntime())) {
                         return i;
                     }
                 } catch (Throwable ignored) {
@@ -2073,7 +2100,8 @@ public class BileUtils {
 
         for (File i : listPluginFiles()) {
             try {
-                if (isPluginJar(i) && i.isFile() && getPluginName(i).equalsIgnoreCase(name)) {
+                if (isPluginJar(i) && i.isFile()
+                        && pluginArchiveMatchesName(i, name, ServerPlatform.isPaperRuntime())) {
                     return i;
                 }
             } catch (Throwable ignored) {
@@ -2089,13 +2117,9 @@ public class BileUtils {
     }
 
     public static File getPluginsFolder() {
-        if (!pluginsFolderApiMissing) {
-            try {
-                return Bukkit.getPluginsFolder();
-            } catch (NoSuchMethodError ignored) {
-                // Spigot: Bukkit#getPluginsFolder is Paper-only
-                pluginsFolderApiMissing = true;
-            }
+        File apiFolder = invokePluginsFolderApi(PLUGINS_FOLDER_API);
+        if (apiFolder != null) {
+            return apiFolder;
         }
 
         File updateFolder;
@@ -2106,6 +2130,19 @@ public class BileUtils {
         }
 
         return derivePluginsFolder(updateFolder);
+    }
+
+    static File invokePluginsFolderApi(Method method) {
+        if (method == null) {
+            return null;
+        }
+
+        try {
+            Object result = method.invoke(null);
+            return result instanceof File file ? file : null;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return null;
+        }
     }
 
     // Spigot fallback: the update folder resolves inside the plugins folder
@@ -2149,6 +2186,18 @@ public class BileUtils {
         return getCachedJarMeta(file).pluginName();
     }
 
+    static boolean pluginArchiveMatchesName(File file,
+                                            String pluginName,
+                                            boolean paperRuntime) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
+        if (pluginName == null) {
+            return false;
+        }
+        if (pluginName.equalsIgnoreCase(getPluginName(file))) {
+            return true;
+        }
+        return paperRuntime && pluginName.equalsIgnoreCase(readPaperPreferredPluginName(file));
+    }
+
     public static PluginDescriptionFile getPluginDescription(File file) throws IOException, InvalidDescriptionException {
         return readPluginDescription(file);
     }
@@ -2162,6 +2211,15 @@ public class BileUtils {
     }
 
     private static PluginJarMetadata readPluginMetadata(File file) throws IOException, InvalidDescriptionException {
+        return readPluginMetadata(file, true);
+    }
+
+    private static PluginJarMetadata readRuntimePluginMetadata(File file) throws IOException, InvalidDescriptionException {
+        return readPluginMetadata(file, ServerPlatform.isPaperRuntime());
+    }
+
+    private static PluginJarMetadata readPluginMetadata(File file,
+                                                        boolean includePaperMetadata) throws IOException, InvalidDescriptionException {
         IOException lastZipReadError = null;
 
         for (int attempt = 0; attempt <= ZIP_READ_RETRY_LIMIT; attempt++) {
@@ -2180,6 +2238,9 @@ public class BileUtils {
                     throw new InvalidDescriptionException("No plugin.yml or paper-plugin.yml found in " + file.getName());
                 }
                 if (paperYml == null) {
+                    return pluginMetadata;
+                }
+                if (!includePaperMetadata && pluginMetadata != null) {
                     return pluginMetadata;
                 }
 

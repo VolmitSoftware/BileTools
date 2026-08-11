@@ -32,6 +32,7 @@ import java.util.zip.ZipOutputStream;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -85,7 +86,7 @@ public class BileUtilsTest {
                 name: DualExample
                 version: 2.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 folia-supported: true
                 depend: [RuntimeDependency]
                 """;
@@ -93,7 +94,7 @@ public class BileUtilsTest {
                 name: DualExample
                 version: 2.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 bootstrapper: example.Bootstrap
                 dependencies:
                   bootstrap:
@@ -140,13 +141,13 @@ public class BileUtilsTest {
                 name: LegacyName
                 version: 1.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 """;
         String paperDescriptor = """
                 name: PaperName
                 version: 1.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 """;
 
         try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(updateArchive))) {
@@ -159,6 +160,9 @@ public class BileUtilsTest {
         }
 
         assertEquals("PaperName", BileUtils.readPaperPreferredPluginName(updateArchive));
+        assertTrue(BileUtils.pluginArchiveMatchesName(updateArchive, "LegacyName", false));
+        assertFalse(BileUtils.pluginArchiveMatchesName(updateArchive, "PaperName", false));
+        assertTrue(BileUtils.pluginArchiveMatchesName(updateArchive, "PaperName", true));
     }
 
     @Test
@@ -168,7 +172,7 @@ public class BileUtilsTest {
                 name: Example
                 version: 1.2.3
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 dependencies:
                   server:
                     RequiredPlugin:
@@ -201,7 +205,7 @@ public class BileUtilsTest {
                 name: DualExample
                 version: 2.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 depend: [LegacyRequired]
                 softdepend: [SharedDependency, LegacyOptional]
                 """;
@@ -209,7 +213,7 @@ public class BileUtilsTest {
                 name: DualExample
                 version: 2.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 dependencies:
                   bootstrap:
                     BootstrapRequired:
@@ -249,13 +253,53 @@ public class BileUtilsTest {
     }
 
     @Test
+    public void declaresDependency_readsPaperDependenciesFromTheSourceArtifact() throws Exception {
+        File pluginJar = temporaryFolder.newFile("PaperDependent.jar");
+        String pluginDescriptor = """
+                name: PaperDependent
+                version: 1.0.0
+                main: example.Plugin
+                api-version: 1.20
+                depend: [LegacyBase]
+                """;
+        String paperDescriptor = """
+                name: PaperDependent
+                version: 1.0.0
+                main: example.Plugin
+                api-version: 1.20
+                dependencies:
+                  server:
+                    LifecycleBase:
+                      required: true
+                    OptionalBase:
+                      required: false
+                """;
+
+        try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(pluginJar))) {
+            output.putNextEntry(new ZipEntry("plugin.yml"));
+            output.write(pluginDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            output.putNextEntry(new ZipEntry("paper-plugin.yml"));
+            output.write(paperDescriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        PluginDescriptionFile runtimeDescription = new PluginDescriptionFile(new StringReader(pluginDescriptor));
+        assertTrue(BileUtils.declaresDependency(runtimeDescription, pluginJar, "LifecycleBase"));
+        assertTrue(BileUtils.declaresDependency(runtimeDescription, pluginJar, "optionalbase"));
+        assertFalse(BileUtils.declaresDependency(runtimeDescription, pluginJar, "UnrelatedPlugin"));
+        assertFalse(BileUtils.declaresDependency(runtimeDescription, pluginJar, "LifecycleBase", false));
+        assertTrue(BileUtils.declaresDependency(runtimeDescription, pluginJar, "LegacyBase", false));
+    }
+
+    @Test
     public void getPluginDescription_rejectsInvalidPaperDependencyMetadata() throws Exception {
         File pluginJar = temporaryFolder.newFile("InvalidExample.jar");
         String descriptor = """
                 name: InvalidExample
                 version: 1.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 dependencies:
                   server:
                     PlaceholderAPI:
@@ -282,7 +326,7 @@ public class BileUtilsTest {
                 name: InvalidBootstrapExample
                 version: 1.0.0
                 main: example.Plugin
-                api-version: 26.2
+                api-version: 1.20
                 dependencies:
                   bootstrap:
                     RegistryPlugin:
@@ -303,11 +347,81 @@ public class BileUtilsTest {
     }
 
     @Test
-    public void derivePluginsFolder_usesUpdateFolderParentWithSpigotDefaultFallback() throws Exception {
+    public void getPluginDescription_acceptsEmptyPaperDependencySections() throws Exception {
+        File pluginJar = temporaryFolder.newFile("EmptyDependencies.jar");
+        String descriptor = """
+                name: EmptyDependencies
+                version: 1.0.0
+                main: example.Plugin
+                api-version: 1.20
+                dependencies:
+                  bootstrap: {}
+                  server: {}
+                """;
+
+        try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(pluginJar))) {
+            output.putNextEntry(new ZipEntry("paper-plugin.yml"));
+            output.write(descriptor.getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        PluginDescriptionFile description = BileUtils.getPluginDescription(pluginJar);
+        assertEquals("EmptyDependencies", description.getName());
+        assertTrue(BileUtils.getDependencies(pluginJar).isEmpty());
+        assertTrue(BileUtils.getSoftDependencies(pluginJar).isEmpty());
+    }
+
+    @Test
+    public void getPluginDescription_rejectsMissingDescriptors() throws Exception {
+        File pluginJar = temporaryFolder.newFile("NoDescriptor.jar");
+        try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(pluginJar))) {
+            output.putNextEntry(new ZipEntry("example/resource.txt"));
+            output.write("resource".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        InvalidDescriptionException exception = assertThrows(InvalidDescriptionException.class,
+                () -> BileUtils.getPluginDescription(pluginJar));
+        assertEquals("No plugin.yml or paper-plugin.yml found in NoDescriptor.jar", exception.getMessage());
+    }
+
+    @Test
+    public void derivePluginsFolder_usesUpdateFolderParent() throws Exception {
         File pluginsFolder = temporaryFolder.newFolder("plugins");
         assertEquals(pluginsFolder, BileUtils.derivePluginsFolder(new File(pluginsFolder, "update")));
+    }
+
+    @Test
+    public void derivePluginsFolder_usesDefaultWhenUpdateFolderHasNoParent() {
         assertEquals(new File("plugins"), BileUtils.derivePluginsFolder(new File("update")));
+    }
+
+    @Test
+    public void derivePluginsFolder_usesDefaultWhenUpdateFolderIsUnavailable() {
         assertEquals(new File("plugins"), BileUtils.derivePluginsFolder(null));
+    }
+
+    @Test
+    public void invokePluginsFolderApi_returnsFolderFromAvailableApi() throws Exception {
+        Method method = PluginsFolderApiFixture.class.getMethod("pluginsFolder");
+        assertEquals(new File("paper-plugins"), BileUtils.invokePluginsFolderApi(method));
+    }
+
+    @Test
+    public void invokePluginsFolderApi_returnsNullWhenCapabilityIsUnavailable() {
+        assertNull(BileUtils.invokePluginsFolderApi(null));
+    }
+
+    @Test
+    public void invokePluginsFolderApi_returnsNullForUnexpectedReturnType() throws Exception {
+        Method method = PluginsFolderApiFixture.class.getMethod("notAPluginsFolder");
+        assertNull(BileUtils.invokePluginsFolderApi(method));
+    }
+
+    @Test
+    public void invokePluginsFolderApi_returnsNullWhenInvocationFails() throws Exception {
+        Method method = PluginsFolderApiFixture.class.getMethod("failingPluginsFolder");
+        assertNull(BileUtils.invokePluginsFolderApi(method));
     }
 
     @Test
@@ -325,7 +439,7 @@ public class BileUtilsTest {
         commands.put("iris:iris", namedCommand("iris:iris"));
         commands.put("other", namedCommand("other"));
 
-        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null, new HashMap<>()), commands);
+        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands);
 
         assertFalse(commands.containsKey("iris"));
         assertFalse(commands.containsKey("iris:iris"));
@@ -457,6 +571,20 @@ public class BileUtilsTest {
 
         public String getName() {
             return name;
+        }
+    }
+
+    public static final class PluginsFolderApiFixture {
+        public static File pluginsFolder() {
+            return new File("paper-plugins");
+        }
+
+        public static String notAPluginsFolder() {
+            return "paper-plugins";
+        }
+
+        public static File failingPluginsFolder() {
+            throw new IllegalStateException("unavailable");
         }
     }
 }

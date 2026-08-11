@@ -1044,6 +1044,28 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         dirtyPlugins.remove(pluginName.toLowerCase(Locale.ROOT));
     }
 
+    private void queueCommandSelfReload(CommandSender sender, String pluginName) {
+        String message = localization.text(
+                BileMessages.RELOADING,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        );
+        Runnable acknowledgeAndQueue = () -> {
+            sender.sendMessage(message);
+            queueSelfReload("command");
+        };
+
+        if (sender instanceof Player player) {
+            if (!PlatformTasks.runForPlayer(this, player, acknowledgeAndQueue)) {
+                acknowledgeAndQueue.run();
+            }
+            return;
+        }
+
+        if (!runGlobal(acknowledgeAndQueue)) {
+            acknowledgeAndQueue.run();
+        }
+    }
+
     private void queueSelfReload(String source) {
         if (!selfReloadQueued.compareAndSet(false, true)) {
             return;
@@ -1511,11 +1533,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 String name = plugin.getName();
                 if (plugin == this) {
-                    queueSelfReload("command");
-                    sendCommandMessage(sender, localization.text(
-                            BileMessages.RELOADING,
-                            MessageArgs.builder().untrusted("plugin", name).build()
-                    ));
+                    queueCommandSelfReload(sender, name);
                     return;
                 }
 

@@ -1,0 +1,35 @@
+name: Compatibility
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out BileTools
+        uses: actions/checkout@v4
+        with:
+          path: BileTools
+      - name: Check out VolmLib
+        uses: actions/checkout@v4
+        with:
+          repository: VolmitSoftware/VolmLib
+          path: VolmLib
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build and verify VolmLib compatibility
+        working-directory: VolmLib
+        run: ./gradlew build
+      - name: Build and verify BileTools compatibility
+        working-directory: BileTools
+        run: ./gradlew build
