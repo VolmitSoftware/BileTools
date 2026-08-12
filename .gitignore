@@ -112,3 +112,5 @@ Temporary Items
 *.iml
 
 .codegraph/
+
+AGENTS.md
