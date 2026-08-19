@@ -15,8 +15,6 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class BileFancyMenu {
-    private static final int HELP_PAGE_SIZE = 17;
-
     private BileFancyMenu() {
     }
 
@@ -26,12 +24,12 @@ public final class BileFancyMenu {
             String[] args,
             DirectorTextResolver resolver
     ) {
-        Optional<DirectorHelpPage> request = DirectorMiniMenu.resolveHelp(engine, Arrays.asList(args), HELP_PAGE_SIZE);
+        Optional<DirectorHelpPage> request = DirectorMiniMenu.resolveHelp(engine, Arrays.asList(args));
         if (request.isEmpty()) {
             return false;
         }
 
-        DirectorMiniMenu.deliver(sender, DirectorMiniMenu.render(request.get(), DirectorMiniMenu.Theme.bileGreen(), resolver));
+        DirectorMiniMenu.deliver(sender, request.get(), DirectorMiniMenu.Theme.bileGreen(), resolver);
         return true;
     }
 
