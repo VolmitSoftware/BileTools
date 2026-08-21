@@ -98,7 +98,8 @@ public class SlaveBileServer extends Thread {
             });
         } catch (Throwable e) {
             if (running) {
-                BileTools.bile.getLogger().log(Level.WARNING, "Rejected or failed remote transfer: " + e.getMessage());
+                BileTools.bile.getLogger().log(
+                        Level.WARNING, "Rejected or failed remote transfer: " + e.getMessage(), e);
             }
         }
     }

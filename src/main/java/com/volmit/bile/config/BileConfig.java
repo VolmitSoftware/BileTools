@@ -24,7 +24,7 @@ public final class BileConfig {
     private static final String PATH_WATCHER_DEBOUNCE_TICKS = "watcher.fingerprint-debounce-ticks";
     private static final String PATH_WATCHER_IGNORE = "watcher.ignore";
     private static final String PATH_WATCHER_ONLY = "watcher.only";
-    private static final String PATH_WATCHER_COALESCE_TICKS = "watcher.coalesce-window-ticks";
+    private static final String PATH_REMOVED_WATCHER_COALESCE_TICKS = "watcher.coalesce-window-ticks";
     private static final String PATH_LOG_TIMINGS = "observability.log-timings";
     private static final String PATH_HEALTH_CHECK = "lifecycle.health-check";
 
@@ -42,7 +42,6 @@ public final class BileConfig {
     private final int watcherFingerprintDebounceTicks;
     private final List<String> watcherIgnore;
     private final List<String> watcherOnly;
-    private final int watcherCoalesceWindowTicks;
     private final boolean logTimings;
     private final boolean healthCheck;
 
@@ -60,7 +59,6 @@ public final class BileConfig {
                       int watcherFingerprintDebounceTicks,
                       List<String> watcherIgnore,
                       List<String> watcherOnly,
-                      int watcherCoalesceWindowTicks,
                       boolean logTimings,
                       boolean healthCheck) {
         this.remoteSlaveEnabled = remoteSlaveEnabled;
@@ -77,7 +75,6 @@ public final class BileConfig {
         this.watcherFingerprintDebounceTicks = watcherFingerprintDebounceTicks;
         this.watcherIgnore = List.copyOf(watcherIgnore);
         this.watcherOnly = List.copyOf(watcherOnly);
-        this.watcherCoalesceWindowTicks = watcherCoalesceWindowTicks;
         this.logTimings = logTimings;
         this.healthCheck = healthCheck;
     }
@@ -106,9 +103,10 @@ public final class BileConfig {
         long watcherIdlePollTicks = Math.max(1L, yaml.getLong(PATH_WATCHER_IDLE_TICKS, defaults.watcherIdlePollTicks));
         long watcherActivePollTicks = Math.max(1L, yaml.getLong(PATH_WATCHER_ACTIVE_TICKS, defaults.watcherActivePollTicks));
         int watcherFingerprintDebounceTicks = Math.max(1, yaml.getInt(PATH_WATCHER_DEBOUNCE_TICKS, defaults.watcherFingerprintDebounceTicks));
-        List<String> watcherIgnore = sanitizeListAllowEmpty(yaml.getStringList(PATH_WATCHER_IGNORE));
+        List<String> watcherIgnore = yaml.contains(PATH_WATCHER_IGNORE)
+                ? sanitizeListAllowEmpty(yaml.getStringList(PATH_WATCHER_IGNORE))
+                : defaults.watcherIgnore;
         List<String> watcherOnly = sanitizeListAllowEmpty(yaml.getStringList(PATH_WATCHER_ONLY));
-        int watcherCoalesceWindowTicks = Math.max(0, yaml.getInt(PATH_WATCHER_COALESCE_TICKS, defaults.watcherCoalesceWindowTicks));
         boolean logTimings = yaml.getBoolean(PATH_LOG_TIMINGS, defaults.logTimings);
         boolean healthCheck = yaml.getBoolean(PATH_HEALTH_CHECK, defaults.healthCheck);
 
@@ -127,7 +125,6 @@ public final class BileConfig {
                 watcherFingerprintDebounceTicks,
                 watcherIgnore,
                 watcherOnly,
-                watcherCoalesceWindowTicks,
                 logTimings,
                 healthCheck
         );
@@ -170,7 +167,6 @@ public final class BileConfig {
                 8,
                 ignore,
                 List.of(),
-                10,
                 true,
                 true
         );
@@ -191,7 +187,7 @@ public final class BileConfig {
         yaml.set(PATH_WATCHER_DEBOUNCE_TICKS, watcherFingerprintDebounceTicks);
         yaml.set(PATH_WATCHER_IGNORE, watcherIgnore);
         yaml.set(PATH_WATCHER_ONLY, watcherOnly);
-        yaml.set(PATH_WATCHER_COALESCE_TICKS, watcherCoalesceWindowTicks);
+        yaml.set(PATH_REMOVED_WATCHER_COALESCE_TICKS, null);
         yaml.set(PATH_LOG_TIMINGS, logTimings);
         yaml.set(PATH_HEALTH_CHECK, healthCheck);
     }
@@ -283,10 +279,6 @@ public final class BileConfig {
 
     public List<String> getWatcherOnly() {
         return watcherOnly;
-    }
-
-    public int getWatcherCoalesceWindowTicks() {
-        return watcherCoalesceWindowTicks;
     }
 
     public boolean isLogTimings() {

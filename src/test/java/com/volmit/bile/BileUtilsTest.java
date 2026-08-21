@@ -17,6 +17,7 @@ import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,6 +77,94 @@ public class BileUtilsTest {
         assertEquals(
                 "Cannot reload Example.jar through plugin.yml on Folia: folia-supported is not true; a full server restart is required",
                 unsupported.getMessage());
+    }
+
+    @Test
+    public void validateReloadIdentity_allowsOnlyExplicitProvidedIdentityReplacement() throws Exception {
+        PluginDescriptionFile sameIdentity = new PluginDescriptionFile(new StringReader("""
+                name: OldProvider
+                version: 1.0.0
+                main: example.Plugin
+                provides: [LegacyAPI]
+                """));
+        PluginDescriptionFile replacement = new PluginDescriptionFile(new StringReader("""
+                name: NewProvider
+                version: 2.0.0
+                main: example.Plugin
+                provides: [OldProvider, LegacyAPI]
+                """));
+        PluginDescriptionFile incompatibleReplacement = new PluginDescriptionFile(new StringReader("""
+                name: NewProvider
+                version: 2.0.0
+                main: example.Plugin
+                """));
+        PluginDescriptionFile droppedAlias = new PluginDescriptionFile(new StringReader("""
+                name: NewProvider
+                version: 2.0.0
+                main: example.Plugin
+                provides: [OldProvider]
+                """));
+
+        assertEquals("OldProvider", BileUtils.validateReloadIdentity(sameIdentity, sameIdentity, false));
+        assertEquals("NewProvider", BileUtils.validateReloadIdentity(sameIdentity, replacement, true));
+        assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateReloadIdentity(sameIdentity, replacement, false));
+        assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateReloadIdentity(sameIdentity, incompatibleReplacement, true));
+        assertThrows(BileUtils.RestartRequiredException.class,
+                () -> BileUtils.validateReloadIdentity(sameIdentity, droppedAlias, true));
+    }
+
+    @Test
+    public void archiveSourceMatches_rejectsPendingVersionOrIdentityChanges() throws Exception {
+        PluginDescriptionFile loaded = new PluginDescriptionFile(new StringReader("""
+                name: Demo
+                version: 1.0.0
+                main: example.Plugin
+                """));
+        PluginDescriptionFile same = new PluginDescriptionFile(new StringReader("""
+                name: Demo
+                version: 1.0.0
+                main: example.Plugin
+                """));
+        PluginDescriptionFile newer = new PluginDescriptionFile(new StringReader("""
+                name: Demo
+                version: 2.0.0
+                main: example.Plugin
+                """));
+        PluginDescriptionFile renamed = new PluginDescriptionFile(new StringReader("""
+                name: RenamedDemo
+                version: 1.0.0
+                main: example.Plugin
+                """));
+
+        assertTrue(BileTools.archiveSourceMatches(loaded, same));
+        assertFalse(BileTools.archiveSourceMatches(loaded, newer));
+        assertFalse(BileTools.archiveSourceMatches(loaded, renamed));
+    }
+
+    @Test
+    public void replacementTargetsForSource_retainsCopyBeforeDeleteCorrelation() {
+        Path oldSource = Path.of("OldProvider.jar").toAbsolutePath();
+        Path newTarget = Path.of("NewProvider.jar").toAbsolutePath();
+        Map<Path, Map<String, Path>> replacements = Map.of(
+                newTarget, Map.of("OldProvider", oldSource));
+
+        assertEquals(List.of(newTarget),
+                BileTools.replacementTargetsForSource(replacements, oldSource));
+        assertTrue(BileTools.replacementTargetsForSource(replacements, newTarget).isEmpty());
+    }
+
+    @Test
+    public void effectiveTrackedIdentities_preservesTheActuallyLoadedIdentityAcrossSupersession() {
+        Path oldSource = Path.of("OldProvider.jar").toAbsolutePath();
+        Map<String, Path> retained = Map.of("OldProvider", oldSource);
+
+        Map<String, Path> effective = BileTools.effectiveTrackedIdentities(
+                retained, "IntermediateProvider", oldSource);
+
+        assertEquals(retained, effective);
+        assertFalse(effective.containsKey("IntermediateProvider"));
     }
 
     @Test

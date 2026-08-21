@@ -257,26 +257,95 @@ public class BileUtils {
     }
 
     public static void reload(Plugin p) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+        reload(p, null, null, Map.of(), Set.of(), false);
+    }
+
+    public static void reloadFromSnapshot(Plugin plugin,
+                                          File snapshotFile,
+                                          File authoritativeFile) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+        if (snapshotFile == null || !snapshotFile.isFile()) {
+            throw new InvalidPluginException("Cannot reload from a missing staged plugin jar");
+        }
+        if (authoritativeFile == null) {
+            throw new InvalidPluginException("Cannot reload without an authoritative plugin jar path");
+        }
+        reload(plugin, snapshotFile, authoritativeFile, Map.of(), Set.of(), false);
+    }
+
+    public static Set<String> reloadFromSnapshot(Plugin plugin,
+                                                 File snapshotFile,
+                                                 File authoritativeFile,
+                                                 Map<String, SnapshotLoadSource> availableSnapshots,
+                                                 Set<String> protectedSnapshotPlugins) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+        if (snapshotFile == null || !snapshotFile.isFile()) {
+            throw new InvalidPluginException("Cannot reload from a missing staged plugin jar");
+        }
+        if (authoritativeFile == null) {
+            throw new InvalidPluginException("Cannot reload without an authoritative plugin jar path");
+        }
+        return reload(plugin, snapshotFile, authoritativeFile, availableSnapshots, protectedSnapshotPlugins, false);
+    }
+
+    public static Set<String> replaceProvidedIdentityFromSnapshot(
+            Plugin plugin,
+            File snapshotFile,
+            File authoritativeFile,
+            Map<String, SnapshotLoadSource> availableSnapshots,
+            Set<String> protectedSnapshotPlugins) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+        if (snapshotFile == null || !snapshotFile.isFile()) {
+            throw new InvalidPluginException("Cannot replace from a missing staged plugin jar");
+        }
+        if (authoritativeFile == null) {
+            throw new InvalidPluginException("Cannot replace without an authoritative plugin jar path");
+        }
+        return reload(plugin, snapshotFile, authoritativeFile, availableSnapshots, protectedSnapshotPlugins, true);
+    }
+
+    private static Set<String> reload(Plugin p,
+                                      File snapshotFile,
+                                      File authoritativeFile,
+                                      Map<String, SnapshotLoadSource> availableSnapshots,
+                                      Set<String> protectedSnapshotPlugins,
+                                      boolean allowProvidedIdentityReplacement) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
         if (p == null) {
             throw new InvalidPluginException("Cannot reload null plugin");
         }
 
         String pluginName = p.getName();
         long startNs = System.nanoTime();
-        File f = getPluginFile(p);
-        if (p.getClass().getClassLoader() == BileUtils.class.getClassLoader()) {
-            preloadOwnClasses(p, f);
+        File currentSource = getPluginFile(p);
+        File loadSource = snapshotFile == null ? currentSource : snapshotFile;
+        File retainedSource = authoritativeFile == null ? loadSource : authoritativeFile;
+        if (loadSource == null || !loadSource.isFile()) {
+            throw new InvalidPluginException("Cannot resolve plugin jar for " + pluginName);
         }
+        PluginDescriptionFile loadDescription = getPluginDescription(loadSource);
+        String loadedPluginName = validateReloadIdentity(
+                p.getDescription(), loadDescription, allowProvidedIdentityReplacement);
         Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
+        Map<String, SnapshotLoadSource> snapshots = normalizeSnapshotSources(availableSnapshots);
+        Set<String> protectedSnapshots = normalizePluginNames(protectedSnapshotPlugins);
+        Set<String> loadedSnapshots = new LinkedHashSet<>();
         Plugin reloaded = null;
         boolean reloadComplete = false;
 
         try {
-            RuntimeLoadArtifact runtimeArtifact = prepareReloadArtifact(p, runtimeArtifacts);
-            prepareDependentReloadArtifacts(p, runtimeArtifacts, new HashSet<>());
+            RuntimeLoadArtifact runtimeArtifact;
+            if (snapshotFile == null) {
+                runtimeArtifact = prepareReloadArtifact(p, runtimeArtifacts);
+            } else {
+                runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(loadSource, retainedSource, true);
+                runtimeArtifacts.put(cacheKey(loadSource), runtimeArtifact);
+            }
+            prepareDependentReloadArtifacts(
+                    p, runtimeArtifacts, new HashSet<>(), snapshots, protectedSnapshots);
 
             if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
-                backup(p);
+                if (snapshotFile == null) {
+                    backup(p);
+                } else {
+                    backupSnapshot(loadSource);
+                }
             }
 
             long unloadStartNs = System.nanoTime();
@@ -284,22 +353,34 @@ public class BileUtils {
             long unloadMs = nanosToMillis(System.nanoTime() - unloadStartNs);
 
             long loadStartNs = System.nanoTime();
-            load(f, true, runtimeArtifact, runtimeArtifacts);
+            load(loadSource, true, runtimeArtifact, runtimeArtifacts, retainedSource);
             long loadMs = nanosToMillis(System.nanoTime() - loadStartNs);
-            reloaded = Bukkit.getPluginManager().getPlugin(pluginName);
+            reloaded = getPluginByExactName(loadedPluginName);
             if (reloaded == null) {
-                throw new InvalidPluginException("Reloaded plugin " + pluginName + " was not registered");
+                throw new InvalidPluginException("Reloaded plugin " + loadedPluginName + " was not registered");
             }
 
             long dependentsStartNs = System.nanoTime();
             for (File i : x) {
-                if (i != null && i.isFile()) {
+                if (i == null) {
+                    continue;
+                }
+                SnapshotLoadSource dependentSnapshot = snapshotSourceFor(i, snapshots);
+                if (dependentSnapshot != null && dependentSnapshot.snapshotFile().isFile()) {
+                    load(
+                            dependentSnapshot.snapshotFile(),
+                            true,
+                            runtimeArtifacts.get(cacheKey(dependentSnapshot.authoritativeFile())),
+                            runtimeArtifacts,
+                            dependentSnapshot.authoritativeFile());
+                    loadedSnapshots.add(dependentSnapshot.pluginName());
+                } else if (i.isFile()) {
                     load(i, true, runtimeArtifacts.get(cacheKey(i)), runtimeArtifacts);
                 }
             }
             long dependentsMs = nanosToMillis(System.nanoTime() - dependentsStartNs);
 
-            HealthCheckResult health = verifyPluginHealth(reloaded, f);
+            HealthCheckResult health = verifyPluginHealth(reloaded, runtimeArtifact.runtimeFile());
             if (!health.ok()) {
                 throw new InvalidPluginException("Post-reload health check failed for " + pluginName + ": " + health.summary());
             }
@@ -311,6 +392,10 @@ public class BileUtils {
                     "load=" + loadMs + "ms",
                     "health=ok");
             reloadComplete = true;
+            if (snapshotFile != null) {
+                loadedSnapshots.add(loadedPluginName);
+            }
+            return Set.copyOf(loadedSnapshots);
         } finally {
             if (!reloadComplete && reloaded != null) {
                 cleanupFailedPluginLoad(reloaded);
@@ -321,34 +406,39 @@ public class BileUtils {
         }
     }
 
-    private static void preloadOwnClasses(Plugin plugin, File file) {
-        ClassLoader loader = plugin.getClass().getClassLoader();
-        if (loader == null || file == null || !file.isFile()) {
-            return;
+    static String validateReloadIdentity(PluginDescriptionFile currentDescription,
+                                         PluginDescriptionFile loadDescription,
+                                         boolean allowProvidedIdentityReplacement) throws InvalidPluginException {
+        if (currentDescription == null || loadDescription == null) {
+            throw new InvalidPluginException("Cannot validate a missing plugin identity");
         }
-
-        long startNs = System.nanoTime();
-        int loaded = 0;
-        try (ZipFile jar = new ZipFile(file)) {
-            Enumeration<? extends ZipEntry> entries = jar.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                String name = entry.getName();
-                if (!name.endsWith(".class") || name.startsWith("META-INF/") || name.endsWith("module-info.class")) {
-                    continue;
-                }
-
-                String className = name.substring(0, name.length() - 6).replace('/', '.');
-                try {
-                    Class.forName(className, false, loader);
-                    loaded++;
-                } catch (Throwable ignored) {
-                }
+        String currentPluginName = currentDescription.getName();
+        String loadedPluginName = loadDescription.getName();
+        boolean identityChanged = !currentPluginName.equalsIgnoreCase(loadedPluginName);
+        if (identityChanged && !allowProvidedIdentityReplacement) {
+            throw new RestartRequiredException(
+                    "Cannot hot-reload " + currentPluginName + " as " + loadedPluginName
+                            + "; a full server restart is required");
+        }
+        if (identityChanged && !providesIdentity(loadDescription, currentPluginName)) {
+            throw new RestartRequiredException(
+                    "Cannot hot-replace " + currentPluginName + " with " + loadedPluginName
+                            + " unless the replacement declares provides: [" + currentPluginName
+                            + "]; a full server restart is required");
+        }
+        for (String providedName : currentDescription.getProvides()) {
+            if (!providesIdentity(loadDescription, providedName)) {
+                throw new RestartRequiredException(
+                        "Cannot hot-reload " + currentPluginName + " because the replacement no longer provides "
+                                + providedName + "; a full server restart is required");
             }
-        } catch (Throwable ignored) {
         }
+        return loadedPluginName;
+    }
 
-        logTiming("preload " + plugin.getName(), nanosToMillis(System.nanoTime() - startNs), "classes=" + loaded);
+    private static boolean providesIdentity(PluginDescriptionFile description, String pluginName) {
+        return description.getName().equalsIgnoreCase(pluginName)
+                || containsPluginName(description.getProvides(), pluginName);
     }
 
     public record HealthCheckResult(boolean ok, List<String> failures) {
@@ -463,11 +553,41 @@ public class BileUtils {
         load(file, false, null, null);
     }
 
+    public static void loadFromSnapshot(File snapshotFile,
+                                        File authoritativeFile) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
+        if (snapshotFile == null || !snapshotFile.isFile()) {
+            throw new InvalidPluginException("Cannot load from a missing staged plugin jar");
+        }
+        if (authoritativeFile == null) {
+            throw new InvalidPluginException("Cannot load without an authoritative plugin jar path");
+        }
+
+        Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
+        RuntimeLoadArtifact runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(snapshotFile, authoritativeFile, false);
+        runtimeArtifacts.put(cacheKey(snapshotFile), runtimeArtifact);
+        try {
+            load(snapshotFile, false, runtimeArtifact, runtimeArtifacts, authoritativeFile);
+        } finally {
+            for (RuntimeLoadArtifact artifact : runtimeArtifacts.values()) {
+                artifact.discard();
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static void load(File file,
                              boolean reloadContext,
                              RuntimeLoadArtifact preparedArtifact,
                              Map<String, RuntimeLoadArtifact> preparedArtifacts) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
+        load(file, reloadContext, preparedArtifact, preparedArtifacts, file);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void load(File file,
+                             boolean reloadContext,
+                             RuntimeLoadArtifact preparedArtifact,
+                             Map<String, RuntimeLoadArtifact> preparedArtifacts,
+                             File retainedSourceFile) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
         if (getPlugin(file) != null) {
             stp("Skipping " + file.getName() + " (already loaded)");
             if (preparedArtifact != null) {
@@ -569,7 +689,7 @@ public class BileUtils {
                 throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
             }
 
-            registerLoadedFileOverride(target.getName(), file);
+            registerLoadedFileOverride(target.getName(), retainedSourceFile == null ? file : retainedSourceFile);
             boolean explicitOnLoad = shouldCallExplicitOnLoad();
 
             if (explicitOnLoad) {
@@ -601,7 +721,7 @@ public class BileUtils {
                 }
             }
 
-            HealthCheckResult health = verifyPluginHealth(target, file);
+            HealthCheckResult health = verifyPluginHealth(target, runtimeFile);
             if (!health.ok()) {
                 throw new InvalidPluginException("Post-load health check failed for " + target.getName() + ": " + health.summary());
             }
@@ -666,6 +786,20 @@ public class BileUtils {
 
     private static RuntimeLoadArtifact prepareRuntimeLoadArtifact(File sourceFile,
                                                                   boolean reloadContext) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        return prepareRuntimeLoadArtifact(sourceFile, reloadContext, sourceFile == null ? null : sourceFile.getName(), false);
+    }
+
+    private static RuntimeLoadArtifact prepareSnapshotRuntimeLoadArtifact(File snapshotFile,
+                                                                          File authoritativeFile,
+                                                                          boolean reloadContext) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        String sourceName = authoritativeFile == null ? snapshotFile.getName() : authoritativeFile.getName();
+        return prepareRuntimeLoadArtifact(snapshotFile, reloadContext, sourceName, true);
+    }
+
+    private static RuntimeLoadArtifact prepareRuntimeLoadArtifact(File sourceFile,
+                                                                  boolean reloadContext,
+                                                                  String runtimeSourceName,
+                                                                  boolean forceRuntimeCopy) throws IOException, InvalidPluginException, InvalidDescriptionException {
         if (sourceFile == null || !sourceFile.isFile()) {
             throw new InvalidPluginException("Cannot resolve plugin jar for runtime load");
         }
@@ -680,6 +814,11 @@ public class BileUtils {
         boolean paperRuntime = ServerPlatform.isPaperRuntime();
         validateRuntimeCompatibility(paperDescriptor, pluginDescriptor, paperRuntime, reloadContext, sourceFile.getName());
         if (!paperRuntime || !paperDescriptor) {
+            if (forceRuntimeCopy) {
+                File runtimeDirectory = runtimePluginDirectory();
+                return new RuntimeLoadArtifact(sourceFile,
+                        createRuntimePluginCopy(sourceFile, runtimeDirectory, runtimeSourceName));
+            }
             return new RuntimeLoadArtifact(sourceFile, sourceFile);
         }
 
@@ -695,8 +834,8 @@ public class BileUtils {
             throw new InvalidPluginException("Cannot prepare runtime plugin view before BileTools is initialized");
         }
 
-        File runtimeDirectory = new File(BileTools.bile.getDataFolder(), "runtime-plugins");
-        File runtimeFile = createRuntimePluginView(sourceFile, runtimeDirectory);
+        File runtimeDirectory = runtimePluginDirectory();
+        File runtimeFile = createRuntimePluginView(sourceFile, runtimeDirectory, runtimeSourceName);
         try {
             PluginDescriptionFile runtimeDescription = readPluginMetadata(runtimeFile).description();
             if (!sourceDescription.getName().equals(runtimeDescription.getName())
@@ -712,8 +851,14 @@ public class BileUtils {
     }
 
     static File createRuntimePluginView(File sourceFile, File runtimeDirectory) throws IOException {
+        return createRuntimePluginView(sourceFile, runtimeDirectory, sourceFile.getName());
+    }
+
+    private static File createRuntimePluginView(File sourceFile,
+                                                File runtimeDirectory,
+                                                String runtimeSourceName) throws IOException {
         Files.createDirectories(runtimeDirectory.toPath());
-        String baseName = encodeRuntimeSourceName(sourceFile.getName());
+        String baseName = encodeRuntimeSourceName(runtimeSourceName);
         String runtimeName = baseName + "-" + UUID.randomUUID() + ".jar";
         File partialFile = new File(runtimeDirectory, runtimeName + ".part");
         File runtimeFile = new File(runtimeDirectory, runtimeName);
@@ -776,6 +921,40 @@ public class BileUtils {
         }
     }
 
+    private static File createRuntimePluginCopy(File sourceFile,
+                                                File runtimeDirectory,
+                                                String runtimeSourceName) throws IOException {
+        Files.createDirectories(runtimeDirectory.toPath());
+        String baseName = encodeRuntimeSourceName(runtimeSourceName);
+        String runtimeName = baseName + "-" + UUID.randomUUID() + ".jar";
+        File partialFile = new File(runtimeDirectory, runtimeName + ".part");
+        File runtimeFile = new File(runtimeDirectory, runtimeName);
+        boolean complete = false;
+
+        try {
+            Files.copy(sourceFile.toPath(), partialFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.move(partialFile.toPath(), runtimeFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(partialFile.toPath(), runtimeFile.toPath());
+            }
+            complete = true;
+            return runtimeFile;
+        } finally {
+            deleteRuntimePluginFile(partialFile);
+            if (!complete) {
+                deleteRuntimePluginFile(runtimeFile);
+            }
+        }
+    }
+
+    private static File runtimePluginDirectory() throws InvalidPluginException {
+        if (BileTools.bile == null) {
+            throw new InvalidPluginException("Cannot prepare a runtime plugin copy before BileTools is initialized");
+        }
+        return new File(BileTools.bile.getDataFolder(), "runtime-plugins");
+    }
+
     private static RuntimeLoadArtifact prepareReloadArtifact(Plugin plugin,
                                                              Map<String, RuntimeLoadArtifact> artifacts) throws IOException, InvalidPluginException, InvalidDescriptionException {
         File sourceFile = getPluginFile(plugin);
@@ -803,6 +982,38 @@ public class BileUtils {
             artifacts.remove(artifactKey);
             runtimeArtifact.discard();
             throw e;
+        }
+    }
+
+    private static RuntimeLoadArtifact prepareSnapshotReloadArtifact(
+            Plugin plugin,
+            SnapshotLoadSource snapshot,
+            Map<String, RuntimeLoadArtifact> artifacts) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        if (!snapshot.snapshotFile().isFile()) {
+            throw new SnapshotUnavailableException("Missing staged snapshot for dependent " + plugin.getName());
+        }
+
+        String artifactKey = cacheKey(snapshot.authoritativeFile());
+        RuntimeLoadArtifact existingArtifact = artifacts.get(artifactKey);
+        if (existingArtifact != null) {
+            return existingArtifact;
+        }
+
+        RuntimeLoadArtifact runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(
+                snapshot.snapshotFile(), snapshot.authoritativeFile(), true);
+        try {
+            PluginDescriptionFile runtimeDescription = readPluginMetadata(runtimeArtifact.runtimeFile()).description();
+            if (!plugin.getName().equalsIgnoreCase(runtimeDescription.getName())) {
+                throw new InvalidPluginException("Cannot replace dependent " + plugin.getName() + " with plugin "
+                        + runtimeDescription.getName() + " from " + snapshot.snapshotFile().getName());
+            }
+            artifacts.put(artifactKey, runtimeArtifact);
+            prepareMissingDependencyArtifacts(snapshot.snapshotFile(), artifacts, new HashSet<>());
+            return runtimeArtifact;
+        } catch (IOException | InvalidPluginException | InvalidDescriptionException exception) {
+            artifacts.remove(artifactKey);
+            runtimeArtifact.discard();
+            throw exception;
         }
     }
 
@@ -892,6 +1103,15 @@ public class BileUtils {
     private static void prepareDependentReloadArtifacts(Plugin root,
                                                         Map<String, RuntimeLoadArtifact> artifacts,
                                                         Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
+        prepareDependentReloadArtifacts(root, artifacts, visited, Map.of(), Set.of());
+    }
+
+    private static void prepareDependentReloadArtifacts(
+            Plugin root,
+            Map<String, RuntimeLoadArtifact> artifacts,
+            Set<String> visited,
+            Map<String, SnapshotLoadSource> snapshots,
+            Set<String> protectedSnapshots) throws IOException, InvalidPluginException, InvalidDescriptionException {
         if (root == null || !visited.add(key(root.getName()))) {
             return;
         }
@@ -901,9 +1121,58 @@ public class BileUtils {
                 continue;
             }
 
-            prepareReloadArtifact(candidate, artifacts);
-            prepareDependentReloadArtifacts(candidate, artifacts, visited);
+            String candidateKey = key(candidate.getName());
+            SnapshotLoadSource snapshot = snapshots.get(candidateKey);
+            if (snapshot == null && protectedSnapshots.contains(candidateKey)) {
+                throw new SnapshotUnavailableException(
+                        "The staged snapshot for dependent " + candidate.getName() + " was superseded");
+            }
+            if (snapshot == null) {
+                prepareReloadArtifact(candidate, artifacts);
+            } else {
+                prepareSnapshotReloadArtifact(candidate, snapshot, artifacts);
+            }
+            prepareDependentReloadArtifacts(candidate, artifacts, visited, snapshots, protectedSnapshots);
         }
+    }
+
+    private static Map<String, SnapshotLoadSource> normalizeSnapshotSources(
+            Map<String, SnapshotLoadSource> availableSnapshots) {
+        if (availableSnapshots == null || availableSnapshots.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, SnapshotLoadSource> normalized = new LinkedHashMap<>();
+        for (SnapshotLoadSource snapshot : availableSnapshots.values()) {
+            if (snapshot != null) {
+                normalized.put(key(snapshot.pluginName()), snapshot);
+            }
+        }
+        return normalized;
+    }
+
+    private static Set<String> normalizePluginNames(Set<String> pluginNames) {
+        if (pluginNames == null || pluginNames.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> normalized = new HashSet<>();
+        for (String pluginName : pluginNames) {
+            if (pluginName != null && !pluginName.trim().isEmpty()) {
+                normalized.add(key(pluginName));
+            }
+        }
+        return normalized;
+    }
+
+    private static SnapshotLoadSource snapshotSourceFor(
+            File authoritativeFile,
+            Map<String, SnapshotLoadSource> snapshots) {
+        for (SnapshotLoadSource snapshot : snapshots.values()) {
+            if (sameFile(authoritativeFile, snapshot.authoritativeFile())) {
+                return snapshot;
+            }
+        }
+        return null;
     }
 
     private static RuntimeLoadArtifact preparedArtifactFor(File file,
@@ -1521,7 +1790,7 @@ public class BileUtils {
 
             removePaperLaunchProviders(plugin.getName(), runtimeFile, true, true);
             releaseRuntimePluginFile(plugin.getName());
-            if (file != null) {
+            if (file != null && (runtimeFile == null || sameFile(file, runtimeFile))) {
                 refreshPluginJarHandle(file);
             }
 
@@ -2033,6 +2302,12 @@ public class BileUtils {
         copy(getPluginFile(p), new File(getBackupLocation(p), p.getDescription().getVersion() + ".jar"));
     }
 
+    private static void backupSnapshot(File snapshotFile) throws IOException, InvalidDescriptionException {
+        PluginDescriptionFile description = getPluginDescription(snapshotFile);
+        BileTools.bile.getLogger().info("Backed up " + description.getName() + " " + description.getVersion());
+        copy(snapshotFile, new File(getBackupLocation(description.getName()), description.getVersion() + ".jar"));
+    }
+
     public static void copy(File a, File b) throws IOException {
         b.getParentFile().mkdirs();
         Files.copy(a.toPath(), b.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -2351,10 +2626,12 @@ public class BileUtils {
     }
 
     public static Plugin getPluginByName(String string) {
-        for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
-            if (i.getName().equalsIgnoreCase(string)) {
-                return i;
-            }
+        Plugin exact = getPluginByExactName(string);
+        if (exact != null) {
+            return exact;
+        }
+        if (string == null || string.trim().isEmpty()) {
+            return null;
         }
 
         for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
@@ -2364,5 +2641,34 @@ public class BileUtils {
         }
 
         return null;
+    }
+
+    public static Plugin getPluginByExactName(String pluginName) {
+        if (pluginName == null || pluginName.trim().isEmpty()) {
+            return null;
+        }
+        for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
+            if (i.getName().equalsIgnoreCase(pluginName)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    public record SnapshotLoadSource(String pluginName, File snapshotFile, File authoritativeFile) {
+        public SnapshotLoadSource {
+            if (pluginName == null || pluginName.trim().isEmpty()) {
+                throw new IllegalArgumentException("pluginName must not be blank");
+            }
+            if (snapshotFile == null || authoritativeFile == null) {
+                throw new IllegalArgumentException("snapshot and authoritative files are required");
+            }
+        }
+    }
+
+    public static final class SnapshotUnavailableException extends InvalidPluginException {
+        public SnapshotUnavailableException(String message) {
+            super(message);
+        }
     }
 }

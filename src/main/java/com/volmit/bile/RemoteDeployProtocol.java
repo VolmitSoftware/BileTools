@@ -34,6 +34,16 @@ public final class RemoteDeployProtocol {
     }
 
     public static void streamFile(File file, String address, int port, String password, int timeoutMs, long maxBytes) throws IOException {
+        streamFile(file, file == null ? null : file.getName(), address, port, password, timeoutMs, maxBytes);
+    }
+
+    public static void streamFile(File file,
+                                  String transferFileName,
+                                  String address,
+                                  int port,
+                                  String password,
+                                  int timeoutMs,
+                                  long maxBytes) throws IOException {
         if (file == null || !file.isFile()) {
             throw new IOException("Source file does not exist: " + file);
         }
@@ -43,7 +53,7 @@ public final class RemoteDeployProtocol {
             throw new IOException("File exceeds max transfer size (" + length + " > " + maxBytes + "): " + file.getName());
         }
 
-        String safeName = sanitizeJarFileName(file.getName());
+        String safeName = sanitizeJarFileName(transferFileName);
         byte[] digest = sha256OfFile(file);
 
         try (Socket socket = new Socket()) {
@@ -120,42 +130,49 @@ public final class RemoteDeployProtocol {
             }
 
             File part = new File(pluginsFolder, fileName + ".part");
-            MessageDigest digest;
+            boolean installed = false;
             try {
-                digest = MessageDigest.getInstance("SHA-256");
-            } catch (NoSuchAlgorithmException e) {
-                throw new IOException("SHA-256 unavailable", e);
-            }
-
-            try (FileOutputStream fos = new FileOutputStream(part)) {
-                byte[] buffer = new byte[8192];
-                long remaining = length;
-                while (remaining > 0) {
-                    int toRead = (int) Math.min(buffer.length, remaining);
-                    int read = din.read(buffer, 0, toRead);
-                    if (read < 0) {
-                        throw new IOException("Unexpected EOF receiving " + fileName);
-                    }
-                    fos.write(buffer, 0, read);
-                    digest.update(buffer, 0, read);
-                    remaining -= read;
+                MessageDigest digest;
+                try {
+                    digest = MessageDigest.getInstance("SHA-256");
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IOException("SHA-256 unavailable", e);
                 }
-                fos.flush();
-            }
 
-            byte[] actualDigest = digest.digest();
-            if (!MessageDigest.isEqual(expectedDigest, actualDigest)) {
-                Files.deleteIfExists(part.toPath());
-                throw new IOException("SHA-256 mismatch for " + fileName);
-            }
+                try (FileOutputStream fos = new FileOutputStream(part)) {
+                    byte[] buffer = new byte[8192];
+                    long remaining = length;
+                    while (remaining > 0) {
+                        int toRead = (int) Math.min(buffer.length, remaining);
+                        int read = din.read(buffer, 0, toRead);
+                        if (read < 0) {
+                            throw new IOException("Unexpected EOF receiving " + fileName);
+                        }
+                        fos.write(buffer, 0, read);
+                        digest.update(buffer, 0, read);
+                        remaining -= read;
+                    }
+                    fos.flush();
+                }
 
-            Path targetPath = target.toPath();
-            try {
-                Files.move(part.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException atomicFailed) {
-                Files.move(part.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                byte[] actualDigest = digest.digest();
+                if (!MessageDigest.isEqual(expectedDigest, actualDigest)) {
+                    throw new IOException("SHA-256 mismatch for " + fileName);
+                }
+
+                Path targetPath = target.toPath();
+                try {
+                    Files.move(part.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException atomicFailed) {
+                    Files.move(part.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                installed = true;
+                return target;
+            } finally {
+                if (!installed) {
+                    Files.deleteIfExists(part.toPath());
+                }
             }
-            return target;
         }
     }
 

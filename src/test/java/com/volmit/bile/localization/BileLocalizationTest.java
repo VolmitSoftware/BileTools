@@ -7,6 +7,7 @@ import art.arcane.volmlib.util.localization.MessageKey;
 import art.arcane.volmlib.util.localization.VolmitLocales;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,7 +16,9 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,6 +38,11 @@ public class BileLocalizationTest {
         Logger logger = Logger.getAnonymousLogger();
         logger.setUseParentHandlers(false);
         localization = new BileLocalization(temporaryFolder.newFolder(), logger);
+    }
+
+    @After
+    public void tearDown() {
+        localization.close();
     }
 
     @Test
@@ -151,6 +159,39 @@ public class BileLocalizationTest {
 
         assertTrue(rendered.contains("\uE0001\uE001"));
         assertTrue(rendered.contains("replacement.jar"));
+    }
+
+    @Test
+    public void automaticReloadsAreQueuedBehindThreeSecondCooldown() throws Exception {
+        long originalModified = Files.getLastModifiedTime(localization.languageFile().toPath()).toMillis();
+        YamlConfiguration yaml = loadLanguageFile();
+        yaml.set("locale", "de_DE");
+        yaml.save(localization.languageFile());
+        Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 1_000L));
+        localization.update(100L);
+        assertEquals("de_DE", localization.activeLocale());
+
+        yaml = loadLanguageFile();
+        yaml.set("locale", "fr_FR");
+        yaml.save(localization.languageFile());
+        Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 2_000L));
+        localization.update(TimeUnit.SECONDS.toNanos(2L));
+        assertEquals("de_DE", localization.activeLocale());
+
+        localization.update(100L + TimeUnit.SECONDS.toNanos(3L));
+        assertEquals("fr_FR", localization.activeLocale());
+    }
+
+    @Test
+    public void closeStopsAutomaticLanguageReloads() throws Exception {
+        localization.close();
+        YamlConfiguration yaml = loadLanguageFile();
+        yaml.set("locale", "de_DE");
+        yaml.save(localization.languageFile());
+
+        localization.update(Long.MAX_VALUE);
+
+        assertEquals("en_US", localization.activeLocale());
     }
 
     private YamlConfiguration loadLanguageFile() throws Exception {

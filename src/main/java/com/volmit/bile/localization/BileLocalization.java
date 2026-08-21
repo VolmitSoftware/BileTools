@@ -22,7 +22,9 @@ import net.md_5.bungee.api.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -31,25 +33,31 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class BileLocalization {
+public final class BileLocalization implements AutoCloseable {
     private static final long MAX_LANGUAGE_BYTES = 2L * 1024L * 1024L;
     private static final int MAX_REPORTED_ISSUES = 12;
+    private static final long AUTOMATIC_RELOAD_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(3L);
     private static final MessageCatalog CATALOG = BileMessages.catalog();
 
     private final File languageFile;
     private final Logger logger;
     private final LocalizationManager manager;
     private final FileWatcher watcher;
+    private final Map<String, byte[]> bundledResources;
     private volatile String activeLocale;
+    private boolean automaticReloadPending;
+    private long nextAutomaticReloadNanos = Long.MIN_VALUE;
 
     public BileLocalization(File dataFolder, Logger logger) {
         this.languageFile = new File(dataFolder, "language.yml");
         this.logger = logger;
         this.manager = new LocalizationManager(LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
         this.activeLocale = CATALOG.englishLocale();
+        this.bundledResources = loadBundledResources();
         ensureDefaultFile();
         reload();
         this.watcher = new FileWatcher(languageFile);
@@ -68,9 +76,27 @@ public final class BileLocalization {
     }
 
     public void update() {
+        update(System.nanoTime());
+    }
+
+    synchronized void update(long nowNanos) {
         if (watcher.checkModified()) {
-            reload();
+            automaticReloadPending = true;
         }
+        if (!automaticReloadPending || nowNanos < nextAutomaticReloadNanos) {
+            return;
+        }
+
+        nextAutomaticReloadNanos = saturatingAdd(nowNanos, AUTOMATIC_RELOAD_INTERVAL_NANOS);
+        if (reload()) {
+            automaticReloadPending = false;
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        automaticReloadPending = false;
+        watcher.close();
     }
 
     public synchronized boolean reload() {
@@ -158,16 +184,17 @@ public final class BileLocalization {
             return null;
         }
 
-        String resourcePath = "/languages/" + locale + ".yml";
-        InputStream input = BileLocalization.class.getResourceAsStream(resourcePath);
-        if (input == null) {
+        byte[] resource = bundledResources.get(locale);
+        if (resource == null) {
             if (VolmitLocales.isBundled(locale)) {
-                throw new IllegalArgumentException("Missing bundled language resource: " + resourcePath);
+                throw new IllegalArgumentException("Missing bundled language resource for " + locale);
             }
             return null;
         }
 
-        try (InputStream stream = input; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+        String resourcePath = "/languages/" + locale + ".yml";
+        try (InputStreamReader reader = new InputStreamReader(
+                new ByteArrayInputStream(resource), StandardCharsets.UTF_8)) {
             YamlConfiguration yaml = new YamlConfiguration();
             yaml.load(reader);
             String declaredLocale = yaml.getString("locale");
@@ -182,6 +209,27 @@ public final class BileLocalization {
             }
             return overlay.build();
         }
+    }
+
+    private Map<String, byte[]> loadBundledResources() {
+        Map<String, byte[]> resources = new LinkedHashMap<>();
+        for (String locale : VolmitLocales.nonEnglish()) {
+            String resourcePath = "/languages/" + locale + ".yml";
+            InputStream input = BileLocalization.class.getResourceAsStream(resourcePath);
+            if (input == null) {
+                throw new IllegalStateException("Missing bundled language resource: " + resourcePath);
+            }
+            try (InputStream stream = input) {
+                byte[] content = stream.readNBytes((int) MAX_LANGUAGE_BYTES + 1);
+                if (content.length > MAX_LANGUAGE_BYTES) {
+                    throw new IllegalStateException("Bundled language resource is too large: " + resourcePath);
+                }
+                resources.put(locale, content);
+            } catch (IOException exception) {
+                throw new IllegalStateException("Cannot preload bundled language resource: " + resourcePath, exception);
+            }
+        }
+        return Map.copyOf(resources);
     }
 
     private void appendMessages(ConfigurationSection messages, LocaleOverlay.Builder overlay) {
@@ -246,6 +294,13 @@ public final class BileLocalization {
         if (result.failure() != null) {
             logger.log(Level.SEVERE, "Language reload failed", result.failure());
         }
+    }
+
+    private long saturatingAdd(long left, long right) {
+        if (right > 0L && left > Long.MAX_VALUE - right) {
+            return Long.MAX_VALUE;
+        }
+        return left + right;
     }
 
     private static String render(ResolvedText resolved) {

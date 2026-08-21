@@ -39,7 +39,7 @@ Canonical English is defined in the typed Java catalog at `src/main/java/com/vol
 * `watcher.ignore` — plugin names that auto hot-drop/reload/unload will skip (defaults include LuckPerms, Vault, ProtocolLib, …)
 * `watcher.only` — if non-empty, **only** these plugins are auto-managed (allowlist mode)
 * Manual `/bile load|unload|reload` always bypasses ignore/only
-* `watcher.coalesce-window-ticks` — batch nearby jar changes into one dependency-aware reload flush
+* Automatic jar changes use a fixed three-second latest-state queue with one dependency-aware reload batch in flight and one trailing batch retained
 * `lifecycle.health-check` — fail reload if plugin is not actually enabled/registered after enable
 * `observability.log-timings` — log unload/load/reload phase timings
 
