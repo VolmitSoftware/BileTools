@@ -14,6 +14,7 @@ def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("co
 // ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
 // ======================== WINDOWS =============================
 // registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
+registerCustomOutputTask('SwiftSwamp', 'C://VolmitSoftware/BUILDS', true)
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/consumers/plugin-consumers/dropins/plugins")
 // ==============================================================
@@ -40,6 +41,7 @@ java {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
     maven { url = 'https://jitpack.io' }

@@ -114,3 +114,8 @@ Temporary Items
 .codegraph/
 
 AGENTS.md
+
+# Local build tooling, not part of the project
+build-lt.sh
+BUILDS/
+.run/

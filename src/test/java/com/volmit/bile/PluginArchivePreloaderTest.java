@@ -82,7 +82,7 @@ public class PluginArchivePreloaderTest {
     @Test
     public void startupPreloadIsTheFirstEnableActionAndPrecedesWatcherInitialization() throws Exception {
         Path source = Path.of("src/main/java/com/volmit/bile/BileTools.java");
-        String content = Files.readString(source, StandardCharsets.UTF_8);
+        String content = Files.readString(source, StandardCharsets.UTF_8).replace("\r\n", "\n");
         String enableStart = "public void onEnable() {\n        preloadSelfHostedArchive();";
 
         assertTrue(content.contains(enableStart));
