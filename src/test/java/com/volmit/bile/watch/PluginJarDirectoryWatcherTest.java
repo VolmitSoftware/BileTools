@@ -10,8 +10,11 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,6 +72,119 @@ public class PluginJarDirectoryWatcherTest {
             Files.writeString(jar, "one", StandardCharsets.UTF_8);
 
             assertSignal(watcher.reconcileNow(1L), jar);
+        }
+    }
+
+    @Test
+    public void unavailableNativeWatchRetainsPeriodicReconciliationCadence() throws Exception {
+        Path directory = temporaryFolder.newFolder("periodic-only-plugins").toPath();
+        Path jar = directory.resolve("Demo.jar");
+        try (PluginJarDirectoryWatcher watcher = new PluginJarDirectoryWatcher(directory, 10L, false)) {
+            watcher.start(0L);
+            Files.writeString(jar, "one", StandardCharsets.UTF_8);
+
+            assertTrue(watcher.poll(9L).signals().isEmpty());
+            assertSignal(watcher.poll(10L), jar);
+        }
+    }
+
+    @Test
+    public void exactFallbackFindsSameMetadataReplacementWithoutNativeEvents() throws Exception {
+        Path directory = temporaryFolder.newFolder("exact-fallback-plugins").toPath();
+        Path jar = directory.resolve("Demo.jar");
+        Files.writeString(jar, "old", StandardCharsets.UTF_8);
+        FileTime originalModified = Files.getLastModifiedTime(jar);
+        JarSnapshotStager.FileStamp originalStamp = JarSnapshotStager.FileStamp.read(jar);
+        String originalFingerprint = JarSnapshotStager.fingerprint(jar);
+
+        try (PluginJarDirectoryWatcher watcher = new PluginJarDirectoryWatcher(
+                directory, 10L, false, 1024L, 1)) {
+            watcher.start(0L);
+            watcher.synchronizeFingerprint(jar, originalFingerprint);
+
+            Files.writeString(jar, "new", StandardCharsets.UTF_8);
+            Files.setLastModifiedTime(jar, originalModified);
+            assertEquals(originalStamp, JarSnapshotStager.FileStamp.read(jar));
+
+            assertTrue(watcher.poll(9L).signals().isEmpty());
+            assertSignal(watcher.poll(10L), jar);
+        }
+    }
+
+    @Test
+    public void exactFallbackIntervalStartsAfterSweepCompletion() throws Exception {
+        Path directory = temporaryFolder.newFolder("completion-anchored-exact-plugins").toPath();
+        Path jar = directory.resolve("Demo.jar");
+        Files.writeString(jar, "old", StandardCharsets.UTF_8);
+        FileTime originalModified = Files.getLastModifiedTime(jar);
+        String originalFingerprint = JarSnapshotStager.fingerprint(jar);
+        AtomicLong completionNanos = new AtomicLong(15L);
+
+        try (PluginJarDirectoryWatcher watcher = new PluginJarDirectoryWatcher(
+                directory, 10L, false, 1024L, 1, completionNanos::get)) {
+            watcher.start(0L);
+            watcher.synchronizeFingerprint(jar, originalFingerprint);
+            assertTrue(watcher.poll(10L).signals().isEmpty());
+
+            Files.writeString(jar, "new", StandardCharsets.UTF_8);
+            Files.setLastModifiedTime(jar, originalModified);
+
+            assertTrue(watcher.poll(24L).signals().isEmpty());
+            assertSignal(watcher.poll(25L), jar);
+        }
+    }
+
+    @Test
+    public void exactFallbackStaggersMultipleJarsAcrossTheFileBudget() throws Exception {
+        Path directory = temporaryFolder.newFolder("budgeted-exact-plugins").toPath();
+        Map<Path, FileTime> modifiedTimes = new LinkedHashMap<>();
+        for (String name : List.of("Alpha.jar", "Beta.jar", "Gamma.jar")) {
+            Path jar = directory.resolve(name);
+            Files.writeString(jar, "old", StandardCharsets.UTF_8);
+            modifiedTimes.put(jar, Files.getLastModifiedTime(jar));
+        }
+        AtomicLong completionNanos = new AtomicLong(12L);
+
+        try (PluginJarDirectoryWatcher watcher = new PluginJarDirectoryWatcher(
+                directory, 10L, false, 1024L, 1, completionNanos::get)) {
+            watcher.start(0L);
+            assertTrue(watcher.poll(10L).signals().isEmpty());
+            assertTrue(watcher.poll(11L).signals().isEmpty());
+            assertTrue(watcher.poll(12L).signals().isEmpty());
+            completionNanos.set(24L);
+
+            for (Map.Entry<Path, FileTime> entry : modifiedTimes.entrySet()) {
+                Files.writeString(entry.getKey(), "new", StandardCharsets.UTF_8);
+                Files.setLastModifiedTime(entry.getKey(), entry.getValue());
+            }
+
+            assertTrue(watcher.poll(21L).signals().isEmpty());
+            assertOnlySignal(watcher.poll(22L), directory.resolve("Alpha.jar"));
+            assertOnlySignal(watcher.poll(23L), directory.resolve("Beta.jar"));
+            assertOnlySignal(watcher.poll(24L), directory.resolve("Gamma.jar"));
+        }
+    }
+
+    @Test
+    public void exactFallbackContinuesOneJarAcrossTheByteBudget() throws Exception {
+        Path directory = temporaryFolder.newFolder("byte-budgeted-exact-plugins").toPath();
+        Path jar = directory.resolve("Demo.jar");
+        Files.writeString(jar, "old-data", StandardCharsets.UTF_8);
+        FileTime originalModified = Files.getLastModifiedTime(jar);
+        AtomicLong completionNanos = new AtomicLong(11L);
+
+        try (PluginJarDirectoryWatcher watcher = new PluginJarDirectoryWatcher(
+                directory, 10L, false, 4L, 1, completionNanos::get)) {
+            watcher.start(0L);
+            assertTrue(watcher.poll(10L).signals().isEmpty());
+            assertTrue(watcher.poll(11L).signals().isEmpty());
+            completionNanos.set(22L);
+
+            Files.writeString(jar, "new-data", StandardCharsets.UTF_8);
+            Files.setLastModifiedTime(jar, originalModified);
+
+            assertTrue(watcher.poll(21L).signals().isEmpty());
+            assertSignal(watcher.poll(22L), jar);
         }
     }
 
@@ -141,6 +257,11 @@ public class PluginJarDirectoryWatcherTest {
 
     private void assertSignal(PluginJarDirectoryWatcher.PollResult result, Path expected) {
         assertTrue(result.signals().stream().anyMatch(signal -> signal.path().equals(expected.toAbsolutePath().normalize())));
+    }
+
+    private void assertOnlySignal(PluginJarDirectoryWatcher.PollResult result, Path expected) {
+        assertEquals(1, result.signals().size());
+        assertEquals(expected.toAbsolutePath().normalize(), result.signals().get(0).path());
     }
 
     private void moveComplete(Path source, Path target) throws Exception {

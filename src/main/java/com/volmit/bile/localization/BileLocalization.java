@@ -27,13 +27,22 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,26 +50,56 @@ public final class BileLocalization implements AutoCloseable {
     private static final long MAX_LANGUAGE_BYTES = 2L * 1024L * 1024L;
     private static final int MAX_REPORTED_ISSUES = 12;
     private static final long AUTOMATIC_RELOAD_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(3L);
+    private static final long EXACT_RECONCILIATION_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(2_500L);
+    private static final long IO_SHUTDOWN_MILLIS = 1_000L;
     private static final MessageCatalog CATALOG = BileMessages.catalog();
 
     private final File languageFile;
     private final Logger logger;
     private final LocalizationManager manager;
     private final FileWatcher watcher;
+    private final SnapshotReader snapshotReader;
+    private final ExecutorService automaticReloadIo;
+    private final AtomicBoolean automaticReadInFlight = new AtomicBoolean();
+    private final AtomicReference<AutomaticReadResult> completedAutomaticRead = new AtomicReference<>();
     private final Map<String, byte[]> bundledResources;
     private volatile String activeLocale;
-    private boolean automaticReloadPending;
+    private byte[] appliedLanguageContent = new byte[0];
+    private byte[] pendingAutomaticContent;
+    private boolean automaticReadRequested;
+    private boolean closed;
+    private long automaticReadGeneration;
     private long nextAutomaticReloadNanos = Long.MIN_VALUE;
+    private long nextExactReconciliationNanos = Long.MIN_VALUE;
+    private String lastAutomaticReadFailure;
 
     public BileLocalization(File dataFolder, Logger logger) {
+        this(dataFolder, logger, FileWatcher::new, BileLocalization::readLanguageContent);
+    }
+
+    BileLocalization(File dataFolder,
+                     Logger logger,
+                     FileWatcherFactory watcherFactory,
+                     SnapshotReader snapshotReader) {
         this.languageFile = new File(dataFolder, "language.yml");
-        this.logger = logger;
+        this.logger = Objects.requireNonNull(logger, "logger");
+        this.snapshotReader = Objects.requireNonNull(snapshotReader, "snapshotReader");
         this.manager = new LocalizationManager(LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
         this.activeLocale = CATALOG.englishLocale();
         this.bundledResources = loadBundledResources();
+        this.automaticReloadIo = Executors.newSingleThreadExecutor((Runnable task) -> {
+            Thread thread = new Thread(task, "BileTools-Language-Hotload-IO");
+            thread.setDaemon(true);
+            return thread;
+        });
         ensureDefaultFile();
         reload();
-        this.watcher = new FileWatcher(languageFile);
+        try {
+            this.watcher = Objects.requireNonNull(watcherFactory, "watcherFactory").create(languageFile);
+        } catch (RuntimeException failure) {
+            automaticReloadIo.shutdownNow();
+            throw failure;
+        }
     }
 
     public String activeLocale() {
@@ -80,23 +119,59 @@ public final class BileLocalization implements AutoCloseable {
     }
 
     synchronized void update(long nowNanos) {
-        if (watcher.checkModified()) {
-            automaticReloadPending = true;
+        if (closed) {
+            return;
         }
-        if (!automaticReloadPending || nowNanos < nextAutomaticReloadNanos) {
+
+        if (nextExactReconciliationNanos == Long.MIN_VALUE) {
+            nextExactReconciliationNanos = saturatingAdd(nowNanos, EXACT_RECONCILIATION_INTERVAL_NANOS);
+        }
+
+        boolean eventDetected = watcher.checkModifiedEvents();
+        boolean reconciliationDue = nowNanos >= nextExactReconciliationNanos;
+        if (reconciliationDue) {
+            nextExactReconciliationNanos = saturatingAdd(nowNanos, EXACT_RECONCILIATION_INTERVAL_NANOS);
+        }
+        if (eventDetected || reconciliationDue) {
+            queueAutomaticRead();
+        }
+
+        consumeAutomaticRead();
+        if (automaticReadInFlight.get()
+                || completedAutomaticRead.get() != null
+                || pendingAutomaticContent == null
+                || nowNanos < nextAutomaticReloadNanos) {
             return;
         }
 
         nextAutomaticReloadNanos = saturatingAdd(nowNanos, AUTOMATIC_RELOAD_INTERVAL_NANOS);
-        if (reload()) {
-            automaticReloadPending = false;
+        byte[] candidate = pendingAutomaticContent;
+        if (applyLanguageContent(candidate)) {
+            appliedLanguageContent = candidate.clone();
+            pendingAutomaticContent = null;
         }
     }
 
     @Override
     public synchronized void close() {
-        automaticReloadPending = false;
+        if (closed) {
+            return;
+        }
+        closed = true;
+        automaticReadGeneration++;
+        automaticReadRequested = false;
+        pendingAutomaticContent = null;
+        completedAutomaticRead.set(null);
         watcher.close();
+        automaticReloadIo.shutdownNow();
+        try {
+            if (!automaticReloadIo.awaitTermination(IO_SHUTDOWN_MILLIS, TimeUnit.MILLISECONDS)) {
+                logger.warning("Language hotload IO worker did not stop within one second");
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            logger.log(Level.WARNING, "Interrupted while stopping the language hotload IO worker", interrupted);
+        }
     }
 
     public synchronized boolean reload() {
@@ -104,7 +179,30 @@ public final class BileLocalization implements AutoCloseable {
             ensureDefaultFile();
         }
 
-        LocalizationReloadResult result = manager.reload(this::loadCandidate);
+        byte[] content;
+        try {
+            content = readSnapshotContent();
+        } catch (IOException failure) {
+            logger.log(Level.SEVERE, "Language reload could not capture a stable file snapshot", failure);
+            return false;
+        }
+
+        if (!applyLanguageContent(content)) {
+            return false;
+        }
+
+        automaticReadGeneration++;
+        automaticReadRequested = false;
+        pendingAutomaticContent = null;
+        completedAutomaticRead.set(null);
+        appliedLanguageContent = content.clone();
+        nextAutomaticReloadNanos = Long.MIN_VALUE;
+        return true;
+    }
+
+    private boolean applyLanguageContent(byte[] content) {
+        byte[] immutableContent = content.clone();
+        LocalizationReloadResult result = manager.reload(() -> loadCandidate(immutableContent));
         if (!result.applied()) {
             reportRejectedReload(result);
             return false;
@@ -148,16 +246,12 @@ public final class BileLocalization implements AutoCloseable {
         return renderTemplate(key.english(), arguments);
     }
 
-    private LocalizationCandidate loadCandidate() throws Exception {
-        if (!languageFile.isFile()) {
-            throw new IllegalArgumentException("Language source is not a regular file: " + languageFile.getPath());
-        }
-        if (languageFile.length() > MAX_LANGUAGE_BYTES) {
-            throw new IllegalArgumentException("Language source is too large: " + languageFile.getPath());
-        }
-
+    private LocalizationCandidate loadCandidate(byte[] content) throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.load(languageFile);
+        try (InputStreamReader reader = new InputStreamReader(
+                new ByteArrayInputStream(content), StandardCharsets.UTF_8)) {
+            yaml.load(reader);
+        }
         String locale = yaml.getString("locale", CATALOG.englishLocale());
         if (locale == null || locale.isBlank()) {
             locale = CATALOG.englishLocale();
@@ -177,6 +271,99 @@ public final class BileLocalization implements AutoCloseable {
             overlays.add(bundled);
         }
         return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
+    }
+
+    private void queueAutomaticRead() {
+        if (closed) {
+            return;
+        }
+        if (!automaticReadInFlight.compareAndSet(false, true)) {
+            automaticReadRequested = true;
+            return;
+        }
+
+        long generation = automaticReadGeneration;
+        try {
+            automaticReloadIo.execute(() -> captureAutomaticRead(generation));
+        } catch (RejectedExecutionException rejected) {
+            automaticReadInFlight.set(false);
+            if (!closed) {
+                automaticReadRequested = true;
+            }
+        }
+    }
+
+    private void captureAutomaticRead(long generation) {
+        AutomaticReadResult result;
+        try {
+            result = new AutomaticReadResult(generation, readSnapshotContent(), null);
+        } catch (NoSuchFileException missing) {
+            result = new AutomaticReadResult(generation, null, null);
+        } catch (IOException | RuntimeException failure) {
+            result = new AutomaticReadResult(generation, null, failure);
+        }
+        completedAutomaticRead.set(result);
+        automaticReadInFlight.set(false);
+    }
+
+    private byte[] readSnapshotContent() throws IOException {
+        byte[] content = snapshotReader.read(languageFile);
+        if (content == null) {
+            throw new IOException("Language snapshot reader returned no content");
+        }
+        return content;
+    }
+
+    private void consumeAutomaticRead() {
+        AutomaticReadResult result = completedAutomaticRead.getAndSet(null);
+        if (result != null && result.generation() == automaticReadGeneration) {
+            if (result.failure() == null && result.content() != null) {
+                lastAutomaticReadFailure = null;
+                pendingAutomaticContent = Arrays.equals(result.content(), appliedLanguageContent)
+                        ? null
+                        : result.content().clone();
+            } else if (result.failure() == null) {
+                lastAutomaticReadFailure = null;
+            } else {
+                String message = result.failure().getMessage();
+                if (!Objects.equals(message, lastAutomaticReadFailure)) {
+                    lastAutomaticReadFailure = message;
+                    logger.log(Level.WARNING, "Language hotload could not capture a stable file snapshot", result.failure());
+                }
+            }
+        }
+
+        if (automaticReadRequested && !automaticReadInFlight.get()) {
+            automaticReadRequested = false;
+            queueAutomaticRead();
+        }
+    }
+
+    static byte[] readLanguageContent(File file) throws IOException {
+        BasicFileAttributes before = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+        if (!before.isRegularFile()) {
+            throw new IOException("Language source is not a regular file: " + file.getPath());
+        }
+        if (before.size() > MAX_LANGUAGE_BYTES) {
+            throw new IOException("Language source is too large: " + file.getPath());
+        }
+
+        byte[] content;
+        try (InputStream input = Files.newInputStream(file.toPath())) {
+            content = input.readNBytes((int) MAX_LANGUAGE_BYTES + 1);
+        }
+        if (content.length > MAX_LANGUAGE_BYTES) {
+            throw new IOException("Language source is too large: " + file.getPath());
+        }
+
+        BasicFileAttributes after = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+        if (before.size() != after.size()
+                || !before.lastModifiedTime().equals(after.lastModifiedTime())
+                || !Objects.equals(before.fileKey(), after.fileKey())
+                || content.length != after.size()) {
+            throw new IOException("Language source changed while it was being read: " + file.getPath());
+        }
+        return content;
     }
 
     private LocaleOverlay loadBundledOverlay(String locale) throws Exception {
@@ -351,6 +538,20 @@ public final class BileLocalization implements AutoCloseable {
     private static String sanitizeUntrusted(String value) {
         String stripped = ChatColor.stripColor(value);
         return stripped == null ? "" : stripped.replace(String.valueOf(ChatColor.COLOR_CHAR), "");
+    }
+
+    interface FileWatcherFactory {
+        FileWatcher create(File file);
+    }
+
+    interface SnapshotReader {
+        byte[] read(File file) throws IOException;
+    }
+
+    private record AutomaticReadResult(long generation, byte[] content, Throwable failure) {
+        private AutomaticReadResult {
+            content = content == null ? null : content.clone();
+        }
     }
 
     private record RenderedArgument(String token, MessageArgument argument) {

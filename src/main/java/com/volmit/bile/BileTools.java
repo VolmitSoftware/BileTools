@@ -357,7 +357,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     private void baselineAppliedFingerprint(Path path, long nowNanos) {
         try {
-            appliedFingerprints.put(path, JarSnapshotStager.fingerprint(path));
+            String fingerprint = JarSnapshotStager.fingerprint(path);
+            appliedFingerprints.put(path, fingerprint);
+            pluginJarWatcher.synchronizeFingerprint(path, fingerprint);
         } catch (IOException exception) {
             getLogger().log(Level.WARNING,
                     "Could not establish the initial watcher fingerprint for " + path.getFileName(), exception);
@@ -389,6 +391,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private void restoreAppliedFingerprint(Path path, WatcherStateHandoff.Entry previous) {
         if (previous != null && !previous.appliedFingerprint().isEmpty()) {
             appliedFingerprints.put(path, previous.appliedFingerprint());
+            pluginJarWatcher.synchronizeFingerprint(path, previous.appliedFingerprint());
         }
     }
 
