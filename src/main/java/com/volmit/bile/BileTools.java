@@ -9,6 +9,9 @@ import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.localization.MessageArgs;
+import art.arcane.volmlib.util.plugin.ComponentLog;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
 import com.volmit.bile.config.BileConfig;
@@ -149,28 +152,33 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     static void debug(Supplier<String> messageSupplier) {
         Logger logger = operatorLogger();
         if (logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE, operatorMessage(logger, messageSupplier.get()));
+            ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.FINE,
+                    ComponentText.literal(messageSupplier.get()), null);
         }
     }
 
     static void info(String message) {
-        Logger logger = operatorLogger();
-        logger.log(Level.INFO, operatorMessage(logger, message));
+        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.INFO,
+                ComponentText.literal(message), null);
     }
 
     static void warn(String message) {
-        Logger logger = operatorLogger();
-        logger.log(Level.WARNING, operatorMessage(logger, message));
+        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.WARNING,
+                ComponentText.literal(message), null);
     }
 
     static void warn(String message, Throwable throwable) {
-        Logger logger = operatorLogger();
-        logger.log(Level.WARNING, operatorMessage(logger, message), throwable);
+        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.WARNING,
+                ComponentText.literal(message), throwable);
     }
 
     static void severe(String message, Throwable throwable) {
-        Logger logger = operatorLogger();
-        logger.log(Level.SEVERE, operatorMessage(logger, message), throwable);
+        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.SEVERE,
+                ComponentText.literal(message), throwable);
+    }
+
+    static void logLegacy(Level level, String message, Throwable throwable) {
+        ComponentLog.logLegacy(bile, FALLBACK_LOGGER, "[BileTools] ", level, message, throwable);
     }
 
     private static Logger operatorLogger() {
@@ -180,11 +188,6 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
         Logger logger = active.getLogger();
         return logger == null ? FALLBACK_LOGGER : logger;
-    }
-
-    private static String operatorMessage(Logger logger, String message) {
-        String safeMessage = message == null ? "" : message;
-        return logger == FALLBACK_LOGGER ? "[BileTools] " + safeMessage : safeMessage;
     }
 
     public static void streamFile(File f, String address, int port, String password) throws IOException {
@@ -1954,7 +1957,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         ), false);
     }
 
-    private void notifyBileUsers(String message, boolean playSound) {
+    private void notifyBileUsers(ComponentText message, boolean playSound) {
         runGlobal(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.hasPermission(ROOT_PERMISSION)) {
@@ -1963,7 +1966,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 // Folia/Canvas: entity-thread for location/sound; message is still safe via entity task.
                 PlatformTasks.runForPlayer(this, player, () -> {
-                    player.sendMessage(message);
+                    ComponentMessenger.send(player, message);
                     if (playSound) {
                         try {
                             player.playSound(player.getLocation(), sx, 1f, 1.9f);
@@ -1976,20 +1979,20 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         });
     }
 
-    private void sendCommandMessage(CommandSender sender, String message) {
+    private void sendCommandMessage(CommandSender sender, ComponentText message) {
         if (sender == null || message == null) {
             return;
         }
 
         if (sender instanceof Player player) {
-            if (!PlatformTasks.runForPlayer(this, player, () -> player.sendMessage(message))) {
-                player.sendMessage(message);
+            if (!PlatformTasks.runForPlayer(this, player, () -> ComponentMessenger.send(player, message))) {
+                ComponentMessenger.send(player, message);
             }
             return;
         }
 
-        if (!runGlobal(() -> sender.sendMessage(message))) {
-            sender.sendMessage(message);
+        if (!runGlobal(() -> ComponentMessenger.send(sender, message))) {
+            ComponentMessenger.send(sender, message);
         }
     }
 
@@ -2057,12 +2060,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void queueCommandSelfReload(CommandSender sender, String pluginName) {
-        String message = localization.text(
+        ComponentText message = localization.text(
                 BileMessages.RELOADING,
                 MessageArgs.builder().untrusted("plugin", pluginName).build()
         );
         Runnable acknowledgeAndQueue = () -> {
-            sender.sendMessage(message);
+            ComponentMessenger.send(sender, message);
             queueSelfReload("command");
         };
 
@@ -2615,7 +2618,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         if (!sender.hasPermission(ROOT_PERMISSION)) {
-            sender.sendMessage(localization.text(
+            ComponentMessenger.send(sender, localization.text(
                     BileMessages.PERMISSION_DENIED,
                     MessageArgs.builder().untrusted("permission", ROOT_PERMISSION).build()
             ));
@@ -2635,7 +2638,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         BileFancyMenu.playFailureSound(sender);
         if (result.getMessage() == null || result.getMessage().trim().isEmpty()) {
-            sender.sendMessage(localization.text(
+            ComponentMessenger.send(sender, localization.text(
                     BileMessages.UNKNOWN_COMMAND,
                     MessageArgs.builder().untrusted("command", String.join(" ", args)).build()
             ));
@@ -3096,7 +3099,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         @Override
         public void sendMessage(String message) {
             if (message != null && !message.trim().isEmpty()) {
-                sender.sendMessage(message);
+                ComponentMessenger.sendLiteral(sender, message);
             }
         }
     }

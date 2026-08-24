@@ -1,6 +1,7 @@
 package com.volmit.bile.localization;
 
 import art.arcane.volmlib.util.director.DirectorTextResolver;
+import art.arcane.volmlib.util.format.ColorFormatter;
 import art.arcane.volmlib.util.io.FileWatcher;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
@@ -18,7 +19,7 @@ import art.arcane.volmlib.util.localization.PluralSelector;
 import art.arcane.volmlib.util.localization.ResolvedText;
 import art.arcane.volmlib.util.localization.TextKey;
 import art.arcane.volmlib.util.localization.VolmitLocales;
-import net.md_5.bungee.api.ChatColor;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -219,15 +220,15 @@ public final class BileLocalization implements AutoCloseable {
         return true;
     }
 
-    public String text(TextKey key) {
+    public ComponentText text(TextKey key) {
         return text(key, MessageArgs.empty());
     }
 
-    public String text(TextKey key, MessageArgs arguments) {
+    public ComponentText text(TextKey key, MessageArgs arguments) {
         return render(manager.snapshot().resolve(key, arguments));
     }
 
-    public String text(PluralKey key, MessageArgs arguments) {
+    public ComponentText text(PluralKey key, MessageArgs arguments) {
         return render(manager.snapshot().resolve(key, arguments));
     }
 
@@ -237,17 +238,15 @@ public final class BileLocalization implements AutoCloseable {
             if (!(definition instanceof TextKey textKey)) {
                 return DirectorTextResolver.ENGLISH.resolve(key, arguments);
             }
-            String rendered = text(textKey, arguments);
-            String plain = ChatColor.stripColor(rendered);
-            return plain == null ? DirectorTextResolver.ENGLISH.resolve(key, arguments) : plain;
+            return text(textKey, arguments).plain();
         };
     }
 
-    public static String english(TextKey key) {
+    public static ComponentText english(TextKey key) {
         return english(key, MessageArgs.empty());
     }
 
-    public static String english(TextKey key, MessageArgs arguments) {
+    public static ComponentText english(TextKey key, MessageArgs arguments) {
         return renderTemplate(key.english(), arguments);
     }
 
@@ -497,11 +496,11 @@ public final class BileLocalization implements AutoCloseable {
         return left + right;
     }
 
-    private static String render(ResolvedText resolved) {
+    private static ComponentText render(ResolvedText resolved) {
         return renderTemplate(resolved.template(), resolved.arguments());
     }
 
-    private static String renderTemplate(String template, MessageArgs arguments) {
+    private static ComponentText renderTemplate(String template, MessageArgs arguments) {
         String prepared = template;
         List<RenderedArgument> replacements = new ArrayList<>(arguments.size());
         int index = 0;
@@ -512,10 +511,10 @@ public final class BileLocalization implements AutoCloseable {
             index++;
         }
 
-        return applyReplacements(ChatColor.translateAlternateColorCodes('&', prepared), replacements);
+        return applyReplacements(ColorFormatter.translateAlternateColorCodes('&', prepared), replacements);
     }
 
-    private static String applyReplacements(String rendered, List<RenderedArgument> replacements) {
+    private static ComponentText applyReplacements(String rendered, List<RenderedArgument> replacements) {
         StringBuilder output = new StringBuilder(rendered.length());
         int cursor = 0;
         while (cursor < rendered.length()) {
@@ -535,16 +534,16 @@ public final class BileLocalization implements AutoCloseable {
             MessageArgument argument = match.argument();
             String value = String.valueOf(argument.value());
             output.append(argument.kind() == MessageArgumentKind.TRUSTED
-                    ? ChatColor.translateAlternateColorCodes('&', value)
+                    ? ColorFormatter.translateAlternateColorCodes('&', value)
                     : sanitizeUntrusted(value));
             cursor += match.token().length();
         }
-        return output.toString();
+        return ComponentText.section(output.toString());
     }
 
     private static String sanitizeUntrusted(String value) {
-        String stripped = ChatColor.stripColor(value);
-        return stripped == null ? "" : stripped.replace(String.valueOf(ChatColor.COLOR_CHAR), "");
+        String stripped = ColorFormatter.stripColor(value);
+        return stripped == null ? "" : stripped.replace("\u00a7", "");
     }
 
     interface FileWatcherFactory {

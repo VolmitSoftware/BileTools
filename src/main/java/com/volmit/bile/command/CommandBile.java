@@ -252,8 +252,8 @@ public class CommandBile {
     private static String localized(TextKey key) {
         BileTools active = BileTools.bile;
         if (active == null || active.getLocalization() == null) {
-            return BileLocalization.english(key);
+            return BileLocalization.english(key).plain();
         }
-        return active.getLocalization().text(key);
+        return active.getLocalization().text(key).plain();
     }
 }

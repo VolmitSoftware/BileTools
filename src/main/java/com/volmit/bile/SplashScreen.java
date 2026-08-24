@@ -2,7 +2,8 @@ package com.volmit.bile;
 
 import art.arcane.volmlib.util.plugin.SplashScreenSupport;
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
+
+import java.util.logging.Level;
 
 public final class SplashScreen {
     private SplashScreen() {
@@ -27,7 +28,7 @@ public final class SplashScreen {
                         + dark + "██████" + accent + "╔╝" + dark + "██" + accent + "║" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "╗   " + dark + "██" + accent + "║   ╚" + dark + "██████" + accent + "╔╝╚" + dark + "██████" + accent + "╔╝" + dark + "███████" + accent + "╗" + dark + "███████" + accent + "║" + meta + "   Server: " + accent + serverVersion + meta + " | MC Support: " + accent + supportedMcVersion + "\n"
                         + accent + "╚═════╝ ╚═╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝" + meta + "   Java: " + accent + SplashScreenSupport.javaMajorVersion() + meta + " | Date: " + accent + startupDate + "\n";
 
-        Bukkit.getConsoleSender().sendMessage(splash);
+        BileTools.logLegacy(Level.INFO, splash, null);
     }
 
     private static String rainbowStudioName() {

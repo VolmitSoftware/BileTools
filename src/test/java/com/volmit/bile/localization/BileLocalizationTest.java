@@ -6,6 +6,10 @@ import art.arcane.volmlib.util.io.FileWatcher;
 import art.arcane.volmlib.util.localization.MessageArgs;
 import art.arcane.volmlib.util.localization.MessageKey;
 import art.arcane.volmlib.util.localization.VolmitLocales;
+import art.arcane.volmlib.util.plugin.ComponentText;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
@@ -101,7 +105,7 @@ public class BileLocalizationTest {
         yaml.save(localization.languageFile());
 
         assertTrue(localization.reload());
-        String rendered = localization.text(
+        ComponentText rendered = localization.text(
                 BileMessages.LOAD_SUCCESS,
                 MessageArgs.builder()
                         .untrusted("plugin", "Demo")
@@ -110,7 +114,8 @@ public class BileLocalizationTest {
                         .build()
         );
 
-        assertEquals(ChatColor.AQUA + "Demo.jar -> Demo (12)", rendered);
+        assertEquals(ChatColor.AQUA + "Demo.jar -> Demo (12)", rendered.legacy());
+        assertEquals("Demo.jar -> Demo (12)", rendered.plain());
         assertEquals("de_DE", localization.activeLocale());
     }
 
@@ -132,13 +137,13 @@ public class BileLocalizationTest {
         assertTrue(localization.reload());
 
         MessageArgs arguments = MessageArgs.builder().untrusted("permission", "bile.use").build();
-        assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments));
+        assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
 
         yaml.set("messages." + BileMessages.PERMISSION_DENIED.id(), "Missing its named argument");
         yaml.save(localization.languageFile());
 
         assertFalse(localization.reload());
-        assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments));
+        assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
     }
 
     @Test
@@ -156,17 +161,17 @@ public class BileLocalizationTest {
                         MessageArgs.builder().untrusted("key", "&cBad" + ChatColor.DARK_RED + "Name").build()
                 )
         );
-        String rendered = localization.text(
+        ComponentText rendered = localization.text(
                 BileMessages.PLUGIN_NOT_FOUND,
                 MessageArgs.builder().untrusted("plugin", "&cBad" + ChatColor.DARK_RED + "Name").build()
         );
-        assertTrue(rendered.contains("&cBadName"));
-        assertFalse(rendered.contains(String.valueOf(ChatColor.DARK_RED)));
+        assertTrue(rendered.plain().contains("&cBadName"));
+        assertFalse(rendered.plain().contains(String.valueOf(ChatColor.DARK_RED)));
     }
 
     @Test
     public void insertedArgumentsAreNeverReprocessedAsLaterSentinels() {
-        String rendered = localization.text(
+        ComponentText rendered = localization.text(
                 BileMessages.LOAD_SUCCESS,
                 MessageArgs.builder()
                         .untrusted("plugin", "\uE0001\uE001")
@@ -175,8 +180,29 @@ public class BileLocalizationTest {
                         .build()
         );
 
-        assertTrue(rendered.contains("\uE0001\uE001"));
-        assertTrue(rendered.contains("replacement.jar"));
+        assertTrue(rendered.plain().contains("\uE0001\uE001"));
+        assertTrue(rendered.plain().contains("replacement.jar"));
+    }
+
+    @Test
+    public void untrustedArgumentsCannotInjectLegacyMiniMessageOrRgbFormatting() throws Exception {
+        YamlConfiguration yaml = loadLanguageFile();
+        yaml.set("messages." + BileMessages.PLUGIN_NOT_FOUND.id(), "{plugin}");
+        yaml.save(localization.languageFile());
+        assertTrue(localization.reload());
+        String payload = "&cAmp \u00a74Section <click:run_command:'/op @s'>Click</click> "
+                + "<hover:show_text:'bad'>Hover</hover> <#ff0000>RGB</#ff0000> "
+                + "&#00ff00 &x&0&0&f&f&0&0Hex";
+
+        ComponentText rendered = localization.text(
+                BileMessages.PLUGIN_NOT_FOUND,
+                MessageArgs.builder().untrusted("plugin", payload).build()
+        );
+        Component component = MiniMessage.miniMessage().deserialize(rendered.miniMessage());
+
+        assertEquals(payload.replace("\u00a74", ""), rendered.plain());
+        assertFalse(rendered.legacy().contains("\u00a7"));
+        assertFalse(hasFormattingOrEvents(component));
     }
 
     @Test
@@ -193,7 +219,7 @@ public class BileLocalizationTest {
         yaml.save(localization.languageFile());
         Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 2_000L));
         settleUpdates(TimeUnit.SECONDS.toNanos(2L));
-        assertEquals("First automatic override", localization.text(BileMessages.COMMAND_LOAD));
+        assertEquals("First automatic override", localization.text(BileMessages.COMMAND_LOAD).plain());
 
         awaitText("Second automatic override", 100L + TimeUnit.SECONDS.toNanos(3L));
     }
@@ -339,12 +365,31 @@ public class BileLocalizationTest {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
         while (System.nanoTime() < deadline) {
             localization.update(nowNanos);
-            if (expected.equals(localization.text(BileMessages.COMMAND_LOAD))) {
+            if (expected.equals(localization.text(BileMessages.COMMAND_LOAD).plain())) {
                 return;
             }
             Thread.sleep(10L);
         }
-        assertEquals(expected, localization.text(BileMessages.COMMAND_LOAD));
+        assertEquals(expected, localization.text(BileMessages.COMMAND_LOAD).plain());
+    }
+
+    private static boolean hasFormattingOrEvents(Component component) {
+        if (component.color() != null
+                || component.clickEvent() != null
+                || component.hoverEvent() != null
+                || component.hasDecoration(TextDecoration.BOLD)
+                || component.hasDecoration(TextDecoration.ITALIC)
+                || component.hasDecoration(TextDecoration.UNDERLINED)
+                || component.hasDecoration(TextDecoration.STRIKETHROUGH)
+                || component.hasDecoration(TextDecoration.OBFUSCATED)) {
+            return true;
+        }
+        for (Component child : component.children()) {
+            if (hasFormattingOrEvents(child)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void settleUpdates(long nowNanos) throws Exception {

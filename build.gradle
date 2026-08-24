@@ -74,6 +74,10 @@ dependencies {
         changing = true
         transitive = false
     }
+    implementation('net.kyori:adventure-api:4.26.1')
+    implementation('net.kyori:adventure-text-minimessage:4.26.1')
+    implementation('net.kyori:adventure-text-serializer-legacy:4.26.1')
+    implementation('net.kyori:adventure-text-serializer-plain:4.26.1')
     implementation libs.bstats
     testImplementation libs.paper
     testImplementation 'junit:junit:4.13.2'
@@ -128,6 +132,9 @@ tasks.named('shadowJar') {
     }
     // bStats refuses to enable unless its package is relocated. VolmLib stays unrelocated on purpose.
     relocate('org.bstats', 'com.volmit.bile.libs.bstats')
+    relocate('net.kyori', 'com.volmit.bile.libs.kyori') {
+        skipStringConstants = true
+    }
 }
 
 tasks.register('verifyCompatibilityArtifact') {

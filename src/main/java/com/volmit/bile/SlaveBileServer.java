@@ -1,6 +1,7 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.util.localization.MessageArgs;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import com.volmit.bile.localization.BileMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -87,7 +88,7 @@ public class SlaveBileServer extends Thread {
                         continue;
                     }
                     PlatformTasks.runForPlayer(BileTools.bile, player, () ->
-                            player.sendMessage(BileTools.bile.getLocalization().text(
+                            ComponentMessenger.send(player, BileTools.bile.getLocalization().text(
                                     BileMessages.REMOTE_RECEIVING,
                                     MessageArgs.builder()
                                             .untrusted("file", received.getName())

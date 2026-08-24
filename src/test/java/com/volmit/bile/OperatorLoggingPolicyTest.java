@@ -16,19 +16,17 @@ public class OperatorLoggingPolicyTest {
     private static final Path SOURCE_ROOT = Path.of("src/main/java/com/volmit/bile");
 
     @Test
-    public void runtimeOutputUsesTheBileToolsLoggerExceptForTheBrandedSplash() throws IOException {
+    public void runtimeOutputUsesSharedComponentSinks() throws IOException {
         List<String> violations = new ArrayList<>();
         try (Stream<Path> files = Files.walk(SOURCE_ROOT)) {
             for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
                 List<String> lines = Files.readAllLines(file);
                 for (int index = 0; index < lines.size(); index++) {
                     String line = lines.get(index);
-                    boolean brandedSplash = file.endsWith("SplashScreen.java")
-                            && line.contains("Bukkit.getConsoleSender().sendMessage(splash)");
                     if (line.contains("System.out")
                             || line.contains("System.err")
                             || line.contains(".printStackTrace(")
-                            || (line.contains("getConsoleSender().sendMessage") && !brandedSplash)) {
+                            || line.contains(".sendMessage(")) {
                         violations.add(SOURCE_ROOT.relativize(file) + ":" + (index + 1) + " " + line.trim());
                     }
                 }
@@ -36,6 +34,13 @@ public class OperatorLoggingPolicyTest {
         }
 
         assertTrue(violations.toString(), violations.isEmpty());
+        String splash = Files.readString(SOURCE_ROOT.resolve("SplashScreen.java"));
+        assertTrue(splash.contains("BileTools.logLegacy(Level.INFO, splash, null)"));
+        assertFalse(splash.contains("Bukkit.getConsoleSender()"));
+        String localization = Files.readString(SOURCE_ROOT.resolve("localization/BileLocalization.java"));
+        assertTrue(localization.contains("ComponentText.section(output.toString())"));
+        assertTrue(localization.contains(": sanitizeUntrusted(value)"));
+        assertFalse(localization.contains("ChatColor.translateAlternateColorCodes"));
     }
 
     @Test
