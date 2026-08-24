@@ -57,7 +57,6 @@ import java.util.zip.ZipOutputStream;
 public class BileUtils {
     private static final int ZIP_READ_RETRY_LIMIT = 2;
     private static final int UUID_TEXT_LENGTH = 36;
-
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
     private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
