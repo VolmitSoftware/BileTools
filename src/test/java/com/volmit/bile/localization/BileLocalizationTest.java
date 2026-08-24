@@ -42,7 +42,7 @@ public class BileLocalizationTest {
     public void setUp() throws Exception {
         Logger logger = Logger.getAnonymousLogger();
         logger.setUseParentHandlers(false);
-        localization = new BileLocalization(temporaryFolder.newFolder(), logger);
+        localization = new BileLocalization(temporaryFolder.newFolder(), logger, "en_US");
     }
 
     @After
@@ -51,24 +51,23 @@ public class BileLocalizationTest {
     }
 
     @Test
-    public void generatesSparseLocaleSelectorWithEnglishInTheTypedCatalog() throws Exception {
+    public void generatesOverridesOnlyFileWithEnglishInTheTypedCatalog() throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.load(localization.languageFile());
 
-        assertEquals("en_US", yaml.getString("locale"));
-        assertFalse(yaml.contains("messages"));
+        assertFalse(yaml.contains("locale"));
+        assertTrue(yaml.contains("messages"));
         assertEquals("Load a plugin jar from the plugins directory", BileMessages.COMMAND_LOAD.english());
     }
 
     @Test
     public void everyBundledLocaleFullyCoversTheTypedCatalog() throws Exception {
         for (String locale : VolmitLocales.nonEnglish()) {
-            YamlConfiguration yaml = loadLanguageFile();
-            yaml.set("locale", locale);
-            yaml.set("messages", null);
-            yaml.save(localization.languageFile());
-
-            assertTrue(locale, localization.reload());
+            localization.close();
+            localization = new BileLocalization(
+                    temporaryFolder.newFolder("locale-" + locale),
+                    Logger.getAnonymousLogger(),
+                    locale);
             for (MessageKey key : localization.snapshot().catalog().keys()) {
                 assertEquals(locale + ":" + key.id(), locale, localization.snapshot().sourceLocale(key));
             }
@@ -92,8 +91,12 @@ public class BileLocalizationTest {
 
     @Test
     public void appliesExternalOverrideWithNamedArguments() throws Exception {
+        localization.close();
+        localization = new BileLocalization(
+                temporaryFolder.newFolder("de_DE-overrides"),
+                Logger.getAnonymousLogger(),
+                "de_DE");
         YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("locale", "de_DE");
         yaml.set("messages." + BileMessages.LOAD_SUCCESS.id(), "&b{file} -> {plugin} ({milliseconds})");
         yaml.save(localization.languageFile());
 
@@ -109,6 +112,16 @@ public class BileLocalizationTest {
 
         assertEquals(ChatColor.AQUA + "Demo.jar -> Demo (12)", rendered);
         assertEquals("de_DE", localization.activeLocale());
+    }
+
+    @Test
+    public void rejectsObsoleteLocaleSelectorInOverrideFile() throws Exception {
+        YamlConfiguration yaml = loadLanguageFile();
+        yaml.set("locale", "de_DE");
+        yaml.save(localization.languageFile());
+
+        assertFalse(localization.reload());
+        assertEquals("en_US", localization.activeLocale());
     }
 
     @Test
@@ -170,19 +183,19 @@ public class BileLocalizationTest {
     public void automaticReloadsAreQueuedBehindThreeSecondCooldown() throws Exception {
         long originalModified = Files.getLastModifiedTime(localization.languageFile().toPath()).toMillis();
         YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("locale", "de_DE");
+        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "First automatic override");
         yaml.save(localization.languageFile());
         Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 1_000L));
-        awaitLocale("de_DE", 100L);
+        awaitText("First automatic override", 100L);
 
         yaml = loadLanguageFile();
-        yaml.set("locale", "fr_FR");
+        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "Second automatic override");
         yaml.save(localization.languageFile());
         Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 2_000L));
         settleUpdates(TimeUnit.SECONDS.toNanos(2L));
-        assertEquals("de_DE", localization.activeLocale());
+        assertEquals("First automatic override", localization.text(BileMessages.COMMAND_LOAD));
 
-        awaitLocale("fr_FR", 100L + TimeUnit.SECONDS.toNanos(3L));
+        awaitText("Second automatic override", 100L + TimeUnit.SECONDS.toNanos(3L));
     }
 
     @Test
@@ -192,6 +205,7 @@ public class BileLocalizationTest {
         localization = new BileLocalization(
                 temporaryFolder.newFolder("idle-language"),
                 Logger.getAnonymousLogger(),
+                "en_US",
                 SilentFileWatcher::new,
                 file -> {
                     reads.incrementAndGet();
@@ -215,17 +229,19 @@ public class BileLocalizationTest {
         localization = new BileLocalization(
                 temporaryFolder.newFolder("same-metadata-language"),
                 Logger.getAnonymousLogger(),
+                "en_US",
                 SilentFileWatcher::new,
                 BileLocalization::readLanguageContent
         );
         localization.update(0L);
         Path languagePath = localization.languageFile().toPath();
         FileTime originalModified = Files.getLastModifiedTime(languagePath);
-        String original = Files.readString(languagePath, StandardCharsets.UTF_8);
-        Files.writeString(languagePath, original.replace("en_US", "de_DE"), StandardCharsets.UTF_8);
+        YamlConfiguration yaml = loadLanguageFile();
+        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "Same metadata override");
+        yaml.save(localization.languageFile());
         Files.setLastModifiedTime(languagePath, originalModified);
 
-        awaitLocale("de_DE", TimeUnit.MILLISECONDS.toNanos(2_500L));
+        awaitText("Same metadata override", TimeUnit.MILLISECONDS.toNanos(2_500L));
     }
 
     @Test
@@ -237,6 +253,7 @@ public class BileLocalizationTest {
         localization = new BileLocalization(
                 temporaryFolder.newFolder("immutable-language-snapshot"),
                 Logger.getAnonymousLogger(),
+                "en_US",
                 SilentFileWatcher::new,
                 file -> {
                     byte[] content = BileLocalization.readLanguageContent(file);
@@ -256,15 +273,15 @@ public class BileLocalizationTest {
         );
         localization.update(0L);
         Path languagePath = localization.languageFile().toPath();
-        Files.writeString(languagePath, "locale: de_DE\n", StandardCharsets.UTF_8);
+        Files.writeString(languagePath, "messages:\n  bile:\n    command:\n      load: Captured override\n", StandardCharsets.UTF_8);
 
         localization.update(TimeUnit.MILLISECONDS.toNanos(2_500L));
         assertTrue(captured.await(5L, TimeUnit.SECONDS));
-        Files.writeString(languagePath, "locale: fr_FR\n", StandardCharsets.UTF_8);
+        Files.writeString(languagePath, "messages:\n  bile:\n    command:\n      load: Newer override\n", StandardCharsets.UTF_8);
         release.countDown();
 
-        awaitLocale("de_DE", TimeUnit.MILLISECONDS.toNanos(2_500L));
-        assertEquals("locale: fr_FR\n", Files.readString(languagePath, StandardCharsets.UTF_8));
+        awaitText("Captured override", TimeUnit.MILLISECONDS.toNanos(2_500L));
+        assertEquals("messages:\n  bile:\n    command:\n      load: Newer override\n", Files.readString(languagePath, StandardCharsets.UTF_8));
     }
 
     @Test
@@ -273,6 +290,7 @@ public class BileLocalizationTest {
         localization = new BileLocalization(
                 temporaryFolder.newFolder("missing-language-snapshot"),
                 Logger.getAnonymousLogger(),
+                "en_US",
                 SilentFileWatcher::new,
                 BileLocalization::readLanguageContent
         );
@@ -315,6 +333,18 @@ public class BileLocalizationTest {
             Thread.sleep(10L);
         }
         assertEquals(expected, localization.activeLocale());
+    }
+
+    private void awaitText(String expected, long nowNanos) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        while (System.nanoTime() < deadline) {
+            localization.update(nowNanos);
+            if (expected.equals(localization.text(BileMessages.COMMAND_LOAD))) {
+                return;
+            }
+            Thread.sleep(10L);
+        }
+        assertEquals(expected, localization.text(BileMessages.COMMAND_LOAD));
     }
 
     private void settleUpdates(long nowNanos) throws Exception {

@@ -19,7 +19,7 @@ public class BileConfigTest {
 
     @Test
     public void removesObsoleteCoalesceWindowAndRestoresMissingIgnoreDefaults() throws Exception {
-        File configFile = temporaryFolder.newFile("config.yml");
+        File configFile = temporaryFolder.newFile("biletools.yml");
         Files.writeString(
                 configFile.toPath(),
                 "watcher:\n  coalesce-window-ticks: 1\n",
@@ -34,11 +34,25 @@ public class BileConfigTest {
 
     @Test
     public void preservesExplicitlyEmptyIgnoreList() throws Exception {
-        File configFile = temporaryFolder.newFile("config.yml");
+        File configFile = temporaryFolder.newFile("biletools.yml");
         Files.writeString(configFile.toPath(), "watcher:\n  ignore: []\n", StandardCharsets.UTF_8);
 
         BileConfig config = BileConfig.load(configFile);
 
         assertTrue(config.getWatcherIgnore().isEmpty());
+    }
+
+    @Test
+    public void writesLanguageThenMetricsBeforeOperationalSettings() throws Exception {
+        File configFile = temporaryFolder.newFile("biletools.yml");
+
+        BileConfig config = BileConfig.load(configFile);
+        String written = Files.readString(configFile.toPath(), StandardCharsets.UTF_8);
+
+        assertEquals("en_US", config.getLanguage());
+        assertTrue(config.isMetrics());
+        assertTrue(written.indexOf("language: en_US") >= 0);
+        assertTrue(written.indexOf("metrics: true") > written.indexOf("language: en_US"));
+        assertTrue(written.indexOf("remote-deploy:") > written.indexOf("metrics: true"));
     }
 }

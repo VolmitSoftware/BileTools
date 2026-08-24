@@ -38,7 +38,7 @@ public final class BileToolsIntegrationService implements IntegrationServiceCont
 
     public void register() {
         Bukkit.getServicesManager().register(IntegrationServiceContract.class, this, plugin, ServicePriority.Normal);
-        plugin.getLogger().info("Integration provider registered for BileTools");
+        BileTools.debug(() -> "Integration provider registered.");
     }
 
     public void unregister() {

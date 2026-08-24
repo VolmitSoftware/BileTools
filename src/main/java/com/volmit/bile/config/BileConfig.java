@@ -10,6 +10,8 @@ import java.util.Locale;
 import java.util.Set;
 
 public final class BileConfig {
+    private static final String PATH_LANGUAGE = "language";
+    private static final String PATH_METRICS = "metrics";
     private static final String PATH_SLAVE_ENABLED = "remote-deploy.slave.slave-enabled";
     private static final String PATH_SLAVE_PORT = "remote-deploy.slave.slave-port";
     private static final String PATH_SLAVE_PAYLOAD = "remote-deploy.slave.slave-payload";
@@ -28,6 +30,8 @@ public final class BileConfig {
     private static final String PATH_LOG_TIMINGS = "observability.log-timings";
     private static final String PATH_HEALTH_CHECK = "lifecycle.health-check";
 
+    private final String language;
+    private final boolean metrics;
     private final boolean remoteSlaveEnabled;
     private final int remoteSlavePort;
     private final String remoteSlavePayload;
@@ -45,7 +49,9 @@ public final class BileConfig {
     private final boolean logTimings;
     private final boolean healthCheck;
 
-    public BileConfig(boolean remoteSlaveEnabled,
+    public BileConfig(String language,
+                      boolean metrics,
+                      boolean remoteSlaveEnabled,
                       int remoteSlavePort,
                       String remoteSlavePayload,
                       boolean remoteMasterEnabled,
@@ -61,6 +67,8 @@ public final class BileConfig {
                       List<String> watcherOnly,
                       boolean logTimings,
                       boolean healthCheck) {
+        this.language = language;
+        this.metrics = metrics;
         this.remoteSlaveEnabled = remoteSlaveEnabled;
         this.remoteSlavePort = remoteSlavePort;
         this.remoteSlavePayload = remoteSlavePayload;
@@ -91,6 +99,8 @@ public final class BileConfig {
         }
 
         BileConfig defaults = defaults();
+        String language = sanitizeScalar(yaml.getString(PATH_LANGUAGE), defaults.language);
+        boolean metrics = yaml.getBoolean(PATH_METRICS, defaults.metrics);
         boolean remoteSlaveEnabled = yaml.getBoolean(PATH_SLAVE_ENABLED, defaults.remoteSlaveEnabled);
         int remoteSlavePort = yaml.getInt(PATH_SLAVE_PORT, defaults.remoteSlavePort);
         String remoteSlavePayload = sanitizeScalar(yaml.getString(PATH_SLAVE_PAYLOAD), defaults.remoteSlavePayload);
@@ -111,6 +121,8 @@ public final class BileConfig {
         boolean healthCheck = yaml.getBoolean(PATH_HEALTH_CHECK, defaults.healthCheck);
 
         BileConfig config = new BileConfig(
+                language,
+                metrics,
                 remoteSlaveEnabled,
                 remoteSlavePort,
                 remoteSlavePayload,
@@ -153,6 +165,8 @@ public final class BileConfig {
         ignore.add("spark");
 
         return new BileConfig(
+                "en_US",
+                true,
                 false,
                 9876,
                 "pickapassword",
@@ -173,6 +187,8 @@ public final class BileConfig {
     }
 
     public void write(YamlConfiguration yaml) {
+        yaml.set(PATH_LANGUAGE, language);
+        yaml.set(PATH_METRICS, metrics);
         yaml.set(PATH_SLAVE_ENABLED, remoteSlaveEnabled);
         yaml.set(PATH_SLAVE_PORT, remoteSlavePort);
         yaml.set(PATH_SLAVE_PAYLOAD, remoteSlavePayload);
@@ -223,6 +239,14 @@ public final class BileConfig {
         }
 
         return true;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public boolean isMetrics() {
+        return metrics;
     }
 
     public boolean isRemoteSlaveEnabled() {

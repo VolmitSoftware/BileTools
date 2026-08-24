@@ -3,7 +3,7 @@ Tools for making garbage
 
 ## Language and localization
 
-Canonical English is defined in the typed Java catalog at `src/main/java/com/volmit/bile/localization/BileMessages.java`; BileTools does not ship a second English message resource. Complete bundles are included for German, Spanish, Finnish, French, Hebrew, Italian, Japanese, Korean, Lithuanian, Dutch, Polish, Portuguese, Russian, Turkish, Vietnamese, Simplified Chinese, and Traditional Chinese. Set `locale` in `language.yml` to select one. Any message entries added to that file are sparse server-specific overrides; omitted entries resolve from the selected bundle and then code-owned English.
+Canonical English is defined in the typed Java catalog at `src/main/java/com/volmit/bile/localization/BileMessages.java`; BileTools does not ship a second English message resource. Complete bundles are included for German, Spanish, Finnish, French, Hebrew, Italian, Japanese, Korean, Lithuanian, Dutch, Polish, Portuguese, Russian, Turkish, Vietnamese, Simplified Chinese, and Traditional Chinese. Set `language` in `biletools.yml` to select one. Entries in `language.yml` are sparse server-specific overrides; omitted entries resolve from the selected bundle and then code-owned English.
 
 ## What the hell does this do?
 * Any plugin jar files modified while loaded (maven compile or export or even drag/drop) are automatically reloaded. So now all you have to do is smack the run button and bam, its already in the game without reloading, dragging or really doing anything. Psst... Works best with multiple monitors.
@@ -35,7 +35,7 @@ Canonical English is defined in the typed Java catalog at `src/main/java/com/vol
 * Classic `Bukkit.getScheduler()` is never used on Folia/Canvas (it throws `UnsupportedOperationException`)
 * Runtime hot-load preserves required/optional dependency discovery, but cannot recreate Paper's startup provider graph; missing `BEFORE`, `AFTER`, and `OMIT` dependencies are loaded first so the public PluginManager can validate the target plugin
 
-### Watcher filters (`config.yml`)
+### Watcher filters (`biletools.yml`)
 * `watcher.ignore` — plugin names that auto hot-drop/reload/unload will skip (defaults include LuckPerms, Vault, ProtocolLib, …)
 * `watcher.only` — if non-empty, **only** these plugins are auto-managed (allowlist mode)
 * Manual `/bile load|unload|reload` always bypasses ignore/only

@@ -55,6 +55,7 @@ public final class BileLocalization implements AutoCloseable {
     private static final MessageCatalog CATALOG = BileMessages.catalog();
 
     private final File languageFile;
+    private final String configuredLocale;
     private final Logger logger;
     private final LocalizationManager manager;
     private final FileWatcher watcher;
@@ -73,15 +74,19 @@ public final class BileLocalization implements AutoCloseable {
     private long nextExactReconciliationNanos = Long.MIN_VALUE;
     private String lastAutomaticReadFailure;
 
-    public BileLocalization(File dataFolder, Logger logger) {
-        this(dataFolder, logger, FileWatcher::new, BileLocalization::readLanguageContent);
+    public BileLocalization(File dataFolder, Logger logger, String configuredLocale) {
+        this(dataFolder, logger, configuredLocale, FileWatcher::new, BileLocalization::readLanguageContent);
     }
 
     BileLocalization(File dataFolder,
                      Logger logger,
+                     String configuredLocale,
                      FileWatcherFactory watcherFactory,
                      SnapshotReader snapshotReader) {
         this.languageFile = new File(dataFolder, "language.yml");
+        this.configuredLocale = configuredLocale == null || configuredLocale.isBlank()
+                ? CATALOG.englishLocale()
+                : configuredLocale.trim();
         this.logger = Objects.requireNonNull(logger, "logger");
         this.snapshotReader = Objects.requireNonNull(snapshotReader, "snapshotReader");
         this.manager = new LocalizationManager(LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
@@ -252,12 +257,11 @@ public final class BileLocalization implements AutoCloseable {
                 new ByteArrayInputStream(content), StandardCharsets.UTF_8)) {
             yaml.load(reader);
         }
-        String locale = yaml.getString("locale", CATALOG.englishLocale());
-        if (locale == null || locale.isBlank()) {
-            locale = CATALOG.englishLocale();
+        if (yaml.contains("locale")) {
+            throw new IllegalArgumentException(
+                    "language.yml no longer accepts locale. Set language in biletools.yml, delete language.yml, and restart BileTools to regenerate the overrides-only file.");
         }
-
-        String selectedLocale = locale.trim();
+        String selectedLocale = configuredLocale;
         LocaleOverlay.Builder overlay = LocaleOverlay.builder(languageFile.getPath(), selectedLocale);
         ConfigurationSection messages = yaml.getConfigurationSection("messages");
         if (messages != null) {
@@ -461,7 +465,10 @@ public final class BileLocalization implements AutoCloseable {
         try {
             Files.createDirectories(languageFile.toPath().getParent());
             YamlConfiguration yaml = new YamlConfiguration();
-            yaml.set("locale", CATALOG.englishLocale());
+            yaml.options().header(
+                    "BileTools language overrides. Select the active language in biletools.yml.\n"
+                            + "Add only message keys you want to replace under messages.");
+            yaml.set("messages", Map.of());
             yaml.save(languageFile);
         } catch (Exception exception) {
             logger.log(Level.SEVERE, "Unable to create the default language file", exception);

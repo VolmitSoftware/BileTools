@@ -69,7 +69,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BileTools extends JavaPlugin implements Listener, CommandExecutor, TabCompleter, ReloadAware {
     private static final String ROOT_COMMAND = "biletools";
@@ -85,6 +87,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
     // bstats.org plugin id
     private static final int BSTATS_PLUGIN_ID = 33192;
+    private static final Logger FALLBACK_LOGGER = Logger.getLogger("BileTools");
 
     private volatile SlaveBileServer srv;
     private volatile Metrics metrics;
@@ -143,6 +146,47 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     });
     public static BileConfig cfg;
 
+    static void debug(Supplier<String> messageSupplier) {
+        Logger logger = operatorLogger();
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, operatorMessage(logger, messageSupplier.get()));
+        }
+    }
+
+    static void info(String message) {
+        Logger logger = operatorLogger();
+        logger.log(Level.INFO, operatorMessage(logger, message));
+    }
+
+    static void warn(String message) {
+        Logger logger = operatorLogger();
+        logger.log(Level.WARNING, operatorMessage(logger, message));
+    }
+
+    static void warn(String message, Throwable throwable) {
+        Logger logger = operatorLogger();
+        logger.log(Level.WARNING, operatorMessage(logger, message), throwable);
+    }
+
+    static void severe(String message, Throwable throwable) {
+        Logger logger = operatorLogger();
+        logger.log(Level.SEVERE, operatorMessage(logger, message), throwable);
+    }
+
+    private static Logger operatorLogger() {
+        BileTools active = bile;
+        if (active == null) {
+            return FALLBACK_LOGGER;
+        }
+        Logger logger = active.getLogger();
+        return logger == null ? FALLBACK_LOGGER : logger;
+    }
+
+    private static String operatorMessage(Logger logger, String message) {
+        String safeMessage = message == null ? "" : message;
+        return logger == FALLBACK_LOGGER ? "[BileTools] " + safeMessage : safeMessage;
+    }
+
     public static void streamFile(File f, String address, int port, String password) throws IOException {
         streamFile(f, f == null ? null : f.getName(), address, port, password);
     }
@@ -159,7 +203,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void readTheConfig() throws Exception {
-        File f = new File(getDataFolder(), "config.yml");
+        File f = new File(getDataFolder(), "biletools.yml");
         cfg = BileConfig.load(f);
     }
 
@@ -174,7 +218,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         bile = this;
-        localization = new BileLocalization(getDataFolder(), getLogger());
+        localization = new BileLocalization(getDataFolder(), getLogger(), cfg.getLanguage());
         SplashScreen.print(this);
         getLogger().info("Runtime platform: " + ServerPlatform.summary());
         if (ServerPlatform.isFoliaFamily()) {
@@ -192,8 +236,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 srv.start();
                 getLogger().info("Remote Slave Server online!");
             } catch (Throwable e) {
-                getLogger().warning("Starting Remote Slave Server on *:" + cfg.getRemoteSlavePort());
-                e.printStackTrace();
+                getLogger().log(Level.SEVERE,
+                        "Failed to start Remote Slave Server on *:" + cfg.getRemoteSlavePort(), e);
             }
         }
 
@@ -304,7 +348,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         long nowNanos = System.nanoTime();
         for (Path path : currentFiles.keySet()) {
             File file = path.toFile();
-            getLogger().info("Now Tracking: " + file.getName());
+            debug(() -> "Tracking plugin jar " + file.getName() + ".");
             WatcherStateHandoff.Entry previous = previousFiles.get(path);
             restoreIdentityReplacement(path, previous);
             String pluginName = previous != null && !previous.pluginName().isEmpty()
@@ -462,7 +506,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     private void setupMetrics() {
-        if (BSTATS_PLUGIN_ID <= 0) {
+        if (BSTATS_PLUGIN_ID <= 0 || !cfg.isMetrics()) {
             return;
         }
 
@@ -698,7 +742,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         pendingObservations.put(path, new PendingObservation(stamp, generation, 0, STAGING_RETRY_LIMIT));
         BileUtils.invalidateJarMeta(path.toFile());
         if (newlyTracked) {
-            getLogger().info("Now Tracking: " + path.getFileName());
+            debug(() -> "Tracking plugin jar " + path.getFileName() + ".");
         }
     }
 
@@ -947,14 +991,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
         if (!isAutoLifecycleAllowed(pluginName)) {
-            getLogger().info("Skipping automatic lifecycle for ignored/filtered plugin " + pluginName);
+            debug(() -> "Skipping automatic lifecycle for ignored/filtered plugin " + pluginName + ".");
             stagedJar.delete();
             return;
         }
 
         boolean remoteDeploy = cfg != null && cfg.isRemoteMasterEnabled()
                 && cfg.hasRemoteDeploySignature(pluginName);
-        getLogger().info("Queued automatic update: " + pluginName + " <-> " + path.getFileName());
+        debug(() -> "Queued automatic update for " + pluginName + " from " + path.getFileName() + ".");
         submitAutomaticCandidate(new AutomaticReloadQueue.Candidate(
                 pluginName,
                 path,
@@ -1160,7 +1204,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         deletionTombstones.schedule(path, pluginName, generation, nowNanos);
-        getLogger().info("Plugin jar removed; waiting 3 seconds for recreation: " + path.getFileName());
+        debug(() -> "Plugin jar removed; waiting three seconds for recreation: " + path.getFileName());
     }
 
     private void expireDeletionTombstones(long nowNanos) {
@@ -1192,11 +1236,11 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 trackedPluginNames.remove(path);
                 latestGenerations.remove(path, tombstone.generation());
                 appliedFingerprints.remove(path);
-                getLogger().info("Skipping auto-unload for ignored/filtered plugin " + tombstone.pluginName());
+                debug(() -> "Skipping auto-unload for ignored/filtered plugin " + tombstone.pluginName() + ".");
                 continue;
             }
 
-            getLogger().info("Queued automatic unload after deletion grace: " + tombstone.pluginName());
+            debug(() -> "Queued automatic unload after deletion grace for " + tombstone.pluginName() + ".");
             submitAutomaticCandidate(new AutomaticReloadQueue.Candidate(
                     tombstone.pluginName(),
                     path,
@@ -1509,7 +1553,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private void runAutomaticUnload(AutomaticReloadQueue.Candidate candidate, String ownPluginName) {
         String pluginName = candidate.pluginName();
         if (pluginName.equalsIgnoreCase(ownPluginName)) {
-            getLogger().info("Detected removal for " + pluginName + ", skipping automatic self-unload.");
+            debug(() -> "Detected BileTools removal; skipping automatic self-unload for " + pluginName + ".");
             return;
         }
 

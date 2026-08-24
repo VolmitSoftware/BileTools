@@ -6,7 +6,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
@@ -230,7 +229,9 @@ public class BileUtils {
         }
 
         if (!activeRuntimeFiles.isEmpty() || removed > 0) {
-            BileTools.bile.getLogger().info("Runtime plugin files: active=" + activeRuntimeFiles.size() + ", staleRemoved=" + removed);
+            int removedCount = removed;
+            BileTools.debug(() -> "Runtime plugin files: active=" + activeRuntimeFiles.size()
+                    + ", staleRemoved=" + removedCount + ".");
         }
     }
 
@@ -492,9 +493,11 @@ public class BileUtils {
                 for (String commandName : declaredCommands.keySet()) {
                     PluginCommand command = Bukkit.getPluginCommand(commandName);
                     if (command == null) {
-                        stp("Health advisory for " + plugin.getName() + ": declared command not yet in map: /" + commandName);
+                        BileTools.warn("Health advisory for " + plugin.getName()
+                                + ": declared command not yet in map: /" + commandName);
                     } else if (command.getPlugin() != plugin) {
-                        stp("Health advisory for " + plugin.getName() + ": /" + commandName + " owned by " + command.getPlugin().getName());
+                        BileTools.warn("Health advisory for " + plugin.getName() + ": /" + commandName
+                                + " owned by " + command.getPlugin().getName());
                     }
                 }
             }
@@ -522,19 +525,11 @@ public class BileUtils {
                 }
             }
         }
-        stp(message.toString());
+        BileTools.info(message.toString());
     }
 
     private static long nanosToMillis(long nanos) {
         return Math.max(0L, nanos / 1_000_000L);
-    }
-
-    public static void stp(String s) {
-        try {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[" + ChatColor.DARK_GRAY + "Bile" + ChatColor.GREEN + "]: " + ChatColor.GRAY + s);
-        } catch (Throwable ignored) {
-            System.out.println("[Bile]: " + s);
-        }
     }
 
     public static boolean isPaperPlugin(File file) {
@@ -589,7 +584,7 @@ public class BileUtils {
                              Map<String, RuntimeLoadArtifact> preparedArtifacts,
                              File retainedSourceFile) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
         if (getPlugin(file) != null) {
-            stp("Skipping " + file.getName() + " (already loaded)");
+            BileTools.debug(() -> "Skipping " + file.getName() + " because it is already loaded.");
             if (preparedArtifact != null) {
                 preparedArtifact.discard();
             }
@@ -602,7 +597,7 @@ public class BileUtils {
         String cycleKey = key(f.getName());
         Set<String> visiting = LOAD_VISITING.get();
         if (!visiting.add(cycleKey)) {
-            stp("Skipping cyclic load for " + f.getName());
+            BileTools.debug(() -> "Skipping cyclic load for " + f.getName() + ".");
             return;
         }
 
@@ -612,13 +607,14 @@ public class BileUtils {
         boolean loadComplete = false;
         try {
             invalidateJarMeta(file);
-            stp("Loading " + f.getName() + " " + f.getVersion() + " from " + file.getName());
+            BileTools.info("Loading " + f.getName() + " " + f.getVersion() + " from " + file.getName() + ".");
             List<File> deferredDependents = new ArrayList<>();
 
             String baseName = file.getName().toLowerCase(Locale.ROOT).replace(".jar", "");
             String declaredName = f.getName() == null ? "" : f.getName().toLowerCase(Locale.ROOT);
             if (!declaredName.isEmpty() && !baseName.contains(declaredName)) {
-                stp("Warning: " + file.getName() + " declares plugin name " + f.getName() + " (filename does not match plugin id)");
+                BileTools.warn(file.getName() + " declares plugin name " + f.getName()
+                        + "; its filename does not match the plugin id.");
             }
 
             Plugin existing = Bukkit.getPluginManager().getPlugin(f.getName());
@@ -630,12 +626,14 @@ public class BileUtils {
                 File existingFile = getPluginFile(existing);
 
                 if (sameFile(existingFile, file)) {
-                    stp("Skipping " + file.getName() + " (plugin " + existing.getName() + " already loaded from this jar)");
+                    BileTools.debug(() -> "Skipping " + file.getName() + " because plugin "
+                            + existing.getName() + " is already loaded from this jar.");
                     return;
                 }
 
                 String existingName = existingFile == null ? "unknown source" : existingFile.getName();
-                stp("Plugin " + existing.getName() + " is already loaded from " + existingName + ", replacing with " + file.getName());
+                BileTools.info("Replacing " + existing.getName() + " from " + existingName
+                        + " with " + file.getName() + ".");
 
                 prepareMissingDependencyArtifacts(file, dependentArtifacts, new HashSet<>());
                 prepareDependentReloadArtifacts(existing, dependentArtifacts, new HashSet<>());
@@ -655,7 +653,7 @@ public class BileUtils {
 
             for (String i : metadata.requiredDependencies()) {
                 if (Bukkit.getPluginManager().getPlugin(i) == null) {
-                    stp(f.getName() + " depends on " + i);
+                    BileTools.debug(() -> f.getName() + " requires unloaded dependency " + i + ".");
                     File fx = getPluginFile(i);
 
                     if (fx != null) {
@@ -670,10 +668,12 @@ public class BileUtils {
 
             File runtimeFile = runtimeArtifact.runtimeFile();
             if (runtimeArtifact.temporary()) {
-                stp("Paper startup entrypoints are not rerun; reloading " + file.getName() + " through its authored plugin.yml");
-                stp("Calling loadPlugin for " + file.getName() + " through its runtime plugin.yml view");
+                BileTools.info("Paper startup entrypoints are not rerun; reloading " + file.getName()
+                        + " through its authored plugin.yml.");
+                BileTools.debug(() -> "Calling loadPlugin for " + file.getName()
+                        + " through its runtime plugin.yml view.");
             } else {
-                stp("Calling loadPlugin for " + file.getName());
+                BileTools.debug(() -> "Calling loadPlugin for " + file.getName() + ".");
             }
 
             try {
@@ -685,7 +685,7 @@ public class BileUtils {
             }
 
             if (target == null) {
-                stp("loadPlugin returned null for " + file.getName());
+                BileTools.warn("The server returned no plugin instance for " + file.getName() + ".");
                 throw new InvalidPluginException("Unable to load plugin providers for " + file.getName());
             }
 
@@ -693,13 +693,17 @@ public class BileUtils {
             boolean explicitOnLoad = shouldCallExplicitOnLoad();
 
             if (explicitOnLoad) {
-                stp("Calling onLoad for " + target.getName());
+                Plugin loadedTarget = target;
+                BileTools.debug(() -> "Calling onLoad for " + loadedTarget.getName() + ".");
                 target.onLoad();
             } else {
-                stp("Skipping explicit onLoad for " + target.getName() + " (already handled by server plugin loader)");
+                Plugin loadedTarget = target;
+                BileTools.debug(() -> "Skipping explicit onLoad for " + loadedTarget.getName()
+                        + " because the server plugin loader already handled it.");
             }
 
-            stp("Enabling " + target.getName());
+            Plugin loadedTarget = target;
+            BileTools.debug(() -> "Enabling " + loadedTarget.getName() + ".");
             Bukkit.getPluginManager().enablePlugin(target);
 
             Plugin registered = Bukkit.getPluginManager().getPlugin(target.getName());
@@ -710,10 +714,11 @@ public class BileUtils {
             ensurePluginRegistered(target);
 
             invalidateJarMeta(file);
-            stp("Enabled " + target.getName() + " successfully");
+            BileTools.info("Enabled " + target.getName() + " successfully.");
 
             if (!deferredDependents.isEmpty()) {
-                stp("Reloading " + deferredDependents.size() + " dependent plugin(s) after replacement of " + target.getName());
+                BileTools.info("Reloading " + deferredDependents.size()
+                        + " dependent plugin(s) after replacement of " + target.getName() + ".");
                 for (File dependent : deferredDependents) {
                     if (dependent != null && dependent.exists()) {
                         load(dependent, true, dependentArtifacts.get(cacheKey(dependent)), dependentArtifacts);
@@ -751,11 +756,7 @@ public class BileUtils {
         try {
             unload(plugin, ReloadAware.PreUnloadReason.HOT_UNLOAD);
         } catch (Throwable e) {
-            if (BileTools.bile != null) {
-                BileTools.bile.getLogger().log(Level.SEVERE, "Could not clean up failed plugin load for " + plugin.getName(), e);
-            } else {
-                e.printStackTrace();
-            }
+            BileTools.severe("Could not clean up failed plugin load for " + plugin.getName() + ".", e);
         } finally {
             clearLoadedFileOverride(plugin.getName());
             releaseRuntimePluginFile(plugin.getName());
@@ -1628,7 +1629,7 @@ public class BileUtils {
         String cycleKey = key(plugin.getName());
         Set<String> visiting = UNLOAD_VISITING.get();
         if (!visiting.add(cycleKey)) {
-            stp("Skipping cyclic unload for " + plugin.getName());
+            BileTools.debug(() -> "Skipping cyclic unload for " + plugin.getName() + ".");
             return deps;
         }
 
@@ -1636,10 +1637,11 @@ public class BileUtils {
             long startNs = System.nanoTime();
             File file = getPluginFile(plugin);
             File runtimeFile = RUNTIME_PLUGIN_FILES.get(key(plugin.getName()));
-            stp("Unloading " + plugin.getName());
+            BileTools.info("Unloading " + plugin.getName() + ".");
 
             if (file == null) {
-                stp("Could not resolve source jar for " + plugin.getName() + ", skipping file reset");
+                BileTools.warn("Could not resolve the source jar for " + plugin.getName()
+                        + "; skipping its file reset.");
             }
 
             for (Plugin candidate : Bukkit.getPluginManager().getPlugins()) {
@@ -1653,7 +1655,7 @@ public class BileUtils {
                 } catch (IOException | InvalidDescriptionException e) {
                     String message = "Could not inspect dependencies for " + candidate.getName()
                             + " while unloading " + plugin.getName();
-                    stp(message);
+                    BileTools.warn(message, e);
                     throw new IllegalStateException(message, e);
                 }
                 if (!dependent) {
@@ -1664,10 +1666,11 @@ public class BileUtils {
                 if (dependentFile == null) {
                     String message = "Could not resolve source jar for dependent plugin " + candidate.getName()
                             + " while unloading " + plugin.getName();
-                    stp(message);
+                    BileTools.warn(message);
                     throw new IllegalStateException(message);
                 }
-                stp(candidate.getName() + " depends on " + plugin.getName() + ". Playing it safe.");
+                BileTools.debug(() -> candidate.getName() + " depends on " + plugin.getName()
+                        + "; unloading it first.");
                 deps.add(dependentFile);
             }
 
@@ -1679,12 +1682,12 @@ public class BileUtils {
             }
 
             if (plugin instanceof ReloadAware aware) {
-                stp("Invoking pre-unload hook on " + plugin.getName() + " (" + reason + ")");
+                BileTools.debug(() -> "Invoking pre-unload hook on " + plugin.getName()
+                        + " (" + reason + ").");
                 try {
                     aware.onPreUnload(reason);
                 } catch (Throwable t) {
-                    stp("Pre-unload hook for " + plugin.getName() + " threw: " + t);
-                    t.printStackTrace();
+                    BileTools.warn("Pre-unload hook failed for " + plugin.getName() + ".", t);
                 }
             }
 
@@ -1703,8 +1706,8 @@ public class BileUtils {
                 try {
                     pluginManager.disablePlugin(plugin);
                 } catch (Throwable t) {
-                    stp("disablePlugin threw for " + name + " (continuing teardown so the plugin is still fully unregistered): " + t);
-                    t.printStackTrace();
+                    BileTools.warn("disablePlugin failed for " + name
+                            + "; continuing teardown so it is still fully unregistered.", t);
                 }
 
                 try {
@@ -1736,7 +1739,7 @@ public class BileUtils {
                         }
                     }
                 } catch (Throwable e) {
-                    e.printStackTrace();
+                    BileTools.severe("Could not inspect server plugin registries while unloading " + name + ".", e);
                     return new HashSet<>();
                 }
             }
@@ -1746,8 +1749,8 @@ public class BileUtils {
                     pluginManager.disablePlugin(plugin);
                 }
             } catch (Throwable t) {
-                stp("disablePlugin (second pass) threw for " + name + " (continuing unregister): " + t);
-                t.printStackTrace();
+                BileTools.warn("The second disablePlugin pass failed for " + name
+                        + "; continuing unregister.", t);
             }
 
             if (plugins != null) {
@@ -1784,7 +1787,7 @@ public class BileUtils {
                 try {
                     ((java.io.Closeable) cl).close();
                 } catch (IOException ex) {
-                    ex.printStackTrace();
+                    BileTools.warn("Could not close the classloader for " + name + ".", ex);
                 }
             }
 
@@ -1817,7 +1820,7 @@ public class BileUtils {
         try {
             Bukkit.getServicesManager().unregisterAll(plugin);
         } catch (Throwable t) {
-            stp("Service unregister for " + plugin.getName() + " threw: " + t.getClass().getSimpleName());
+            BileTools.warn("Service unregister failed for " + plugin.getName() + ".", t);
         }
     }
 
@@ -1837,7 +1840,7 @@ public class BileUtils {
             } catch (Throwable ignored) {
             }
         } catch (Throwable t) {
-            stp("Messenger channel scrub for " + plugin.getName() + " threw: " + t.getClass().getSimpleName());
+            BileTools.warn("Messenger channel cleanup failed for " + plugin.getName() + ".", t);
         }
     }
 
@@ -1872,7 +1875,8 @@ public class BileUtils {
 
         List<String> removed = removeApiNodesFromRoot(root, plugin.getName(), ownerResolvable);
         if (!removed.isEmpty()) {
-            stp("Scrubbed brigadier nodes for " + plugin.getName() + ": " + String.join(", ", removed));
+            BileTools.debug(() -> "Scrubbed Brigadier nodes for " + plugin.getName()
+                    + ": " + String.join(", ", removed));
         }
     }
 
@@ -2057,7 +2061,8 @@ public class BileUtils {
                 }
             }
         } catch (Throwable t) {
-            stp("Command map walk for " + plugin.getName() + " aborted (" + t.getClass().getSimpleName() + "); falling back to declared command names");
+            BileTools.warn("Command map walk for " + plugin.getName()
+                    + " failed; falling back to declared command names.", t);
         }
 
         try {
@@ -2239,7 +2244,7 @@ public class BileUtils {
             copy(temp, file);
             BileTools.bile.reset(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            BileTools.warn("Could not refresh the plugin jar handle for " + file.getName() + ".", e);
         } finally {
             if (temp.exists() && !temp.delete()) {
                 temp.deleteOnExit();
