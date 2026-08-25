@@ -91,6 +91,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     // bstats.org plugin id
     private static final int BSTATS_PLUGIN_ID = 33192;
     private static final Logger FALLBACK_LOGGER = Logger.getLogger("BileTools");
+    private static final String LOG_DISCRIMINATOR = ComponentLog.discriminator("BileTools", "&a");
 
     private volatile SlaveBileServer srv;
     private volatile Metrics metrics;
@@ -152,33 +153,33 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     static void debug(Supplier<String> messageSupplier) {
         Logger logger = operatorLogger();
         if (logger.isLoggable(Level.FINE)) {
-            ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.FINE,
+            ComponentLog.log(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, Level.FINE,
                     ComponentText.literal(messageSupplier.get()), null);
         }
     }
 
     static void info(String message) {
-        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.INFO,
+        ComponentLog.log(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, Level.INFO,
                 ComponentText.literal(message), null);
     }
 
     static void warn(String message) {
-        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.WARNING,
+        ComponentLog.log(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, Level.WARNING,
                 ComponentText.literal(message), null);
     }
 
     static void warn(String message, Throwable throwable) {
-        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.WARNING,
+        ComponentLog.log(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, Level.WARNING,
                 ComponentText.literal(message), throwable);
     }
 
     static void severe(String message, Throwable throwable) {
-        ComponentLog.log(bile, FALLBACK_LOGGER, "[BileTools] ", Level.SEVERE,
+        ComponentLog.log(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, Level.SEVERE,
                 ComponentText.literal(message), throwable);
     }
 
     static void logLegacy(Level level, String message, Throwable throwable) {
-        ComponentLog.logLegacy(bile, FALLBACK_LOGGER, "[BileTools] ", level, message, throwable);
+        ComponentLog.logLegacy(bile, FALLBACK_LOGGER, LOG_DISCRIMINATOR, level, message, throwable);
     }
 
     private static Logger operatorLogger() {
