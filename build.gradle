@@ -248,5 +248,14 @@ void createOutputTask(String name, String path, boolean doRename) {
         from tasks.named('shadowJar').flatMap { it.archiveFile }
         into file(path)
         if (doRename) rename { 'BileTools.jar' }
+        if (name == 'PsychoLT') {
+            doLast {
+                project.copy {
+                    from(tasks.named('shadowJar').get().archiveFile.get().asFile)
+                    into(project.file('../PluginOuts'))
+                    rename { String ignored -> "BileTools-${project.version}.jar" }
+                }
+            }
+        }
     }
 }
