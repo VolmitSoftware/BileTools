@@ -6,7 +6,7 @@ plugins {
     alias libs.plugins.shadow
 }
 
-version = '3.0.0-26.2'
+version = '3.0.1-26.2'
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
