@@ -35,6 +35,7 @@
       "usage": "Käyttö: {usage}"
   "bile":
     "command":
+      "debugdump": "Luo diagnostiikkaraportti ja lähetä se halutessasi"
       "root": "BileTools-komentoryhmä"
       "load": "Lataa pluginin JAR-tiedosto plugins-hakemistosta"
       "unload": "Poista asennettu lisäosa muistista"
@@ -43,6 +44,7 @@
       "install": "Asenna lisäosa Bile-kirjastosta"
       "library": "Luettele kirjaston lisäosat tai yhden lisäosan versiot"
     "parameter":
+      "debugdump_upload": "Lähetä raportti mclo.gs-palveluun"
       "installed_plugin": "Asennetun lisäosan nimi"
       "library_plugin": "Kirjaston lisäosan nimi"
       "version": "Kirjaston lisäosan versio"

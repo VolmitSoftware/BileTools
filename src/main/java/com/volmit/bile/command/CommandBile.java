@@ -19,12 +19,25 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-@Director(name = "biletools", aliases = {"bile", "bi", "b", "volmit", "vomit", "vom"}, description = "BileTools command root", descriptionKey = "bile.command.root")
+@Director(name = "biletools", aliases = {"bile", "bi", "b", "vomit", "vom"}, description = "BileTools command root", descriptionKey = "bile.command.root")
 public class CommandBile {
     private final BileTools plugin;
 
     public CommandBile(BileTools plugin) {
         this.plugin = plugin;
+    }
+
+    @Director(name = "debugdump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "bile.command.debugdump")
+    public void debugdump(
+        @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "bile.parameter.debugdump_upload") boolean upload,
+        @Param(name = "sender", contextual = true) CommandSender sender
+    ) {
+        plugin.debugDump().request(sender, upload);
+    }
+
+    @Director(name = "language", description = "Choose your language or the server language")
+    public void language(@Param(name = "sender", contextual = true) CommandSender sender) {
+        plugin.languageSwitcher().open(sender);
     }
 
     @Director(name = "load", description = "Load a plugin jar from the plugins directory", descriptionKey = "bile.command.load")

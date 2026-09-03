@@ -35,6 +35,7 @@
       "usage": "使用法: {usage}"
   "bile":
     "command":
+      "debugdump": "診断レポートを作成し、必要に応じてアップロードする"
       "root": "BileToolsコマンドグループ"
       "load": "pluginsディレクトリからプラグインJARを読み込む"
       "unload": "インストール済みプラグインをアンロードする"
@@ -43,6 +44,7 @@
       "install": "Bileライブラリからプラグインをインストールする"
       "library": "ライブラリのプラグインまたはプラグインのバージョンを一覧表示する"
     "parameter":
+      "debugdump_upload": "レポートを mclo.gs にアップロードする"
       "installed_plugin": "インストール済みプラグイン名"
       "library_plugin": "ライブラリのプラグイン名"
       "version": "ライブラリのプラグインバージョン"

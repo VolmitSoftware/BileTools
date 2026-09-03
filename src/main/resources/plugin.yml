@@ -6,8 +6,14 @@ folia-supported: true
 website: VolmitSoftware.com
 commands:
   biletools:
-    aliases: [bile, bi, b, volmit, vomit, vom]
+    aliases: [bile, bi, b, vomit, vom]
 permissions:
+  biletools.debugdump:
+    description: Allows creating and optionally uploading diagnostic reports.
+    default: op
+  biletools.language.self:
+    description: Allows choosing your own language for this plugin.
+    default: true
   bile.use:
     description: Gives access to biletools
     default: op

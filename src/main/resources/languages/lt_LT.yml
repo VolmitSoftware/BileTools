@@ -35,6 +35,7 @@
       "usage": "Naudojimas: {usage}"
   "bile":
     "command":
+      "debugdump": "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
       "root": "BileTools komandų grupė"
       "load": "Įkelti įskiepio JAR failą iš plugins katalogo"
       "unload": "Iškelti įdiegtą įskiepį iš atminties"
@@ -43,6 +44,7 @@
       "install": "Įdiegti įskiepį iš Bile bibliotekos"
       "library": "Rodyti bibliotekos įskiepius arba įskiepio versijas"
     "parameter":
+      "debugdump_upload": "Įkelti ataskaitą į mclo.gs"
       "installed_plugin": "Įdiegto įskiepio pavadinimas"
       "library_plugin": "Bibliotekos įskiepio pavadinimas"
       "version": "Bibliotekos įskiepio versija"

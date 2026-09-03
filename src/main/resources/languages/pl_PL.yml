@@ -35,6 +35,7 @@
       "usage": "Użycie: {usage}"
   "bile":
     "command":
+      "debugdump": "Utwórz raport diagnostyczny i opcjonalnie go prześlij"
       "root": "Grupa komend BileTools"
       "load": "Wczytaj plik JAR wtyczki z katalogu plugins"
       "unload": "Wyładuj zainstalowaną wtyczkę"
@@ -43,6 +44,7 @@
       "install": "Zainstaluj wtyczkę z biblioteki Bile"
       "library": "Wyświetl wtyczki biblioteki lub wersje wybranej wtyczki"
     "parameter":
+      "debugdump_upload": "Prześlij raport do mclo.gs"
       "installed_plugin": "Nazwa zainstalowanej wtyczki"
       "library_plugin": "Nazwa wtyczki biblioteki"
       "version": "Wersja wtyczki biblioteki"

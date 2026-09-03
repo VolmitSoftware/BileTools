@@ -35,6 +35,7 @@
       "usage": "Cách dùng: {usage}"
   "bile":
     "command":
+      "debugdump": "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
       "root": "Nhóm lệnh BileTools"
       "load": "Nạp tệp JAR plugin từ thư mục plugins"
       "unload": "Gỡ plugin đã cài khỏi bộ nhớ"
@@ -43,6 +44,7 @@
       "install": "Cài plugin từ thư viện Bile"
       "library": "Liệt kê plugin trong thư viện hoặc các phiên bản của một plugin"
     "parameter":
+      "debugdump_upload": "Tải báo cáo lên mclo.gs"
       "installed_plugin": "Tên plugin đã cài"
       "library_plugin": "Tên plugin trong thư viện"
       "version": "Phiên bản plugin trong thư viện"

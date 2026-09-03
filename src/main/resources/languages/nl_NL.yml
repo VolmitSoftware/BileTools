@@ -35,6 +35,7 @@
       "usage": "Gebruik: {usage}"
   "bile":
     "command":
+      "debugdump": "Maak een diagnostisch rapport en upload het desgewenst"
       "root": "BileTools-opdrachtgroep"
       "load": "Een plugin-JAR uit de pluginsmap laden"
       "unload": "Een geïnstalleerde plugin uit het geheugen verwijderen"
@@ -43,6 +44,7 @@
       "install": "Een plugin uit de Bile-bibliotheek installeren"
       "library": "Bibliotheekplugins of versies van één plugin weergeven"
     "parameter":
+      "debugdump_upload": "Upload het rapport naar mclo.gs"
       "installed_plugin": "Naam van geïnstalleerde plugin"
       "library_plugin": "Naam van bibliotheekplugin"
       "version": "Versie van bibliotheekplugin"

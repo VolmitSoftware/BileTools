@@ -35,6 +35,7 @@
       "usage": "用法: {usage}"
   "bile":
     "command":
+      "debugdump": "创建诊断报告并选择是否上传"
       "root": "BileTools 命令组"
       "load": "从 plugins 目录加载插件 JAR 文件"
       "unload": "卸载已安装的插件"
@@ -43,6 +44,7 @@
       "install": "从 Bile 库安装插件"
       "library": "列出库中的插件或某个插件的版本"
     "parameter":
+      "debugdump_upload": "将报告上传到 mclo.gs"
       "installed_plugin": "已安装的插件名称"
       "library_plugin": "库插件名称"
       "version": "库插件版本"

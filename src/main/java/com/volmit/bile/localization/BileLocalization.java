@@ -2,7 +2,15 @@ package com.volmit.bile.localization;
 
 import art.arcane.volmlib.util.director.DirectorTextResolver;
 import art.arcane.volmlib.util.format.ColorFormatter;
+import art.arcane.volmlib.util.io.AtomicFileIO;
 import art.arcane.volmlib.util.io.FileWatcher;
+import art.arcane.volmlib.util.localization.PluginLanguageService;
+import art.arcane.volmlib.util.localization.PluginLanguageEditor;
+import art.arcane.volmlib.util.localization.LanguageFileEditor;
+import art.arcane.volmlib.util.localization.MessageValue;
+import art.arcane.volmlib.util.localization.TextValue;
+import art.arcane.volmlib.util.localization.PluralValue;
+import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
 import art.arcane.volmlib.util.localization.LocalizationIssue;
@@ -20,7 +28,10 @@ import art.arcane.volmlib.util.localization.ResolvedText;
 import art.arcane.volmlib.util.localization.TextKey;
 import art.arcane.volmlib.util.localization.VolmitLocales;
 import art.arcane.volmlib.util.plugin.ComponentText;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.ByteArrayInputStream;
@@ -28,7 +39,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -56,7 +69,7 @@ public final class BileLocalization implements AutoCloseable {
     private static final MessageCatalog CATALOG = BileMessages.catalog();
 
     private final File languageFile;
-    private final String configuredLocale;
+    private volatile String configuredLocale;
     private final Logger logger;
     private final LocalizationManager manager;
     private final FileWatcher watcher;
@@ -64,7 +77,9 @@ public final class BileLocalization implements AutoCloseable {
     private final ExecutorService automaticReloadIo;
     private final AtomicBoolean automaticReadInFlight = new AtomicBoolean();
     private final AtomicReference<AutomaticReadResult> completedAutomaticRead = new AtomicReference<>();
-    private final Map<String, byte[]> bundledResources;
+    private final RemoteLanguageCatalog remoteCatalog;
+    private final Path languageDirectory;
+    private PluginLanguageService languageService;
     private volatile String activeLocale;
     private byte[] appliedLanguageContent = new byte[0];
     private byte[] pendingAutomaticContent;
@@ -92,7 +107,11 @@ public final class BileLocalization implements AutoCloseable {
         this.snapshotReader = Objects.requireNonNull(snapshotReader, "snapshotReader");
         this.manager = new LocalizationManager(LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
         this.activeLocale = CATALOG.englishLocale();
-        this.bundledResources = loadBundledResources();
+        this.languageDirectory = dataFolder.toPath().resolve("languages");
+        this.remoteCatalog = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
+                "BileTools", URI.create("https://raw.githubusercontent.com/VolmitSoftware/BileTools/"),
+                "src/main/resources/languages", ".yml", "language-source.properties",
+                languageDirectory.resolve("cache"), BileLocalization.class.getClassLoader()));
         this.automaticReloadIo = Executors.newSingleThreadExecutor((Runnable task) -> {
             Thread thread = new Thread(task, "BileTools-Language-Hotload-IO");
             thread.setDaemon(true);
@@ -100,9 +119,16 @@ public final class BileLocalization implements AutoCloseable {
         });
         ensureDefaultFile();
         reload();
+        languageService = new PluginLanguageService(new PluginLanguageService.Options(
+                dataFolder.toPath().resolve("language-preferences.properties"),
+                () -> VolmitLocales.all(), () -> this.configuredLocale, manager::snapshot,
+                locale -> LocalizationSnapshot.create(loadCandidate(readSnapshotContent(), locale)),
+                this::selectDefault, logger));
         try {
             this.watcher = Objects.requireNonNull(watcherFactory, "watcherFactory").create(languageFile);
         } catch (RuntimeException failure) {
+            languageService.close();
+            remoteCatalog.close();
             automaticReloadIo.shutdownNow();
             throw failure;
         }
@@ -169,6 +195,8 @@ public final class BileLocalization implements AutoCloseable {
         pendingAutomaticContent = null;
         completedAutomaticRead.set(null);
         watcher.close();
+        languageService.close();
+        remoteCatalog.close();
         automaticReloadIo.shutdownNow();
         try {
             if (!automaticReloadIo.awaitTermination(IO_SHUTDOWN_MILLIS, TimeUnit.MILLISECONDS)) {
@@ -208,12 +236,15 @@ public final class BileLocalization implements AutoCloseable {
 
     private boolean applyLanguageContent(byte[] content) {
         byte[] immutableContent = content.clone();
-        LocalizationReloadResult result = manager.reload(() -> loadCandidate(immutableContent));
+        LocalizationReloadResult result = manager.reload(() -> loadCandidate(immutableContent, configuredLocale));
         if (!result.applied()) {
             reportRejectedReload(result);
             return false;
         }
 
+        if (languageService != null) {
+            languageService.invalidate();
+        }
         activeLocale = result.current().overlays().isEmpty()
                 ? CATALOG.englishLocale()
                 : result.current().overlays().get(0).locale();
@@ -225,11 +256,48 @@ public final class BileLocalization implements AutoCloseable {
     }
 
     public ComponentText text(TextKey key, MessageArgs arguments) {
-        return render(manager.snapshot().resolve(key, arguments));
+        return render(selectedSnapshot(null).resolve(key, arguments));
     }
 
     public ComponentText text(PluralKey key, MessageArgs arguments) {
-        return render(manager.snapshot().resolve(key, arguments));
+        return render(selectedSnapshot(null).resolve(key, arguments));
+    }
+
+    public ComponentText text(CommandSender sender, TextKey key) {
+        return text(sender, key, MessageArgs.empty());
+    }
+
+    public ComponentText text(CommandSender sender, TextKey key, MessageArgs arguments) {
+        return render(selectedSnapshot(sender).resolve(key, arguments));
+    }
+
+    public ComponentText text(CommandSender sender, PluralKey key, MessageArgs arguments) {
+        return render(selectedSnapshot(sender).resolve(key, arguments));
+    }
+
+    public PluginLanguageService languageService() {
+        return languageService;
+    }
+
+    private LocalizationSnapshot selectedSnapshot(CommandSender sender) {
+        if (languageService == null) {
+            return manager.snapshot();
+        }
+        return sender instanceof Player player
+                ? languageService.snapshot(player.getUniqueId()) : languageService.snapshot();
+    }
+
+    private synchronized void selectDefault(String locale, LocalizationSnapshot prepared) throws Exception {
+        File configurationFile = new File(languageFile.getParentFile(), "biletools.yml");
+        YamlConfiguration configuration = new YamlConfiguration();
+        if (configurationFile.isFile()) {
+            configuration.load(configurationFile);
+        }
+        configuration.set("language", locale);
+        AtomicFileIO.writeString(configurationFile.toPath(), configuration.saveToString());
+        manager.install(prepared);
+        configuredLocale = locale;
+        activeLocale = locale;
     }
 
     public DirectorTextResolver directorResolver() {
@@ -250,17 +318,92 @@ public final class BileLocalization implements AutoCloseable {
         return renderTemplate(key.english(), arguments);
     }
 
-    private LocalizationCandidate loadCandidate(byte[] content) throws Exception {
+    public PluginLanguageEditor.Options editorOptions() {
+        return new PluginLanguageEditor.Options(
+                locale -> LocalizationSnapshot.create(loadCandidate(readSnapshotContent(), locale)), this::saveEditor);
+    }
+
+    private synchronized LocalizationSnapshot saveEditor(PluginLanguageEditor.Edit edit) throws Exception {
+        LocalizationCandidate base = loadBaseCandidate(readSnapshotContent(), edit.locale());
+        Path path = overridePath(edit.locale());
+        LocalizationSnapshot prepared = LanguageFileEditor.update(path, raw -> {
+            YamlConfiguration yaml = new YamlConfiguration();
+            try {
+                yaml.loadFromString(raw);
+            } catch (InvalidConfigurationException exception) {
+                throw new IOException("Could not parse language overrides: " + path, exception);
+            }
+            LocalizationSnapshot current = withOverride(base, parseEditorOverlay(yaml, edit.locale()));
+            MessageKey key = CATALOG.key(edit.key());
+            if (key == null || !current.value(key).equals(edit.expected())) {
+                throw new IOException("Language message changed while it was being edited: " + edit.key());
+            }
+            yaml.set("locale", edit.locale());
+            String messagePath = "messages." + edit.key();
+            yaml.set(messagePath, null);
+            MessageValue value = edit.value();
+            if (value instanceof TextValue text) {
+                yaml.set(messagePath, text.template());
+            } else if (value instanceof PluralValue plural) {
+                yaml.createSection(messagePath, plural.forms());
+            } else {
+                throw new IllegalArgumentException("Unsupported language message shape: " + edit.key());
+            }
+            LocalizationSnapshot updated = withOverride(base, parseEditorOverlay(yaml, edit.locale()));
+            return new LanguageFileEditor.Prepared<>(yaml.saveToString(), updated);
+        });
+        if (configuredLocale.equals(edit.locale())) {
+            manager.install(prepared);
+        }
+        return prepared;
+    }
+
+    private Path overridePath(String locale) {
+        if (!locale.matches("[A-Za-z0-9_-]{2,32}")) {
+            throw new IllegalArgumentException("Invalid language locale: " + locale);
+        }
+        return languageDirectory.resolve("overrides").resolve(locale + ".yml");
+    }
+
+    private LocaleOverlay parseEditorOverlay(YamlConfiguration yaml, String locale) {
+        if (yaml.contains("locale") && !locale.equals(yaml.getString("locale"))) {
+            throw new IllegalArgumentException("Language override must declare locale: " + locale);
+        }
+        LocaleOverlay.Builder overlay = LocaleOverlay.builder(overridePath(locale).toString(), locale);
+        ConfigurationSection messages = yaml.getConfigurationSection("messages");
+        if (messages != null) {
+            appendMessages(messages, overlay);
+        }
+        return overlay.build();
+    }
+
+    private LocalizationSnapshot withOverride(LocalizationCandidate base, LocaleOverlay override) {
+        List<LocaleOverlay> overlays = new ArrayList<>(base.overlays().size() + 1);
+        overlays.add(override);
+        overlays.addAll(base.overlays());
+        return LocalizationSnapshot.create(new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther()));
+    }
+
+    private LocalizationCandidate loadCandidate(byte[] content, String selectedLocale) throws Exception {
+        LocalizationCandidate base = loadBaseCandidate(content, selectedLocale);
+        Path override = overridePath(selectedLocale);
+        if (!Files.exists(override)) {
+            return base;
+        }
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.loadFromString(new String(readLanguageContent(override.toFile()), StandardCharsets.UTF_8));
+        List<LocaleOverlay> overlays = new ArrayList<>(base.overlays().size() + 1);
+        overlays.add(parseEditorOverlay(yaml, selectedLocale));
+        overlays.addAll(base.overlays());
+        return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
+    }
+
+    private LocalizationCandidate loadBaseCandidate(byte[] content, String selectedLocale) throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
         try (InputStreamReader reader = new InputStreamReader(
                 new ByteArrayInputStream(content), StandardCharsets.UTF_8)) {
             yaml.load(reader);
         }
-        if (yaml.contains("locale")) {
-            throw new IllegalArgumentException(
-                    "language.yml no longer accepts locale. Set language in biletools.yml, delete language.yml, and restart BileTools to regenerate the overrides-only file.");
-        }
-        String selectedLocale = configuredLocale;
         LocaleOverlay.Builder overlay = LocaleOverlay.builder(languageFile.getPath(), selectedLocale);
         ConfigurationSection messages = yaml.getConfigurationSection("messages");
         if (messages != null) {
@@ -269,9 +412,9 @@ public final class BileLocalization implements AutoCloseable {
 
         List<LocaleOverlay> overlays = new ArrayList<>();
         overlays.add(overlay.build());
-        LocaleOverlay bundled = loadBundledOverlay(selectedLocale);
-        if (bundled != null) {
-            overlays.add(bundled);
+        LocaleOverlay downloaded = loadDownloadedOverlay(selectedLocale);
+        if (downloaded != null) {
+            overlays.add(downloaded);
         }
         return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
     }
@@ -369,57 +512,29 @@ public final class BileLocalization implements AutoCloseable {
         return content;
     }
 
-    private LocaleOverlay loadBundledOverlay(String locale) throws Exception {
+    private LocaleOverlay loadDownloadedOverlay(String locale) throws Exception {
         if (VolmitLocales.ENGLISH.equals(locale)) {
             return null;
         }
-
-        byte[] resource = bundledResources.get(locale);
-        if (resource == null) {
-            if (VolmitLocales.isBundled(locale)) {
-                throw new IllegalArgumentException("Missing bundled language resource for " + locale);
-            }
-            return null;
-        }
-
-        String resourcePath = "/languages/" + locale + ".yml";
-        try (InputStreamReader reader = new InputStreamReader(
-                new ByteArrayInputStream(resource), StandardCharsets.UTF_8)) {
-            YamlConfiguration yaml = new YamlConfiguration();
-            yaml.load(reader);
-            String declaredLocale = yaml.getString("locale");
-            if (!locale.equals(declaredLocale)) {
-                throw new IllegalArgumentException(resourcePath + " must declare locale: " + locale);
-            }
-
-            LocaleOverlay.Builder overlay = LocaleOverlay.builder(resourcePath, locale);
-            ConfigurationSection messages = yaml.getConfigurationSection("messages");
-            if (messages != null) {
-                appendMessages(messages, overlay);
-            }
-            return overlay.build();
-        }
+        Path file = languageDirectory.resolve(locale + ".yml");
+        String content = remoteCatalog.readOrInstall(locale, file, (selectedLocale, raw) ->
+                LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
+                        List.of(parseDownloadedOverlay(selectedLocale, raw)), PluralSelector.oneOther())));
+        return parseDownloadedOverlay(locale, content);
     }
 
-    private Map<String, byte[]> loadBundledResources() {
-        Map<String, byte[]> resources = new LinkedHashMap<>();
-        for (String locale : VolmitLocales.nonEnglish()) {
-            String resourcePath = "/languages/" + locale + ".yml";
-            InputStream input = BileLocalization.class.getResourceAsStream(resourcePath);
-            if (input == null) {
-                throw new IllegalStateException("Missing bundled language resource: " + resourcePath);
-            }
-            try (InputStream stream = input) {
-                byte[] content = stream.readNBytes((int) MAX_LANGUAGE_BYTES + 1);
-                if (content.length > MAX_LANGUAGE_BYTES) {
-                    throw new IllegalStateException("Bundled language resource is too large: " + resourcePath);
-                }
-                resources.put(locale, content);
-            } catch (IOException exception) {
-                throw new IllegalStateException("Cannot preload bundled language resource: " + resourcePath, exception);
-            }
+    private LocaleOverlay parseDownloadedOverlay(String locale, String content) throws Exception {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.loadFromString(content);
+        if (!locale.equals(yaml.getString("locale"))) {
+            throw new IllegalArgumentException("Language file must declare locale: " + locale);
         }
-        return Map.copyOf(resources);
+        LocaleOverlay.Builder overlay = LocaleOverlay.builder("languages/" + locale + ".yml", locale);
+        ConfigurationSection messages = yaml.getConfigurationSection("messages");
+        if (messages != null) {
+            appendMessages(messages, overlay);
+        }
+        return overlay.build();
     }
 
     private void appendMessages(ConfigurationSection messages, LocaleOverlay.Builder overlay) {

@@ -35,6 +35,7 @@
       "usage": "Verwendung: {usage}"
   "bile":
     "command":
+      "debugdump": "Einen Diagnosebericht erstellen und optional hochladen"
       "root": "BileTools-Befehlsgruppe"
       "load": "Plugin-JAR aus dem Plugin-Verzeichnis laden"
       "unload": "Installiertes Plugin entladen"
@@ -43,6 +44,7 @@
       "install": "Plugin aus der Bile-Bibliothek installieren"
       "library": "Bibliotheks-Plugins oder Versionen eines Plugins auflisten"
     "parameter":
+      "debugdump_upload": "Den Bericht zu mclo.gs hochladen"
       "installed_plugin": "Name des installierten Plugins"
       "library_plugin": "Name des Bibliotheks-Plugins"
       "version": "Version des Bibliotheks-Plugins"

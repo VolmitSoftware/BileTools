@@ -35,6 +35,7 @@
       "usage": "Utilização: {usage}"
   "bile":
     "command":
+      "debugdump": "Criar um relatório de diagnóstico e carregá-lo opcionalmente"
       "root": "Grupo de comandos BileTools"
       "load": "Carregar um ficheiro JAR de plugin da pasta de plugins"
       "unload": "Descarregar da memória um plugin instalado"
@@ -43,6 +44,7 @@
       "install": "Instalar um plugin da biblioteca Bile"
       "library": "Listar plugins da biblioteca ou versões de um plugin"
     "parameter":
+      "debugdump_upload": "Carregar o relatório para mclo.gs"
       "installed_plugin": "Nome do plugin instalado"
       "library_plugin": "Nome do plugin da biblioteca"
       "version": "Versão do plugin da biblioteca"

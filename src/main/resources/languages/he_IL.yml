@@ -35,6 +35,7 @@
       "usage": "שימוש: {usage}"
   "bile":
     "command":
+      "debugdump": "יצירת דוח אבחון והעלאתו לפי בחירה"
       "root": "קבוצת הפקודות של BileTools"
       "load": "טעינת קובץ JAR של תוסף מתיקיית התוספים"
       "unload": "פריקת תוסף מותקן מהזיכרון"
@@ -43,6 +44,7 @@
       "install": "התקנת תוסף מספריית Bile"
       "library": "הצגת תוספי הספרייה או הגרסאות של תוסף"
     "parameter":
+      "debugdump_upload": "העלאת הדוח אל mclo.gs"
       "installed_plugin": "שם התוסף המותקן"
       "library_plugin": "שם התוסף בספרייה"
       "version": "גרסת התוסף בספרייה"

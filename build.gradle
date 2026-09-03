@@ -32,6 +32,10 @@ tasks.processResources {
     }
 }
 
+tasks.withType(org.gradle.api.tasks.bundling.Jar).configureEach {
+    exclude('languages/**')
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)

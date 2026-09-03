@@ -35,6 +35,7 @@
       "usage": "사용법: {usage}"
   "bile":
     "command":
+      "debugdump": "진단 보고서를 생성하고 선택적으로 업로드"
       "root": "BileTools 명령어 그룹"
       "load": "plugins 디렉터리에서 플러그인 JAR 불러오기"
       "unload": "설치된 플러그인 언로드"
@@ -43,6 +44,7 @@
       "install": "Bile 라이브러리에서 플러그인 설치"
       "library": "라이브러리 플러그인 또는 플러그인 버전 표시"
     "parameter":
+      "debugdump_upload": "보고서를 mclo.gs에 업로드"
       "installed_plugin": "설치된 플러그인 이름"
       "library_plugin": "라이브러리 플러그인 이름"
       "version": "라이브러리 플러그인 버전"

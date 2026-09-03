@@ -35,6 +35,7 @@
       "usage": "Kullanım: {usage}"
   "bile":
     "command":
+      "debugdump": "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
       "root": "BileTools komut grubu"
       "load": "plugins dizininden bir eklenti JAR dosyası yükle"
       "unload": "Yüklü bir eklentiyi bellekten kaldır"
@@ -43,6 +44,7 @@
       "install": "Bile kütüphanesinden bir eklenti yükle"
       "library": "Kütüphane eklentilerini veya bir eklentinin sürümlerini listele"
     "parameter":
+      "debugdump_upload": "Raporu mclo.gs üzerine yükle"
       "installed_plugin": "Yüklü eklenti adı"
       "library_plugin": "Kütüphane eklentisi adı"
       "version": "Kütüphane eklentisi sürümü"

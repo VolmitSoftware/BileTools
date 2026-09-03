@@ -9,6 +9,8 @@ import art.arcane.volmlib.util.localization.VolmitLocales;
 import java.util.Map;
 
 public final class BileMessages {
+    public static final TextKey DEBUG_DUMP_DESCRIPTION = TextKey.of("bile.command.debugdump", "Create and optionally upload a diagnostic report");
+    public static final TextKey DEBUG_DUMP_UPLOAD = TextKey.of("bile.parameter.debugdump_upload", "Upload the report to mclo.gs");
     public static final TextKey COMMAND_ROOT = TextKey.of("bile.command.root", "BileTools command root");
     public static final TextKey COMMAND_LOAD = TextKey.of("bile.command.load", "Load a plugin jar from the plugins directory");
     public static final TextKey COMMAND_UNLOAD = TextKey.of("bile.command.unload", "Unload an installed plugin");
@@ -82,6 +84,8 @@ public final class BileMessages {
     private static MessageCatalog createCatalog() {
         MessageCatalog.Builder builder = MessageCatalog.builder(VolmitLocales.ENGLISH);
         builder.addAll(DirectorMessages.keys());
+        builder.add(DEBUG_DUMP_DESCRIPTION);
+        builder.add(DEBUG_DUMP_UPLOAD);
         builder.add(COMMAND_ROOT);
         builder.add(COMMAND_LOAD);
         builder.add(COMMAND_UNLOAD);

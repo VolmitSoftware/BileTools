@@ -35,6 +35,7 @@
       "usage": "用法: {usage}"
   "bile":
     "command":
+      "debugdump": "建立診斷報告並選擇是否上傳"
       "root": "BileTools 指令群組"
       "load": "從 plugins 目錄載入外掛 JAR 檔案"
       "unload": "卸載已安裝的外掛"
@@ -43,6 +44,7 @@
       "install": "從 Bile 程式庫安裝外掛"
       "library": "列出程式庫中的外掛或某個外掛的版本"
     "parameter":
+      "debugdump_upload": "將報告上傳至 mclo.gs"
       "installed_plugin": "已安裝的外掛名稱"
       "library_plugin": "程式庫外掛名稱"
       "version": "程式庫外掛版本"
