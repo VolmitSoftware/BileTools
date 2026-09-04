@@ -9,6 +9,7 @@ import art.arcane.volmlib.util.localization.MessageKey;
 import art.arcane.volmlib.util.localization.MessageValue;
 import art.arcane.volmlib.util.localization.PluralValue;
 import art.arcane.volmlib.util.localization.PluginLanguageEditor;
+import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.TextValue;
 import art.arcane.volmlib.util.localization.TomlLanguageEditor;
 import art.arcane.volmlib.util.localization.VolmitLocales;
@@ -22,6 +23,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -206,6 +208,28 @@ public class BileLocalizationTest {
                     .contains("[bile."));
         }
         assertFalse(expected.contains(VolmitLocales.ENGLISH + ".toml"));
+    }
+
+    @Test
+    public void remoteCatalogTargetsTheMasterLanguageDirectory() {
+        RemoteLanguageCatalog catalog = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
+                "BileTools",
+                URI.create("https://raw.githubusercontent.com/VolmitSoftware/BileTools/"),
+                "src/main/resources/languages",
+                ".toml",
+                "biletools-language-source.properties",
+                temporaryFolder.getRoot().toPath().resolve("language-cache"),
+                BileLocalization.class.getClassLoader()
+        ));
+        try {
+            assertEquals(
+                    "https://raw.githubusercontent.com/VolmitSoftware/BileTools/master/"
+                            + "src/main/resources/languages/de_DE.toml",
+                    catalog.sourceUri("de_DE").toString()
+            );
+        } finally {
+            catalog.close();
+        }
     }
 
     @Test
