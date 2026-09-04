@@ -30,7 +30,7 @@ public class PluginArchivePreloaderTest {
                 nestedClass.replace('.', '/') + ".class",
                 missingOptionalClass.replace('.', '/') + ".class",
                 "META-INF/versions/21/ignored.Versioned.class",
-                "languages/de_DE.yml"));
+                "languages/de_DE.toml"));
 
         PluginArchivePreloader.PreloadReport report = PluginArchivePreloader.preload(
                 archive, PluginArchivePreloaderTest.class.getClassLoader());

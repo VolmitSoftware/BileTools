@@ -1,0 +1,251 @@
+# BileTools language: ru_RU
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "Группа команд BileTools"
+load = "Загрузить JAR-файл плагина из каталога plugins"
+unload = "Выгрузить установленный плагин"
+reload = "Перезагрузить установленный плагин"
+uninstall = "Удалить JAR-файл плагина из каталога plugins"
+install = "Установить плагин из библиотеки Bile"
+library = "Показать плагины библиотеки или версии одного плагина"
+debug_dump = "Создать диагностический отчёт и при желании загрузить его"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Имя установленного плагина"
+library_plugin = "Имя плагина библиотеки"
+version = "Версия плагина библиотеки"
+sender = "Отправитель команды"
+debug_upload = "Загрузить отчёт на mclo.gs"
+
+[error]
+plugin_name_required = "Имя плагина не может быть пустым"
+library_plugin_name_required = "Имя плагина библиотеки не может быть пустым"
+version_required = "Версия не может быть пустой"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Требуется &f{permission}&7 или OP."
+unknown_command = "&a[&8Bile&a]: &7Неизвестная команда \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 требует полного перезапуска сервера."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 помечен как повреждённый после сбоя жизненного цикла. Автоматическая перезагрузка этого плагина приостановлена."
+reloading_context = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Плагин не найден: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7Получение &f{file}&7 от &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7 развёрнут на &f{count}&7 удалённых серверах."
+one = "&a[&8Bile&a]: &7&f{plugin}&7 развёрнут на &f{count}&7 удалённом сервере."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Горячее развёртывание завершено: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Горячее развёртывание не удалось: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Ошибка перезагрузки: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Перезагрузка поставлена в очередь: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Ошибка перезагрузки: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Выгружен: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Ошибка выгрузки: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Выгрузка поставлена в очередь: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Выгружен: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Ошибка выгрузки: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Загрузка поставлена в очередь: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Загружен: &f{plugin}&7 из &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Ошибка загрузки: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Удаление поставлено в очередь: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Удалён &f{plugin}&7 из &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7Плагин выгружен, но не удалось удалить &c{file}&7. Удалите файл перед повторной установкой плагина."
+failed = "&a[&8Bile&a]: &7Ошибка удаления: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Плагин не найден в библиотеке: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Версия \"&f{version}&7\" не найдена для \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Установка из библиотеки поставлена в очередь: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Установлен из библиотеки: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 установлен и требует полного перезапуска сервера."
+install_failed = "&a[&8Bile&a]: &7Ошибка установки: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7Библиотека пуста."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} установлена) &f{latestVersion}&7 (новейшая)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (новейшая)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (новейшая)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aОткрыт полный внутриигровой редактор конфигурации.&r"
+save_failed = "&a[&8Bile&a]: &cНе удалось применить &f{setting}&r&c: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 изменено на &f{new}&7; ранее &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dОбщие&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dЯзыки&r"
+
+[gui.navigation]
+back = "&eНазад&r"
+close = "&cЗакрыть&r"
+
+[gui.lore]
+state = "&7Текущее значение:&r {value}"
+toggle = "&8Нажмите, чтобы переключить.&r"
+number = "&8ЛКМ +1, ПКМ -1, Shift ×10, выбросить для ввода.&r"
+text = "&8Нажмите, чтобы ввести новое значение в чат.&r"
+language = "&8Нажмите, чтобы выбрать доступный язык или ввести локаль.&r"
+category = "&8Нажмите, чтобы изменить все параметры этой категории.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eВведите в чат новое значение для &f{setting}&r&e.&r"
+list = "&a[&8Bile&a]: &7Разделяйте элементы списка запятыми. Введите &fnone&r&7, чтобы очистить список.&r"
+cancel = "&a[&8Bile&a]: &7Введите &fcancel&r&7 для отмены. Запрос истечёт через 60 секунд.&r"
+cancelled = "&a[&8Bile&a]: &eИзменение конфигурации отменено.&r"
+timeout = "&a[&8Bile&a]: &eВремя изменения конфигурации истекло, ничего не изменено.&r"
+
+[gui.setting.general]
+language = "&dАктивная языковая локаль&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dАнонимная статистика bStats&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "На этой странице нет подкоманд."
+no_description = "Описание не указано"
+command_group = "Группа команд. Нажмите, чтобы открыть."
+category = "Категория команд"
+no_parameters = "Параметров нет. Нажмите, чтобы предварительно заполнить команду."
+parameters_hover = "Наведите курсор на параметры, чтобы узнать больше."
+
+[director.help.navigation]
+back = "Назад"
+page = "Страница"
+
+[director.help.navigation.parent]
+hover = "Вернуться к родительской группе команд"
+
+[director.help.navigation.previous]
+hover = "Предыдущая страница"
+
+[director.help.navigation.next]
+hover = "Следующая страница"
+
+[director.help.parameter]
+required = "Этот параметр является обязательным."
+optional = "Этот параметр является необязательным."
+default = "Если не задан, используется значение \"{value}\"."
+type = "Этот параметр имеет тип {type}."
+
+[director.runtime]
+usage = "Использование: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Эту команду нельзя выполнить из данного источника."
+unknown_parameter = "Неизвестный ключ параметра: {key}"
+unexpected_argument = "Неожиданный аргумент \"{argument}\". Необязательные параметры должны задаваться с ключом, например seed=123"
+unclosed_group = "Отсутствует закрывающая скобка \"]\" для параметра {key}"
+conversion_failed = "Невозможно преобразовать \"{value}\" в {type} для {parameter}"
+default_parse_failed = "Невозможно разобрать значение по умолчанию параметра {parameter}"
+missing_argument = "Отсутствует аргумент \"{parameter}\" ({type})"
+execution_failed = "Не удалось выполнить команду {command}: {reason}"
+
+[language.menu]
+your_language = "Ваш язык"
+reset_your_language = "Сбросить выбор языка"
+server_default = "Язык сервера по умолчанию"
+edit_messages = "Изменить языковые сообщения"
+use_server_default = "Использовать язык сервера по умолчанию"
+current = "Текущий: {locale}"
+current_with_personal = "Текущий: {locale} (Ваш: {personal})"
+your_description = "Изменить только сообщения, которые видите вы."
+reset_description = "Использовать язык сервера по умолчанию."
+server_description = "Изменить язык сервера по умолчанию."
+edit_description = "Открыть редактор сообщений для каждого языка."
+select_description = "Нажмите, чтобы выбрать этот язык."
+remove_personal_description = "Удалить ваш личный выбор языка."
+no_controls = "У вас нет доступа к настройкам языка."

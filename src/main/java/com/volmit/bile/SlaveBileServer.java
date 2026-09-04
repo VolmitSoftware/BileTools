@@ -3,6 +3,7 @@ package com.volmit.bile;
 import art.arcane.volmlib.util.localization.MessageArgs;
 import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import com.volmit.bile.localization.BileMessages;
+import com.volmit.bile.config.BileConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -17,14 +18,16 @@ public class SlaveBileServer extends Thread {
     private final ServerSocket socket;
     private final int clientTimeoutMs;
     private final long maxTransferBytes;
+    private final String payload;
     private volatile boolean running = true;
 
-    public SlaveBileServer() throws IOException {
+    public SlaveBileServer(BileConfig config) throws IOException {
         setName("Bile Slave Connection");
         setDaemon(true);
-        this.clientTimeoutMs = Math.max(1000, BileTools.cfg.getRemoteSocketTimeoutMs());
-        this.maxTransferBytes = BileTools.cfg.getRemoteMaxTransferBytes();
-        this.socket = new ServerSocket(BileTools.cfg.getRemoteSlavePort());
+        clientTimeoutMs = Math.max(1000, config.getRemoteSocketTimeoutMs());
+        maxTransferBytes = config.getRemoteMaxTransferBytes();
+        payload = config.getRemoteSlavePayload();
+        socket = new ServerSocket(config.getRemoteSlavePort());
         this.socket.setSoTimeout(1000);
         this.socket.setPerformancePreferences(1, 1, 10);
     }
@@ -74,7 +77,7 @@ public class SlaveBileServer extends Thread {
 
             File received = RemoteDeployProtocol.receiveFile(
                     client,
-                    BileTools.cfg.getRemoteSlavePayload(),
+                    payload,
                     BileUtils.getPluginsFolder(),
                     maxTransferBytes
             );

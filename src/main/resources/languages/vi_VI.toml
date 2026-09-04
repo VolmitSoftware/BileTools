@@ -1,0 +1,251 @@
+# BileTools language: vi_VI
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "Nhóm lệnh BileTools"
+load = "Nạp tệp JAR plugin từ thư mục plugins"
+unload = "Gỡ plugin đã cài khỏi bộ nhớ"
+reload = "Nạp lại plugin đã cài"
+uninstall = "Xóa tệp JAR plugin khỏi thư mục plugins"
+install = "Cài plugin từ thư viện Bile"
+library = "Liệt kê plugin trong thư viện hoặc các phiên bản của một plugin"
+debug_dump = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Tên plugin đã cài"
+library_plugin = "Tên plugin trong thư viện"
+version = "Phiên bản plugin trong thư viện"
+sender = "Người gửi lệnh"
+debug_upload = "Tải báo cáo lên mclo.gs"
+
+[error]
+plugin_name_required = "Tên plugin không được để trống"
+library_plugin_name_required = "Tên plugin trong thư viện không được để trống"
+version_required = "Phiên bản không được để trống"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Bạn cần &f{permission}&7 hoặc OP."
+unknown_command = "&a[&8Bile&a]: &7Lệnh không xác định \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 yêu cầu khởi động lại toàn bộ máy chủ."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 bị đánh dấu lỗi sau sự cố vòng đời. Tự động nạp lại plugin này đã bị tạm dừng."
+reloading_context = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy plugin: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7Đang nhận &f{file}&7 từ &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7Đã triển khai &f{plugin}&7 tới &f{count}&7 máy chủ từ xa."
+one = "&a[&8Bile&a]: &7Đã triển khai &f{plugin}&7 tới &f{count}&7 máy chủ từ xa."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Triển khai nóng hoàn tất: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Triển khai nóng thất bại: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Đã nạp lại: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nạp lại thất bại: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp lại: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Đã nạp lại: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Nạp lại thất bại: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Đã gỡ khỏi bộ nhớ: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Gỡ khỏi bộ nhớ thất bại: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ khỏi bộ nhớ: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Đã gỡ khỏi bộ nhớ: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Gỡ khỏi bộ nhớ thất bại: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Đã nạp: &f{plugin}&7 từ &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nạp thất bại: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ cài đặt: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Đã gỡ cài đặt &f{plugin}&7 khỏi &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7Plugin đã được gỡ khỏi bộ nhớ nhưng không thể xóa &c{file}&7. Hãy xóa tệp trước khi cài lại plugin."
+failed = "&a[&8Bile&a]: &7Gỡ cài đặt thất bại: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy plugin trong thư viện: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Không tìm thấy phiên bản \"&f{version}&7\" cho \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Đã xếp hàng cài từ thư viện: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Đã cài từ thư viện: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 đã được cài và yêu cầu khởi động lại toàn bộ máy chủ."
+install_failed = "&a[&8Bile&a]: &7Cài đặt thất bại: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7Thư viện trống."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} đã cài) &f{latestVersion}&7 (mới nhất)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (mới nhất)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (mới nhất)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aĐã mở trình chỉnh sửa cấu hình đầy đủ trong trò chơi.&r"
+save_failed = "&a[&8Bile&a]: &cKhông thể áp dụng &f{setting}&r&c: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 đã đổi thành &f{new}&7; trước đó là &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dChung&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dNgôn ngữ&r"
+
+[gui.navigation]
+back = "&eQuay lại&r"
+close = "&cĐóng&r"
+
+[gui.lore]
+state = "&7Hiện tại:&r {value}"
+toggle = "&8Nhấp để bật hoặc tắt.&r"
+number = "&8Trái +1, phải -1, shift ×10, thả để nhập.&r"
+text = "&8Nhấp để nhập giá trị mới trong trò chuyện.&r"
+language = "&8Nhấp để chọn ngôn ngữ khả dụng hoặc nhập mã vùng.&r"
+category = "&8Nhấp để sửa mọi thiết lập trong mục này.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eNhập giá trị mới cho &f{setting}&r&e trong trò chuyện.&r"
+list = "&a[&8Bile&a]: &7Phân tách các mục bằng dấu phẩy. Nhập &fnone&r&7 để dùng danh sách trống.&r"
+cancel = "&a[&8Bile&a]: &7Nhập &fcancel&r&7 để dừng. Yêu cầu này hết hạn sau 60 giây.&r"
+cancelled = "&a[&8Bile&a]: &eĐã hủy chỉnh sửa cấu hình.&r"
+timeout = "&a[&8Bile&a]: &eChỉnh sửa cấu hình đã hết hạn mà không thay đổi gì.&r"
+
+[gui.setting.general]
+language = "&dMã vùng ngôn ngữ đang dùng&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dThống kê bStats ẩn danh&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Không có lệnh con trên trang này."
+no_description = "Không có mô tả"
+command_group = "Nhóm lệnh. Nhấp để mở."
+category = "Danh mục lệnh"
+no_parameters = "Không có tham số. Nhấp để điền sẵn lệnh."
+parameters_hover = "Di chuột qua các tham số để tìm hiểu thêm."
+
+[director.help.navigation]
+back = "Quay lại"
+page = "Trang"
+
+[director.help.navigation.parent]
+hover = "Quay lại nhóm lệnh cha"
+
+[director.help.navigation.previous]
+hover = "Trang trước"
+
+[director.help.navigation.next]
+hover = "Trang sau"
+
+[director.help.parameter]
+required = "Tham số này là bắt buộc."
+optional = "Tham số này là tùy chọn."
+default = "Mặc định là \"{value}\" nếu không được chỉ định."
+type = "Tham số này có kiểu {type}."
+
+[director.runtime]
+usage = "Cách dùng: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Không thể chạy lệnh này từ nguồn này."
+unknown_parameter = "Khóa tham số không xác định: {key}"
+unexpected_argument = "Đối số không mong đợi \"{argument}\". Các tham số tùy chọn phải được chỉ định bằng khóa, ví dụ seed=123"
+unclosed_group = "Thiếu dấu \"]\" đóng cho tham số {key}"
+conversion_failed = "Không thể chuyển \"{value}\" thành {type} cho {parameter}"
+default_parse_failed = "Không thể phân tích giá trị mặc định của tham số {parameter}"
+missing_argument = "Thiếu đối số \"{parameter}\" ({type})"
+execution_failed = "Không thể thực thi lệnh {command}: {reason}"
+
+[language.menu]
+your_language = "Ngôn ngữ của bạn"
+reset_your_language = "Đặt lại ngôn ngữ của bạn"
+server_default = "Ngôn ngữ mặc định của máy chủ"
+edit_messages = "Chỉnh sửa thông báo ngôn ngữ"
+use_server_default = "Dùng ngôn ngữ mặc định của máy chủ"
+current = "Hiện tại: {locale}"
+current_with_personal = "Hiện tại: {locale} (Của bạn: {personal})"
+your_description = "Chỉ thay đổi những thông báo bạn thấy."
+reset_description = "Dùng ngôn ngữ mặc định của máy chủ."
+server_description = "Thay đổi ngôn ngữ mặc định của máy chủ."
+edit_description = "Mở trình chỉnh sửa thông báo cho từng ngôn ngữ."
+select_description = "Nhấp để chọn ngôn ngữ này."
+remove_personal_description = "Xóa lựa chọn ngôn ngữ cá nhân của bạn."
+no_controls = "Bạn không có quyền dùng các tùy chọn ngôn ngữ."

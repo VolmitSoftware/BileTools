@@ -1,0 +1,251 @@
+# BileTools language: pt_PT
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "Grupo de comandos BileTools"
+load = "Carregar um ficheiro JAR de plugin da pasta de plugins"
+unload = "Descarregar da memória um plugin instalado"
+reload = "Recarregar um plugin instalado"
+uninstall = "Eliminar um ficheiro JAR de plugin da pasta de plugins"
+install = "Instalar um plugin da biblioteca Bile"
+library = "Listar plugins da biblioteca ou versões de um plugin"
+debug_dump = "Criar um relatório de diagnóstico e carregá-lo opcionalmente"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Nome do plugin instalado"
+library_plugin = "Nome do plugin da biblioteca"
+version = "Versão do plugin da biblioteca"
+sender = "Emissor do comando"
+debug_upload = "Carregar o relatório para mclo.gs"
+
+[error]
+plugin_name_required = "O nome do plugin não pode estar vazio"
+library_plugin_name_required = "O nome do plugin da biblioteca não pode estar vazio"
+version_required = "A versão não pode estar vazia"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Precisas de &f{permission}&7 ou OP."
+unknown_command = "&a[&8Bile&a]: &7Comando desconhecido \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 requer um reinício completo do servidor."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 foi marcado como defeituoso após uma falha do ciclo de vida. Os recarregamentos automáticos estão em pausa."
+reloading_context = "&a[&8Bile&a]: &7A recarregar: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Plugin não encontrado: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7A recarregar: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7A receber &f{file}&7 de &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7 implementado em &f{count}&7 servidores remotos."
+one = "&a[&8Bile&a]: &7&f{plugin}&7 implementado em &f{count}&7 servidor remoto."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Implementação em tempo real concluída: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Falha na implementação em tempo real: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Recarregado: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Falha ao recarregar: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Recarregamento em fila: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Recarregado: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Falha ao recarregar: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Descarregado da memória: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Falha ao descarregar da memória: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Descarga da memória em fila: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Descarregado da memória: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Falha ao descarregar da memória: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Carregamento em fila: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Carregado: &f{plugin}&7 de &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Falha ao carregar: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Desinstalação em fila: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Desinstalado &f{plugin}&7 de &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7O plugin foi descarregado da memória, mas não foi possível eliminar &c{file}&7. Elimina o ficheiro antes de instalar novamente o plugin."
+failed = "&a[&8Bile&a]: &7Falha ao desinstalar: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Plugin não encontrado na biblioteca: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Versão \"&f{version}&7\" não encontrada para \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Instalação da biblioteca em fila: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Instalado da biblioteca: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 foi instalado e requer um reinício completo do servidor."
+install_failed = "&a[&8Bile&a]: &7Falha ao instalar: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7A biblioteca está vazia."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} instalada) &f{latestVersion}&7 (mais recente)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (mais recente)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (mais recente)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aO editor completo de configuração no jogo foi aberto.&r"
+save_failed = "&a[&8Bile&a]: &cNão foi possível aplicar &f{setting}&r&c: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 foi alterado para &f{new}&7; antes &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dGeral&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dIdiomas&r"
+
+[gui.navigation]
+back = "&eVoltar&r"
+close = "&cFechar&r"
+
+[gui.lore]
+state = "&7Atual:&r {value}"
+toggle = "&8Clica para alternar.&r"
+number = "&8Esquerdo +1, direito -1, Shift ×10, larga para escrever.&r"
+text = "&8Clica para escrever um novo valor no chat.&r"
+language = "&8Clica para escolher um idioma disponível ou escreve uma região.&r"
+category = "&8Clica para editar todas as definições desta categoria.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eEscreve um novo valor para &f{setting}&r&e no chat.&r"
+list = "&a[&8Bile&a]: &7Separa os itens da lista com vírgulas. Escreve &fnone&r&7 para uma lista vazia.&r"
+cancel = "&a[&8Bile&a]: &7Escreve &fcancel&r&7 para parar. Este pedido expira em 60 segundos.&r"
+cancelled = "&a[&8Bile&a]: &eEdição da configuração cancelada.&r"
+timeout = "&a[&8Bile&a]: &eA edição da configuração expirou sem alterar nada.&r"
+
+[gui.setting.general]
+language = "&dRegião de idioma ativa&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dMétricas anónimas do bStats&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Não existem subcomandos nesta página."
+no_description = "Nenhuma descrição fornecida"
+command_group = "Grupo de comandos. Clique para abrir."
+category = "Categoria de comandos"
+no_parameters = "Sem parâmetros. Clique para preencher previamente o comando."
+parameters_hover = "Passe o cursor sobre os parâmetros para saber mais."
+
+[director.help.navigation]
+back = "Voltar"
+page = "Página"
+
+[director.help.navigation.parent]
+hover = "Voltar ao grupo de comandos principal"
+
+[director.help.navigation.previous]
+hover = "Página anterior"
+
+[director.help.navigation.next]
+hover = "Página seguinte"
+
+[director.help.parameter]
+required = "Este parâmetro é obrigatório."
+optional = "Este parâmetro é opcional."
+default = "Predefinição \"{value}\" se não for definido."
+type = "Este parâmetro é do tipo {type}."
+
+[director.runtime]
+usage = "Utilização: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Este comando não pode ser executado a partir desta origem."
+unknown_parameter = "Chave de parâmetro desconhecida: {key}"
+unexpected_argument = "Argumento inesperado \"{argument}\". Os parâmetros opcionais devem ser indicados por chave, por ex. seed=123"
+unclosed_group = "Falta o \"]\" de fecho para o parâmetro {key}"
+conversion_failed = "Não foi possível converter \"{value}\" em {type} para {parameter}"
+default_parse_failed = "Não foi possível interpretar o valor predefinido do parâmetro {parameter}"
+missing_argument = "Falta o argumento \"{parameter}\" ({type})"
+execution_failed = "Falha ao executar o comando {command}: {reason}"
+
+[language.menu]
+your_language = "O teu idioma"
+reset_your_language = "Repor o teu idioma"
+server_default = "Idioma predefinido do servidor"
+edit_messages = "Editar mensagens do idioma"
+use_server_default = "Usar o idioma predefinido do servidor"
+current = "Atual: {locale}"
+current_with_personal = "Atual: {locale} (O teu: {personal})"
+your_description = "Altera apenas as mensagens que vês."
+reset_description = "Usa o idioma predefinido do servidor."
+server_description = "Altera o idioma predefinido do servidor."
+edit_description = "Abre o editor de mensagens de cada idioma."
+select_description = "Clica para selecionar este idioma."
+remove_personal_description = "Remove a tua escolha pessoal de idioma."
+no_controls = "Não tens acesso às opções de idioma."

@@ -1,0 +1,251 @@
+# BileTools language: lt_LT
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools komandų grupė"
+load = "Įkelti įskiepio JAR failą iš plugins katalogo"
+unload = "Iškelti įdiegtą įskiepį iš atminties"
+reload = "Iš naujo įkelti įdiegtą įskiepį"
+uninstall = "Ištrinti įskiepio JAR failą iš plugins katalogo"
+install = "Įdiegti įskiepį iš Bile bibliotekos"
+library = "Rodyti bibliotekos įskiepius arba įskiepio versijas"
+debug_dump = "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Įdiegto įskiepio pavadinimas"
+library_plugin = "Bibliotekos įskiepio pavadinimas"
+version = "Bibliotekos įskiepio versija"
+sender = "Komandos siuntėjas"
+debug_upload = "Įkelti ataskaitą į mclo.gs"
+
+[error]
+plugin_name_required = "Įskiepio pavadinimas negali būti tuščias"
+library_plugin_name_required = "Bibliotekos įskiepio pavadinimas negali būti tuščias"
+version_required = "Versija negali būti tuščia"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Reikia &f{permission}&7 leidimo arba OP teisių."
+unknown_command = "&a[&8Bile&a]: &7Nežinoma komanda \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 reikalauja visiškai iš naujo paleisti serverį."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 pažymėtas kaip sugedęs po gyvavimo ciklo klaidos. Automatinis šio įskiepio įkėlimas iš naujo pristabdytas."
+reloading_context = "&a[&8Bile&a]: &7Įkeliama iš naujo: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Įskiepis nerastas: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Įkeliama iš naujo: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7Gaunamas &f{file}&7 iš &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7 įdiegtas &f{count}&7 nuotoliniuose serveriuose."
+one = "&a[&8Bile&a]: &7&f{plugin}&7 įdiegtas &f{count}&7 nuotoliniame serveryje."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Tiesioginis diegimas baigtas: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Tiesioginis diegimas nepavyko: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Įkelta iš naujo: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nepavyko įkelti iš naujo: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Pakartotinis įkėlimas įtrauktas į eilę: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Įkelta iš naujo: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Nepavyko įkelti iš naujo: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Iškelta iš atminties: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nepavyko iškelti iš atminties: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Iškėlimas įtrauktas į eilę: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Iškelta iš atminties: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Nepavyko iškelti iš atminties: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Įkėlimas įtrauktas į eilę: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Įkelta: &f{plugin}&7 iš &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nepavyko įkelti: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Šalinimas įtrauktas į eilę: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 pašalintas iš &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7Įskiepis iškeltas iš atminties, bet &c{file}&7 nepavyko ištrinti. Ištrinkite failą prieš diegdami įskiepį dar kartą."
+failed = "&a[&8Bile&a]: &7Nepavyko pašalinti: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Įskiepis bibliotekoje nerastas: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Versija \"&f{version}&7\" įskiepiui \"&f{plugin}&7\" nerasta."
+install_queued = "&a[&8Bile&a]: &7Diegimas iš bibliotekos įtrauktas į eilę: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Įdiegta iš bibliotekos: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 įdiegtas ir reikalauja visiškai iš naujo paleisti serverį."
+install_failed = "&a[&8Bile&a]: &7Nepavyko įdiegti: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7Biblioteka tuščia."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} įdiegta) &f{latestVersion}&7 (naujausia)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (naujausia)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (naujausia)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aAtidarytas visas žaidimo konfigūracijos redaktorius.&r"
+save_failed = "&a[&8Bile&a]: &cNepavyko pritaikyti &f{setting}&r&c: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 pakeista į &f{new}&7; anksčiau &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dBendrieji&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dKalbos&r"
+
+[gui.navigation]
+back = "&eAtgal&r"
+close = "&cUždaryti&r"
+
+[gui.lore]
+state = "&7Dabartinė reikšmė:&r {value}"
+toggle = "&8Spustelėkite, kad perjungtumėte.&r"
+number = "&8Kairysis +1, dešinysis -1, Shift ×10, išmeskite norėdami įvesti.&r"
+text = "&8Spustelėkite ir pokalbyje įveskite naują reikšmę.&r"
+language = "&8Spustelėkite norėdami pasirinkti prieinamą kalbą arba įveskite lokalę.&r"
+category = "&8Spustelėkite norėdami redaguoti kiekvieną šios kategorijos nustatymą.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &ePokalbyje įveskite naują &f{setting}&r&e reikšmę.&r"
+list = "&a[&8Bile&a]: &7Sąrašo elementus atskirkite kableliais. Jei norite tuščio sąrašo, įveskite &fnone&r&7.&r"
+cancel = "&a[&8Bile&a]: &7Norėdami sustabdyti, įveskite &fcancel&r&7. Ši užklausa baigsis po 60 sekundžių.&r"
+cancelled = "&a[&8Bile&a]: &eKonfigūracijos redagavimas atšauktas.&r"
+timeout = "&a[&8Bile&a]: &eKonfigūracijos redagavimo laikas baigėsi nieko nepakeitus.&r"
+
+[gui.setting.general]
+language = "&dAktyvi kalbos lokalė&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dAnoniminė bStats statistika&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Šiame puslapyje nėra antrinių komandų."
+no_description = "Aprašymas nepateiktas"
+command_group = "Komandų grupė. Spustelėkite, kad atidarytumėte."
+category = "Komandų kategorija"
+no_parameters = "Parametrų nėra. Spustelėkite, kad iš anksto užpildytumėte komandą."
+parameters_hover = "Užveskite pelės žymeklį ant parametrų, kad sužinotumėte daugiau."
+
+[director.help.navigation]
+back = "Atgal"
+page = "Puslapis"
+
+[director.help.navigation.parent]
+hover = "Grįžti į pirminę komandų grupę"
+
+[director.help.navigation.previous]
+hover = "Ankstesnis puslapis"
+
+[director.help.navigation.next]
+hover = "Kitas puslapis"
+
+[director.help.parameter]
+required = "Šis parametras yra privalomas."
+optional = "Šis parametras yra neprivalomas."
+default = "Jei nenurodyta, numatytoji reikšmė yra \"{value}\"."
+type = "Šio parametro tipas yra {type}."
+
+[director.runtime]
+usage = "Naudojimas: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Šios komandos negalima vykdyti iš šio šaltinio."
+unknown_parameter = "Nežinomas parametro raktas: {key}"
+unexpected_argument = "Netikėtas argumentas \"{argument}\". Pasirenkami parametrai turi būti nurodyti su raktu, pvz. seed=123"
+unclosed_group = "Trūksta uždarančio \"]\" parametrui {key}"
+conversion_failed = "Reikšmės \"{value}\" nepavyko konvertuoti į {type} parametrui {parameter}"
+default_parse_failed = "Nepavyko nuskaityti parametro {parameter} numatytosios reikšmės"
+missing_argument = "Trūksta argumento \"{parameter}\" ({type})"
+execution_failed = "Nepavyko įvykdyti komandos {command}: {reason}"
+
+[language.menu]
+your_language = "Jūsų kalba"
+reset_your_language = "Atkurti jūsų kalbą"
+server_default = "Numatytoji serverio kalba"
+edit_messages = "Redaguoti kalbos pranešimus"
+use_server_default = "Naudoti numatytąją serverio kalbą"
+current = "Dabartinė: {locale}"
+current_with_personal = "Dabartinė: {locale} (Jūsų: {personal})"
+your_description = "Keiskite tik jums rodomus pranešimus."
+reset_description = "Naudokite numatytąją serverio kalbą."
+server_description = "Keiskite numatytąją serverio kalbą."
+edit_description = "Atverkite kiekvienos kalbos pranešimų redaktorių."
+select_description = "Spustelėkite, kad pasirinktumėte šią kalbą."
+remove_personal_description = "Pašalinkite asmeninį kalbos pasirinkimą."
+no_controls = "Jums nepasiekiami kalbos nustatymai."

@@ -1,12 +1,15 @@
 package com.volmit.bile.config;
 
+import art.arcane.volmlib.util.io.AtomicFileIO;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 public final class BileConfig {
@@ -49,42 +52,25 @@ public final class BileConfig {
     private final boolean logTimings;
     private final boolean healthCheck;
 
-    public BileConfig(String language,
-                      boolean metrics,
-                      boolean remoteSlaveEnabled,
-                      int remoteSlavePort,
-                      String remoteSlavePayload,
-                      boolean remoteMasterEnabled,
-                      List<String> remoteMasterDeployTargets,
-                      List<String> remoteMasterDeploySignatures,
-                      boolean archivePlugins,
-                      int remoteSocketTimeoutMs,
-                      long remoteMaxTransferBytes,
-                      long watcherIdlePollTicks,
-                      long watcherActivePollTicks,
-                      int watcherFingerprintDebounceTicks,
-                      List<String> watcherIgnore,
-                      List<String> watcherOnly,
-                      boolean logTimings,
-                      boolean healthCheck) {
-        this.language = language;
-        this.metrics = metrics;
-        this.remoteSlaveEnabled = remoteSlaveEnabled;
-        this.remoteSlavePort = remoteSlavePort;
-        this.remoteSlavePayload = remoteSlavePayload;
-        this.remoteMasterEnabled = remoteMasterEnabled;
-        this.remoteMasterDeployTargets = List.copyOf(remoteMasterDeployTargets);
-        this.remoteMasterDeploySignatures = List.copyOf(remoteMasterDeploySignatures);
-        this.archivePlugins = archivePlugins;
-        this.remoteSocketTimeoutMs = remoteSocketTimeoutMs;
-        this.remoteMaxTransferBytes = remoteMaxTransferBytes;
-        this.watcherIdlePollTicks = watcherIdlePollTicks;
-        this.watcherActivePollTicks = watcherActivePollTicks;
-        this.watcherFingerprintDebounceTicks = watcherFingerprintDebounceTicks;
-        this.watcherIgnore = List.copyOf(watcherIgnore);
-        this.watcherOnly = List.copyOf(watcherOnly);
-        this.logTimings = logTimings;
-        this.healthCheck = healthCheck;
+    private BileConfig(Builder builder) {
+        language = sanitizeScalar(builder.language, "en_US");
+        metrics = builder.metrics;
+        remoteSlaveEnabled = builder.remoteSlaveEnabled;
+        remoteSlavePort = Math.max(1, Math.min(65_535, builder.remoteSlavePort));
+        remoteSlavePayload = sanitizeScalar(builder.remoteSlavePayload, "pickapassword");
+        remoteMasterEnabled = builder.remoteMasterEnabled;
+        remoteMasterDeployTargets = List.copyOf(sanitizeList(builder.remoteMasterDeployTargets));
+        remoteMasterDeploySignatures = List.copyOf(sanitizeList(builder.remoteMasterDeploySignatures));
+        archivePlugins = builder.archivePlugins;
+        remoteSocketTimeoutMs = Math.max(1_000, builder.remoteSocketTimeoutMs);
+        remoteMaxTransferBytes = Math.max(1024L * 1024L, builder.remoteMaxTransferBytes);
+        watcherIdlePollTicks = Math.max(1L, builder.watcherIdlePollTicks);
+        watcherActivePollTicks = Math.max(1L, builder.watcherActivePollTicks);
+        watcherFingerprintDebounceTicks = Math.max(1, builder.watcherFingerprintDebounceTicks);
+        watcherIgnore = List.copyOf(sanitizeList(builder.watcherIgnore));
+        watcherOnly = List.copyOf(sanitizeList(builder.watcherOnly));
+        logTimings = builder.logTimings;
+        healthCheck = builder.healthCheck;
     }
 
     public static BileConfig load(File file) throws Exception {
@@ -92,98 +78,59 @@ public final class BileConfig {
         if (parent != null) {
             parent.mkdirs();
         }
-
         YamlConfiguration yaml = new YamlConfiguration();
         if (file.exists()) {
             yaml.load(file);
         }
-
         BileConfig defaults = defaults();
-        String language = sanitizeScalar(yaml.getString(PATH_LANGUAGE), defaults.language);
-        boolean metrics = yaml.getBoolean(PATH_METRICS, defaults.metrics);
-        boolean remoteSlaveEnabled = yaml.getBoolean(PATH_SLAVE_ENABLED, defaults.remoteSlaveEnabled);
-        int remoteSlavePort = yaml.getInt(PATH_SLAVE_PORT, defaults.remoteSlavePort);
-        String remoteSlavePayload = sanitizeScalar(yaml.getString(PATH_SLAVE_PAYLOAD), defaults.remoteSlavePayload);
-        boolean remoteMasterEnabled = yaml.getBoolean(PATH_MASTER_ENABLED, defaults.remoteMasterEnabled);
-        List<String> remoteMasterDeployTargets = sanitizeList(yaml.getStringList(PATH_MASTER_DEPLOY_TO), defaults.remoteMasterDeployTargets);
-        List<String> remoteMasterDeploySignatures = sanitizeList(yaml.getStringList(PATH_MASTER_DEPLOY_SIGNATURES), defaults.remoteMasterDeploySignatures);
-        boolean archivePlugins = yaml.getBoolean(PATH_ARCHIVE_PLUGINS, defaults.archivePlugins);
-        int remoteSocketTimeoutMs = Math.max(1000, yaml.getInt(PATH_REMOTE_SOCKET_TIMEOUT_MS, defaults.remoteSocketTimeoutMs));
-        long remoteMaxTransferBytes = Math.max(1024L * 1024L, yaml.getLong(PATH_REMOTE_MAX_BYTES, defaults.remoteMaxTransferBytes));
-        long watcherIdlePollTicks = Math.max(1L, yaml.getLong(PATH_WATCHER_IDLE_TICKS, defaults.watcherIdlePollTicks));
-        long watcherActivePollTicks = Math.max(1L, yaml.getLong(PATH_WATCHER_ACTIVE_TICKS, defaults.watcherActivePollTicks));
-        int watcherFingerprintDebounceTicks = Math.max(1, yaml.getInt(PATH_WATCHER_DEBOUNCE_TICKS, defaults.watcherFingerprintDebounceTicks));
-        List<String> watcherIgnore = yaml.contains(PATH_WATCHER_IGNORE)
-                ? sanitizeListAllowEmpty(yaml.getStringList(PATH_WATCHER_IGNORE))
-                : defaults.watcherIgnore;
-        List<String> watcherOnly = sanitizeListAllowEmpty(yaml.getStringList(PATH_WATCHER_ONLY));
-        boolean logTimings = yaml.getBoolean(PATH_LOG_TIMINGS, defaults.logTimings);
-        boolean healthCheck = yaml.getBoolean(PATH_HEALTH_CHECK, defaults.healthCheck);
-
-        BileConfig config = new BileConfig(
-                language,
-                metrics,
-                remoteSlaveEnabled,
-                remoteSlavePort,
-                remoteSlavePayload,
-                remoteMasterEnabled,
-                remoteMasterDeployTargets,
-                remoteMasterDeploySignatures,
-                archivePlugins,
-                remoteSocketTimeoutMs,
-                remoteMaxTransferBytes,
-                watcherIdlePollTicks,
-                watcherActivePollTicks,
-                watcherFingerprintDebounceTicks,
-                watcherIgnore,
-                watcherOnly,
-                logTimings,
-                healthCheck
-        );
-
-        config.write(yaml);
-        yaml.save(file);
+        Builder builder = defaults.toBuilder()
+                .language(sanitizeScalar(yaml.getString(PATH_LANGUAGE), defaults.language))
+                .metrics(yaml.getBoolean(PATH_METRICS, defaults.metrics))
+                .remoteSlaveEnabled(yaml.getBoolean(PATH_SLAVE_ENABLED, defaults.remoteSlaveEnabled))
+                .remoteSlavePort(yaml.getInt(PATH_SLAVE_PORT, defaults.remoteSlavePort))
+                .remoteSlavePayload(sanitizeScalar(yaml.getString(PATH_SLAVE_PAYLOAD), defaults.remoteSlavePayload))
+                .remoteMasterEnabled(yaml.getBoolean(PATH_MASTER_ENABLED, defaults.remoteMasterEnabled))
+                .remoteMasterDeployTargets(yaml.contains(PATH_MASTER_DEPLOY_TO)
+                        ? yaml.getStringList(PATH_MASTER_DEPLOY_TO) : defaults.remoteMasterDeployTargets)
+                .remoteMasterDeploySignatures(yaml.contains(PATH_MASTER_DEPLOY_SIGNATURES)
+                        ? yaml.getStringList(PATH_MASTER_DEPLOY_SIGNATURES) : defaults.remoteMasterDeploySignatures)
+                .archivePlugins(yaml.getBoolean(PATH_ARCHIVE_PLUGINS, defaults.archivePlugins))
+                .remoteSocketTimeoutMs(yaml.getInt(PATH_REMOTE_SOCKET_TIMEOUT_MS, defaults.remoteSocketTimeoutMs))
+                .remoteMaxTransferBytes(yaml.getLong(PATH_REMOTE_MAX_BYTES, defaults.remoteMaxTransferBytes))
+                .watcherIdlePollTicks(yaml.getLong(PATH_WATCHER_IDLE_TICKS, defaults.watcherIdlePollTicks))
+                .watcherActivePollTicks(yaml.getLong(PATH_WATCHER_ACTIVE_TICKS, defaults.watcherActivePollTicks))
+                .watcherFingerprintDebounceTicks(yaml.getInt(
+                        PATH_WATCHER_DEBOUNCE_TICKS, defaults.watcherFingerprintDebounceTicks))
+                .watcherIgnore(yaml.contains(PATH_WATCHER_IGNORE)
+                        ? yaml.getStringList(PATH_WATCHER_IGNORE) : defaults.watcherIgnore)
+                .watcherOnly(yaml.contains(PATH_WATCHER_ONLY)
+                        ? yaml.getStringList(PATH_WATCHER_ONLY) : defaults.watcherOnly)
+                .logTimings(yaml.getBoolean(PATH_LOG_TIMINGS, defaults.logTimings))
+                .healthCheck(yaml.getBoolean(PATH_HEALTH_CHECK, defaults.healthCheck));
+        BileConfig config = builder.build();
+        config.save(file);
         return config;
     }
 
     public static BileConfig defaults() {
-        List<String> deployTargets = new ArrayList<>();
-        deployTargets.add("yourserver.com:9876:password");
+        return new Builder().build();
+    }
 
-        List<String> deploySignatures = new ArrayList<>();
-        deploySignatures.add("MyPlugin");
-        deploySignatures.add("AnotherPlugin");
+    public Builder toBuilder() {
+        return new Builder(this);
+    }
 
-        // Plugins that are usually dangerous or useless to auto-reload on a dev box.
-        List<String> ignore = new ArrayList<>();
-        ignore.add("LuckPerms");
-        ignore.add("Vault");
-        ignore.add("ProtocolLib");
-        ignore.add("packetevents");
-        ignore.add("WorldGuard");
-        ignore.add("CoreProtect");
-        ignore.add("spark");
-
-        return new BileConfig(
-                "en_US",
-                true,
-                false,
-                9876,
-                "pickapassword",
-                false,
-                deployTargets,
-                deploySignatures,
-                true,
-                15_000,
-                256L * 1024L * 1024L,
-                20L,
-                5L,
-                8,
-                ignore,
-                List.of(),
-                true,
-                true
-        );
+    public void save(File file) throws IOException {
+        YamlConfiguration yaml = new YamlConfiguration();
+        if (file.isFile()) {
+            try {
+                yaml.load(file);
+            } catch (Exception exception) {
+                throw new IOException("Could not read the current BileTools configuration", exception);
+            }
+        }
+        write(yaml);
+        AtomicFileIO.writeString(file.toPath(), yaml.saveToString());
     }
 
     public void write(YamlConfiguration yaml) {
@@ -216,28 +163,24 @@ public final class BileConfig {
         if (pluginName == null || pluginName.trim().isEmpty()) {
             return false;
         }
-
         String name = pluginName.trim().toLowerCase(Locale.ROOT);
-
         if (!watcherOnly.isEmpty()) {
-            boolean allowed = false;
+            boolean included = false;
             for (String entry : watcherOnly) {
-                if (entry != null && entry.trim().toLowerCase(Locale.ROOT).equals(name)) {
-                    allowed = true;
+                if (name.equals(entry.toLowerCase(Locale.ROOT))) {
+                    included = true;
                     break;
                 }
             }
-            if (!allowed) {
+            if (!included) {
                 return false;
             }
         }
-
         for (String entry : watcherIgnore) {
-            if (entry != null && entry.trim().toLowerCase(Locale.ROOT).equals(name)) {
+            if (name.equals(entry.toLowerCase(Locale.ROOT))) {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -317,14 +260,12 @@ public final class BileConfig {
         if (pluginName == null || pluginName.trim().isEmpty()) {
             return false;
         }
-
         String name = pluginName.trim().toLowerCase(Locale.ROOT);
         for (String signature : remoteMasterDeploySignatures) {
-            if (signature != null && signature.trim().toLowerCase(Locale.ROOT).equals(name)) {
+            if (name.equals(signature.toLowerCase(Locale.ROOT))) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -332,35 +273,158 @@ public final class BileConfig {
         if (value == null || value.trim().isEmpty()) {
             return fallback;
         }
-
         return value.trim();
     }
 
-    private static List<String> sanitizeList(List<String> values, List<String> fallback) {
-        List<String> normalized = sanitizeListAllowEmpty(values);
-        if (normalized.isEmpty()) {
-            return new ArrayList<>(fallback);
-        }
-        return normalized;
-    }
-
-    private static List<String> sanitizeListAllowEmpty(List<String> values) {
+    private static List<String> sanitizeList(List<String> values) {
         Set<String> normalized = new LinkedHashSet<>();
         if (values != null) {
             for (String value : values) {
-                if (value == null) {
-                    continue;
+                if (value != null && !value.trim().isEmpty()) {
+                    normalized.add(value.trim());
                 }
-
-                String trimmed = value.trim();
-                if (trimmed.isEmpty()) {
-                    continue;
-                }
-
-                normalized.add(trimmed);
             }
         }
-
         return new ArrayList<>(normalized);
+    }
+
+    public static final class Builder {
+        private String language = "en_US";
+        private boolean metrics = true;
+        private boolean remoteSlaveEnabled;
+        private int remoteSlavePort = 9_876;
+        private String remoteSlavePayload = "pickapassword";
+        private boolean remoteMasterEnabled;
+        private List<String> remoteMasterDeployTargets = List.of("yourserver.com:9876:password");
+        private List<String> remoteMasterDeploySignatures = List.of("MyPlugin", "AnotherPlugin");
+        private boolean archivePlugins = true;
+        private int remoteSocketTimeoutMs = 15_000;
+        private long remoteMaxTransferBytes = 256L * 1024L * 1024L;
+        private long watcherIdlePollTicks = 20L;
+        private long watcherActivePollTicks = 5L;
+        private int watcherFingerprintDebounceTicks = 8;
+        private List<String> watcherIgnore = List.of(
+                "LuckPerms", "Vault", "ProtocolLib", "packetevents", "WorldGuard", "CoreProtect", "spark");
+        private List<String> watcherOnly = List.of();
+        private boolean logTimings = true;
+        private boolean healthCheck = true;
+
+        public Builder() {
+        }
+
+        private Builder(BileConfig config) {
+            language = config.language;
+            metrics = config.metrics;
+            remoteSlaveEnabled = config.remoteSlaveEnabled;
+            remoteSlavePort = config.remoteSlavePort;
+            remoteSlavePayload = config.remoteSlavePayload;
+            remoteMasterEnabled = config.remoteMasterEnabled;
+            remoteMasterDeployTargets = config.remoteMasterDeployTargets;
+            remoteMasterDeploySignatures = config.remoteMasterDeploySignatures;
+            archivePlugins = config.archivePlugins;
+            remoteSocketTimeoutMs = config.remoteSocketTimeoutMs;
+            remoteMaxTransferBytes = config.remoteMaxTransferBytes;
+            watcherIdlePollTicks = config.watcherIdlePollTicks;
+            watcherActivePollTicks = config.watcherActivePollTicks;
+            watcherFingerprintDebounceTicks = config.watcherFingerprintDebounceTicks;
+            watcherIgnore = config.watcherIgnore;
+            watcherOnly = config.watcherOnly;
+            logTimings = config.logTimings;
+            healthCheck = config.healthCheck;
+        }
+
+        public Builder language(String value) {
+            language = value;
+            return this;
+        }
+
+        public Builder metrics(boolean value) {
+            metrics = value;
+            return this;
+        }
+
+        public Builder remoteSlaveEnabled(boolean value) {
+            remoteSlaveEnabled = value;
+            return this;
+        }
+
+        public Builder remoteSlavePort(int value) {
+            remoteSlavePort = value;
+            return this;
+        }
+
+        public Builder remoteSlavePayload(String value) {
+            remoteSlavePayload = value;
+            return this;
+        }
+
+        public Builder remoteMasterEnabled(boolean value) {
+            remoteMasterEnabled = value;
+            return this;
+        }
+
+        public Builder remoteMasterDeployTargets(List<String> value) {
+            remoteMasterDeployTargets = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder remoteMasterDeploySignatures(List<String> value) {
+            remoteMasterDeploySignatures = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder archivePlugins(boolean value) {
+            archivePlugins = value;
+            return this;
+        }
+
+        public Builder remoteSocketTimeoutMs(int value) {
+            remoteSocketTimeoutMs = value;
+            return this;
+        }
+
+        public Builder remoteMaxTransferBytes(long value) {
+            remoteMaxTransferBytes = value;
+            return this;
+        }
+
+        public Builder watcherIdlePollTicks(long value) {
+            watcherIdlePollTicks = value;
+            return this;
+        }
+
+        public Builder watcherActivePollTicks(long value) {
+            watcherActivePollTicks = value;
+            return this;
+        }
+
+        public Builder watcherFingerprintDebounceTicks(int value) {
+            watcherFingerprintDebounceTicks = value;
+            return this;
+        }
+
+        public Builder watcherIgnore(List<String> value) {
+            watcherIgnore = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder watcherOnly(List<String> value) {
+            watcherOnly = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder logTimings(boolean value) {
+            logTimings = value;
+            return this;
+        }
+
+        public Builder healthCheck(boolean value) {
+            healthCheck = value;
+            return this;
+        }
+
+        public BileConfig build() {
+            return new BileConfig(this);
+        }
     }
 }

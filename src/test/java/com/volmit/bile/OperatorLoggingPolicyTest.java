@@ -38,8 +38,11 @@ public class OperatorLoggingPolicyTest {
         assertTrue(splash.contains("BileTools.logLegacy(Level.INFO, splash, null)"));
         assertFalse(splash.contains("Bukkit.getConsoleSender()"));
         String localization = Files.readString(SOURCE_ROOT.resolve("localization/BileLocalization.java"));
-        assertTrue(localization.contains("ComponentText.section(output.toString())"));
-        assertTrue(localization.contains(": sanitizeUntrusted(value)"));
+        assertTrue(localization.contains("render(selectedSnapshot"));
+        assertTrue(localization.contains("MessageArgumentKind.UNTRUSTED"));
+        assertTrue(localization.contains("Remote language catalog is unavailable; code-owned English and installed local language files remain active"));
+        assertTrue(localization.contains("Configured language could not be loaded; BileTools is continuing with code-owned English"));
+        assertFalse(localization.contains("BileTools remote language catalog is unavailable"));
         assertFalse(localization.contains("ChatColor.translateAlternateColorCodes"));
     }
 

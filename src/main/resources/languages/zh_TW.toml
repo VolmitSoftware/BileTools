@@ -1,0 +1,251 @@
+# BileTools language: zh_TW
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools 指令群組"
+load = "從 plugins 目錄載入外掛 JAR 檔案"
+unload = "卸載已安裝的外掛"
+reload = "重新載入已安裝的外掛"
+uninstall = "從 plugins 目錄刪除外掛 JAR 檔案"
+install = "從 Bile 程式庫安裝外掛"
+library = "列出程式庫中的外掛或某個外掛的版本"
+debug_dump = "建立診斷報告並選擇是否上傳"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "已安裝的外掛名稱"
+library_plugin = "程式庫外掛名稱"
+version = "程式庫外掛版本"
+sender = "指令傳送者"
+debug_upload = "將報告上傳至 mclo.gs"
+
+[error]
+plugin_name_required = "外掛名稱不能為空"
+library_plugin_name_required = "程式庫外掛名稱不能為空"
+version_required = "版本不能為空"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7你需要 &f{permission}&7 權限或 OP."
+unknown_command = "&a[&8Bile&a]: &7未知指令 \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 需要完整重新啟動伺服器."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 因生命週期故障被標記為異常。該外掛的自動重新載入已暫停。"
+reloading_context = "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7(&f{context}&7)。"
+plugin_not_found = "&a[&8Bile&a]: &7找不到外掛: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7。"
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7正在從 &f{host}&7 接收 &f{file}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7已將 &f{plugin}&7 部署到 &f{count}&7 台遠端伺服器."
+one = "&a[&8Bile&a]: &7已將 &f{plugin}&7 部署到 &f{count}&7 台遠端伺服器."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7熱部署已完成：&f{file}&7。"
+failed = "&a[&8Bile&a]: &7熱部署失敗：&c{file}&7。"
+
+[message.reload]
+success = "&a[&8Bile&a]: &7已重新載入：&f{plugin}&7(&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7重新載入失敗：&c{plugin}&7。"
+queued = "&a[&8Bile&a]: &7已加入重新載入佇列：&f{plugin}&7。"
+command_success = "&a[&8Bile&a]: &7已重新載入：&f{plugin}&7(&f{file}&7，&f{milliseconds}&7ms)。"
+command_failed = "&a[&8Bile&a]: &7重新載入失敗：\"&f{plugin}&7\"。"
+
+[message.unload]
+success = "&a[&8Bile&a]: &7已卸載：&f{plugin}&7(&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7卸載失敗：&c{plugin}&7。"
+queued = "&a[&8Bile&a]: &7已加入卸載佇列：&f{plugin}&7。"
+command_success = "&a[&8Bile&a]: &7已卸載：&f{plugin}&7(&f{file}&7)。"
+command_failed = "&a[&8Bile&a]: &7卸載失敗：\"&f{plugin}&7\"。"
+
+[message.load]
+queued = "&a[&8Bile&a]: &7已加入載入佇列：&f{plugin}&7。"
+success = "&a[&8Bile&a]: &7已從 &f{file}&7 載入 &f{plugin}&7(&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7載入失敗：\"&f{plugin}&7\"。"
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7已加入解除安裝佇列: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7已從 &f{file}&7 解除安裝 &f{plugin}&7."
+delete_failed = "&a[&8Bile&a]: &7外掛已卸載，但無法刪除 &c{file}&7. 請在重新安裝外掛前刪除該檔案."
+failed = "&a[&8Bile&a]: &7解除安裝失敗: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7程式庫中找不到外掛: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7找不到 \"&f{plugin}&7\" 的版本 \"&f{version}&7\"."
+install_queued = "&a[&8Bile&a]: &7已加入程式庫安裝佇列: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7已從程式庫安裝: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 已安裝，需要完整重新啟動伺服器."
+install_failed = "&a[&8Bile&a]: &7安裝失敗: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7程式庫為空."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} 已安裝) &f{latestVersion}&7 (最新)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (最新)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (最新)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &a已開啟完整的遊戲內設定編輯器。&r"
+save_failed = "&a[&8Bile&a]: &c無法套用&f{setting}&r&c：{reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 已變更為 &f{new}&7；原值為 &f{old}&7。"
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&d一般&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&d語言&r"
+
+[gui.navigation]
+back = "&e返回&r"
+close = "&c關閉&r"
+
+[gui.lore]
+state = "&7當前：&r{value}"
+toggle = "&8點擊以切換。&r"
+number = "&8左 +1，右 -1，Shift ×10，拖動至類型。&r"
+text = "&8點擊以在聊天中輸入新數值。&r"
+language = "&8點擊以選擇可用語言或輸入語言區域。&r"
+category = "&8點擊以編輯此類別中的所有設定。&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &e在聊天中輸入&f{setting}&r&e的新數值。&r"
+list = "&a[&8Bile&a]: &7用逗號分隔列表條目。輸入&fnone&r&7表示列表為空。&r"
+cancel = "&a[&8Bile&a]: &7輸入&fcancel&r&7以停止。本提示會在 60 秒後失效。&r"
+cancelled = "&a[&8Bile&a]: &e配置編輯已取消。&r"
+timeout = "&a[&8Bile&a]: &e配置編輯到期且未更改任何內容。&r"
+
+[gui.setting.general]
+language = "&d活躍語言地區&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&d匿名 bStats 統計&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "此頁面沒有子命令。"
+no_description = "未提供說明"
+command_group = "命令群組。點擊以開啟。"
+category = "指令類別"
+no_parameters = "無參數。點擊以預先填入命令。"
+parameters_hover = "將滑鼠懸停在參數上以瞭解更多。"
+
+[director.help.navigation]
+back = "返回"
+page = "頁面"
+
+[director.help.navigation.parent]
+hover = "返回上層命令群組"
+
+[director.help.navigation.previous]
+hover = "上一頁"
+
+[director.help.navigation.next]
+hover = "下一頁"
+
+[director.help.parameter]
+required = "此參數為必填項。"
+optional = "此參數為可選項。"
+default = "未指定時預設為 \"{value}\"。"
+type = "此參數的類型為 {type}。"
+
+[director.runtime]
+usage = "用法: {usage}"
+
+[director.runtime.error]
+invalid_origin = "無法從此來源執行該指令。"
+unknown_parameter = "未知參數鍵: {key}"
+unexpected_argument = "意外參數 \"{argument}\"。選用參數必須使用鍵指定，例如 seed=123"
+unclosed_group = "引數 {key} 缺少閉合的 \"]\""
+conversion_failed = "無法將 \"{value}\" 轉換為 {parameter} 所需的 {type}"
+default_parse_failed = "無法解析參數 {parameter} 的預設值"
+missing_argument = "缺少參數 \"{parameter}\" ({type})"
+execution_failed = "執行指令 {command} 失敗: {reason}"
+
+[language.menu]
+your_language = "您的語言"
+reset_your_language = "重設您的語言"
+server_default = "伺服器預設語言"
+edit_messages = "編輯語言訊息"
+use_server_default = "使用伺服器預設語言"
+current = "目前：{locale}"
+current_with_personal = "目前：{locale}（您的：{personal}）"
+your_description = "只變更您看到的訊息。"
+reset_description = "使用伺服器預設語言。"
+server_description = "變更伺服器預設語言。"
+edit_description = "開啟各語言的訊息編輯器。"
+select_description = "點擊以選擇此語言。"
+remove_personal_description = "移除您的個人語言選擇。"
+no_controls = "您無權使用語言設定。"

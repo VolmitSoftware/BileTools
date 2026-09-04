@@ -4,6 +4,7 @@ import art.arcane.volmlib.util.director.DirectorTextResolver;
 import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
 import art.arcane.volmlib.util.director.help.DirectorMiniMenu.DirectorHelpPage;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import com.volmit.bile.BileTools;
 import com.volmit.bile.PlatformTasks;
 import org.bukkit.Sound;
@@ -29,8 +30,16 @@ public final class BileFancyMenu {
             return false;
         }
 
-        DirectorMiniMenu.deliver(sender, request.get(), DirectorMiniMenu.Theme.bileGreen(), resolver);
+        DirectorMiniMenu.deliver(sender, request.get(), theme(), resolver);
         return true;
+    }
+
+    public static DirectorMiniMenu.Theme theme() {
+        return DirectorMiniMenu.Theme.bileGreen();
+    }
+
+    public static ComponentText entry(ComponentText content) {
+        return ComponentText.markup("<dark_gray>  › </dark_gray>").append(content);
     }
 
     public static void playTabSound(CommandSender sender) {

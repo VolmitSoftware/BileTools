@@ -1,11 +1,9 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.util.diagnostics.BukkitDebugDump;
-import art.arcane.volmlib.util.diagnostics.DebugDumpContributor;
 import art.arcane.volmlib.util.director.DirectorEngineOptions;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
-import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
 import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
 import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
@@ -14,12 +12,15 @@ import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.localization.MessageArgs;
 import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
 import art.arcane.volmlib.util.localization.LanguageAudience;
+import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.plugin.ComponentLog;
 import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import art.arcane.volmlib.util.plugin.ComponentText;
 import com.volmit.bile.command.BileFancyMenu;
 import com.volmit.bile.command.CommandBile;
 import com.volmit.bile.config.BileConfig;
+import com.volmit.bile.config.BileConfigEditor;
+import com.volmit.bile.debug.BileDebugContributor;
 import com.volmit.bile.localization.BileLocalization;
 import com.volmit.bile.localization.BileMessages;
 import com.volmit.bile.watch.AutomaticReloadCompletionHandoff;
@@ -137,6 +138,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private BileLocalization localization;
     private BukkitLanguageSwitcher languageSwitcher;
     private BukkitDebugDump debugDump;
+    private BileConfigEditor configEditor;
     private final AtomicBoolean selfReloadQueued = new AtomicBoolean(false);
     private volatile AutomaticReloadQueue.Candidate remoteSelfReloadInProgress;
     private final Set<String> queuedOperationKeys = ConcurrentHashMap.newKeySet();
@@ -155,7 +157,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         thread.setDaemon(true);
         return thread;
     });
-    public static BileConfig cfg;
+    public static volatile BileConfig cfg;
 
     static void debug(Supplier<String> messageSupplier) {
         Logger logger = operatorLogger();
@@ -218,6 +220,101 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         cfg = BileConfig.load(f);
     }
 
+    public synchronized void applyConfiguration(BileConfig candidate) throws Exception {
+        BileConfig previous = cfg;
+        if (!candidate.getLanguage().equalsIgnoreCase(previous.getLanguage())) {
+            throw new IllegalArgumentException("use the language selector to change the active language");
+        }
+        boolean reconfigureReceiver = receiverConfigurationChanged(previous, candidate);
+        if (reconfigureReceiver) {
+            stopSlaveServer();
+        }
+        try {
+            candidate.save(new File(getDataFolder(), "biletools.yml"));
+            cfg = candidate;
+            if (reconfigureReceiver && candidate.isRemoteSlaveEnabled()) {
+                startSlaveServer(candidate);
+            }
+        } catch (Exception exception) {
+            cfg = previous;
+            try {
+                previous.save(new File(getDataFolder(), "biletools.yml"));
+            } catch (IOException rollbackFailure) {
+                exception.addSuppressed(rollbackFailure);
+            }
+            if (reconfigureReceiver && previous.isRemoteSlaveEnabled()) {
+                try {
+                    startSlaveServer(previous);
+                } catch (IOException rollbackFailure) {
+                    exception.addSuppressed(rollbackFailure);
+                }
+            }
+            throw exception;
+        }
+        if (previous.isMetrics() != candidate.isMetrics()) {
+            PlatformTasks.runGlobal(this, this::refreshMetrics);
+        }
+    }
+
+    private synchronized void selectDefaultLanguage(String locale, LocalizationSnapshot prepared) throws Exception {
+        BileConfig previous = cfg;
+        BileConfig candidate = previous.toBuilder().language(locale).build();
+        File configurationFile = new File(getDataFolder(), "biletools.yml");
+        try {
+            candidate.save(configurationFile);
+            localization.installDefault(locale, prepared);
+            cfg = candidate;
+        } catch (Exception exception) {
+            try {
+                previous.save(configurationFile);
+            } catch (IOException rollbackFailure) {
+                exception.addSuppressed(rollbackFailure);
+            }
+            throw exception;
+        }
+    }
+
+    private boolean receiverConfigurationChanged(BileConfig previous, BileConfig candidate) {
+        return previous.isRemoteSlaveEnabled() != candidate.isRemoteSlaveEnabled()
+                || previous.getRemoteSlavePort() != candidate.getRemoteSlavePort()
+                || !previous.getRemoteSlavePayload().equals(candidate.getRemoteSlavePayload())
+                || previous.getRemoteSocketTimeoutMs() != candidate.getRemoteSocketTimeoutMs()
+                || previous.getRemoteMaxTransferBytes() != candidate.getRemoteMaxTransferBytes();
+    }
+
+    private void startSlaveServer(BileConfig config) throws IOException {
+        SlaveBileServer server = new SlaveBileServer(config);
+        server.start();
+        srv = server;
+    }
+
+    private void stopSlaveServer() {
+        SlaveBileServer server = srv;
+        srv = null;
+        if (server == null) {
+            return;
+        }
+        server.shutdown();
+        try {
+            server.join(5_000L);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void refreshMetrics() {
+        Metrics active = metrics;
+        metrics = null;
+        if (active != null) {
+            try {
+                active.shutdown();
+            } catch (RuntimeException exception) {
+                getLogger().log(Level.WARNING, "Failed to stop BileTools metrics", exception);
+            }
+        }
+        setupMetrics();
+    }
+
     @Override
     public void onEnable() {
         preloadSelfHostedArchive();
@@ -229,11 +326,17 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         bile = this;
-        localization = new BileLocalization(getDataFolder(), getLogger(), cfg.getLanguage());
-        debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(() -> true, this::captureDebugState));
+        localization = new BileLocalization(getDataFolder(), getLogger(), cfg.getLanguage(), this::selectDefaultLanguage);
         languageSwitcher = BukkitLanguageSwitcher.register(this, localization.languageService(),
-                new BukkitLanguageSwitcher.Options(ROOT_COMMAND, ROOT_PERMISSION,
-                        DirectorMiniMenu.Theme.bileGreen(), localization.directorResolver(), localization.editorOptions()));
+                new BukkitLanguageSwitcher.Options(ROOT_COMMAND, "biletools.config",
+                        BileFancyMenu.theme(), localization.directorResolver(), localization.editorOptions(),
+                        this::renderLanguageEditFeedback));
+        debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(
+                () -> true,
+                new BileDebugContributor(this),
+                new BukkitDebugDump.Presentation("/biletools debug dump", "/biletools debug",
+                        BileFancyMenu.theme(), localization.directorResolver())));
+        configEditor = new BileConfigEditor(this);
         SplashScreen.print(this);
         getLogger().info("Runtime platform: " + ServerPlatform.summary());
         if (ServerPlatform.isFoliaFamily()) {
@@ -247,7 +350,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             getLogger().info("Starting Remote Slave Server on *:" + cfg.getRemoteSlavePort());
 
             try {
-                srv = new SlaveBileServer();
+                srv = new SlaveBileServer(cfg);
                 srv.start();
                 getLogger().info("Remote Slave Server online!");
             } catch (Throwable e) {
@@ -273,6 +376,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             getLogger().warning("Could not register /" + ROOT_COMMAND + " command executor");
         }
         Bukkit.getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(configEditor, this);
 
         sx = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
 
@@ -616,6 +720,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         if (debugDump != null) {
             debugDump.close();
             debugDump = null;
+        }
+        if (configEditor != null) {
+            configEditor.shutdown();
+            configEditor = null;
         }
         if (languageSwitcher != null) {
             languageSwitcher.close();
@@ -1931,7 +2039,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         for (String target : targets) {
             String[] split = target.split(":", 3);
             if (split.length < 3) {
-                getLogger().warning("Invalid remote deploy target format: " + target);
+                getLogger().warning("Invalid remote deploy target format at configured target "
+                        + targets.indexOf(target));
                 continue;
             }
 
@@ -1941,7 +2050,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             try {
                 port = Integer.parseInt(split[1]);
             } catch (NumberFormatException e) {
-                getLogger().warning("Invalid port in remote deploy target: " + target);
+                getLogger().warning("Invalid port in remote deploy target " + host);
                 continue;
             }
 
@@ -1949,9 +2058,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 try {
                     streamFile(sourceFile, transferFileName, host, port, password);
                 } catch (UnknownHostException e) {
-                    getLogger().warning("Invalid host in remote deploy target: " + target);
+                    getLogger().warning("Invalid remote deploy host: " + host);
                 } catch (IOException e) {
-                    getLogger().warning("Failed remote deploy to " + target + ": " + e.getMessage());
+                    getLogger().warning("Failed remote deploy to " + host + ":" + port + ": " + e.getMessage());
                 }
             }, remoteDeployExecutor));
         }
@@ -2588,11 +2697,6 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
     }
 
-    private DebugDumpContributor.Report captureDebugState() {
-        String state = "Watched jars: " + watchedJarCount() + "\nDirty plugins: " + dirtyPluginCount() + "\nCompleted reloads: " + reloadsTotal();
-        return () -> state;
-    }
-
     public BukkitDebugDump debugDump() {
         return debugDump;
     }
@@ -2601,8 +2705,41 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         return languageSwitcher;
     }
 
+    public BileConfigEditor configEditor() {
+        return configEditor;
+    }
+
+    public String schedulerName() {
+        return ServerPlatform.summary();
+    }
+
+    public boolean isWatcherActive() {
+        return tickerActive && pluginJarWatcher != null;
+    }
+
+    public boolean isMetricsActive() {
+        return metrics != null;
+    }
+
     public BileLocalization getLocalization() {
         return localization;
+    }
+
+    private ComponentText renderLanguageEditFeedback(CommandSender sender,
+                                                     BukkitLanguageSwitcher.LanguageEditChange change) {
+        return localization.singleLineText(sender, BileMessages.CHANGE_SAVED, MessageArgs.builder()
+                .untrusted("setting", change.key())
+                .untrusted("new", compactLanguageEditValue(change.after()))
+                .untrusted("old", compactLanguageEditValue(change.before()))
+                .build());
+    }
+
+    private static String compactLanguageEditValue(String value) {
+        String flattened = value.replace("\r\n", "\\n")
+                .replace("\r", "\\n")
+                .replace("\n", "\\n")
+                .strip();
+        return flattened.length() <= 120 ? flattened : flattened.substring(0, 117) + "…";
     }
 
     private DirectorContextRegistry buildDirectorContexts() {
@@ -2660,8 +2797,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return true;
         }
 
-        if (!(args.length > 0 && args[0].equalsIgnoreCase("debugdump"))
-            && !sender.hasPermission(ROOT_PERMISSION)) {
+        boolean debugCommand = args.length > 0 && args[0].equalsIgnoreCase("debug");
+        boolean configCommand = args.length > 0 && args[0].equalsIgnoreCase("config");
+        if (!debugCommand && !configCommand && !sender.hasPermission(ROOT_PERMISSION)) {
             ComponentMessenger.send(sender, localization.text(sender,
                     BileMessages.PERMISSION_DENIED,
                     MessageArgs.builder().untrusted("permission", ROOT_PERMISSION).build()
@@ -2692,13 +2830,18 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length > 1 && args[0].equalsIgnoreCase("debugdump")) {
-            return sender.hasPermission("biletools.debugdump") ? runDirectorTab(sender, alias, args) : List.of();
+        if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length > 1 && args[0].equalsIgnoreCase("debug")) {
+            return sender.hasPermission("biletools.debug") ? runDirectorTab(sender, alias, args) : List.of();
         }
         if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length == 1
-                && "debugdump".startsWith(args[0].toLowerCase(Locale.ROOT))
-                && sender.hasPermission("biletools.debugdump") && !sender.hasPermission(ROOT_PERMISSION)) {
-            return List.of("debugdump");
+                && "debug".startsWith(args[0].toLowerCase(Locale.ROOT))
+                && sender.hasPermission("biletools.debug") && !sender.hasPermission(ROOT_PERMISSION)) {
+            return List.of("debug");
+        }
+        if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length == 1
+                && "config".startsWith(args[0].toLowerCase(Locale.ROOT))
+                && sender.hasPermission("biletools.config") && !sender.hasPermission(ROOT_PERMISSION)) {
+            return List.of("config");
         }
         if (isRootCommand(command) && args.length > 0 && args[0].equalsIgnoreCase("language")) {
             return languageSwitcher.complete(sender, Arrays.copyOfRange(args, 1, args.length));

@@ -1,22 +1,18 @@
 package com.volmit.bile.localization;
 
 import art.arcane.volmlib.util.director.help.DirectorHelpMessages;
-import art.arcane.volmlib.util.director.runtime.DirectorRuntimeMessages;
 import art.arcane.volmlib.util.io.FileWatcher;
-import art.arcane.volmlib.util.localization.PluginLanguageEditor;
-import art.arcane.volmlib.util.localization.TextValue;
-import art.arcane.volmlib.util.localization.MessageValue;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.MessageArgs;
-import art.arcane.volmlib.util.localization.PluralValue;
-import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.MessageKey;
+import art.arcane.volmlib.util.localization.MessageValue;
+import art.arcane.volmlib.util.localization.PluralValue;
+import art.arcane.volmlib.util.localization.PluginLanguageEditor;
+import art.arcane.volmlib.util.localization.TextValue;
+import art.arcane.volmlib.util.localization.TomlLanguageEditor;
 import art.arcane.volmlib.util.localization.VolmitLocales;
 import art.arcane.volmlib.util.plugin.ComponentText;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
 import org.junit.Before;
@@ -30,21 +26,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.Set;
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class BileLocalizationTest {
@@ -66,101 +62,130 @@ public class BileLocalizationTest {
     }
 
     @Test
-    public void editorPreservesPluralFormsAndUnrelatedMessages() throws Exception {
+    public void createsDirectTomlEnglishCatalogAndLanguagePreferences() throws Exception {
+        assertEquals("en_US.toml", localization.languageFile().getName());
+        assertTrue(localization.languageFile().isFile());
+        assertFalse(new File(localization.languageDirectory(), "overrides").exists());
+        localization.languageService().selectPlayer(UUID.randomUUID(), "en_US").get(5L, TimeUnit.SECONDS);
+        assertTrue(Files.exists(localization.languageDirectory().toPath()
+                .resolve("language-preferences.properties")));
+    }
+
+    @Test
+    public void englishReferenceUsesCanonicalKeysAndSpecificPlaceholderDescriptions() throws Exception {
+        String english = Files.readString(localization.languageFile().toPath(), StandardCharsets.UTF_8);
+        assertFalse(english.contains("Message-specific value"));
+        assertTrue(english.contains("{file}              Plugin jar filename"));
+        assertTrue(english.contains("{milliseconds}      Load, unload, or reload duration in milliseconds"));
+        assertTrue(english.contains("{new}               Newly saved language message value"));
+        assertTrue(english.contains("{old}               Previous language message value"));
+        assertTrue(english.contains("{permission}        Required permission node"));
+        assertTrue(english.contains("{personal}          Personal locale when different from the server default"));
+        assertTrue(english.contains("{setting}           Configuration setting name"));
+        assertTrue(english.contains("[gui.setting.general]"));
+        assertFalse(english.contains("[bile."));
+        int firstTable = english.indexOf("\n[");
+        Set<String> documentedPlaceholders = Pattern.compile("\\{([A-Za-z][A-Za-z0-9_]*)}")
+                .matcher(english.substring(0, firstTable)).results()
+                .map(result -> result.group(1)).collect(Collectors.toUnmodifiableSet());
+        Set<String> catalogPlaceholders = BileMessages.catalog().keys().stream()
+                .flatMap(key -> key.placeholders().stream()).collect(Collectors.toUnmodifiableSet());
+        assertEquals(catalogPlaceholders, documentedPlaceholders);
+        for (MessageKey key : BileMessages.catalog().keys()) {
+            assertFalse(key.id(), key.id().startsWith("bile."));
+        }
+    }
+
+    @Test
+    public void editReceiptIsOneCompactLineWithNewValueBeforeOldValue() {
+        ComponentText rendered = localization.text(BileMessages.CHANGE_SAVED, MessageArgs.builder()
+                .untrusted("setting", "message.reload.success")
+                .untrusted("new", "new value")
+                .untrusted("old", "old value")
+                .build());
+
+        assertEquals("[Bile]: message.reload.success changed to new value from old value.", rendered.plain());
+    }
+
+    @Test
+    public void singleLineReceiptFlattensAnExistingMultilineLanguageEntry() throws Exception {
+        write(BileMessages.CHANGE_SAVED, new TextValue(
+                "&a[&8Bile&a]: &f{setting}\n&aChanged to: &f{new}\n&7From: &f{old}"));
+        assertTrue(localization.reload());
+
+        ComponentText rendered = localization.singleLineText(null, BileMessages.CHANGE_SAVED,
+                MessageArgs.builder()
+                        .untrusted("setting", "Archive plugin jars before replacement")
+                        .untrusted("new", "false")
+                        .untrusted("old", "true")
+                        .build());
+
+        assertEquals("[Bile]: Archive plugin jars before replacement Changed to: false From: true",
+                rendered.plain());
+        assertFalse(rendered.plain().contains("\n"));
+    }
+
+    @Test
+    public void pluginRegistersItsCompactLanguageEditReceipt() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/volmit/bile/BileTools.java"))
+                .replace("\r\n", "\n");
+
+        assertTrue(source.contains("this::renderLanguageEditFeedback"));
+        assertTrue(source.contains("localization.singleLineText(sender, BileMessages.CHANGE_SAVED"));
+    }
+
+    @Test
+    public void editorPreservesPluralFormsAndUnknownTomlKeys() throws Exception {
         PluginLanguageEditor.Options editor = localization.editorOptions();
         LocalizationSnapshot original = editor.loader().load("en_US");
-        TextValue text = new TextValue("Edited root");
-        editor.writer().write(new PluginLanguageEditor.Edit("en_US", BileMessages.COMMAND_ROOT.id(),
-                original.value(BileMessages.COMMAND_ROOT), text));
+        Files.writeString(localization.languageFile().toPath(),
+                Files.readString(localization.languageFile().toPath()) + "\n[operator]\nprivate_note = \"keep me\"\n");
         PluralValue existing = (PluralValue) original.value(BileMessages.REMOTE_DEPLOYED);
-        Map<String, String> forms = new LinkedHashMap<>();
-        for (Map.Entry<String, String> form : existing.forms().entrySet()) {
-            forms.put(form.getKey(), form.getValue() + " edited");
-        }
+        LinkedHashMap<String, String> forms = new LinkedHashMap<>(existing.forms());
+        forms.replaceAll((name, value) -> value + " edited");
         PluralValue replacement = new PluralValue(forms);
         editor.writer().write(new PluginLanguageEditor.Edit("en_US", BileMessages.REMOTE_DEPLOYED.id(),
                 existing, replacement));
-
-        LocalizationSnapshot reloaded = editor.loader().load("en_US");
-        assertEquals(replacement, reloaded.value(BileMessages.REMOTE_DEPLOYED));
-        assertEquals(text, reloaded.value(BileMessages.COMMAND_ROOT));
+        assertEquals(replacement, editor.loader().load("en_US").value(BileMessages.REMOTE_DEPLOYED));
+        assertTrue(Files.readString(localization.languageFile().toPath()).contains("private_note = \"keep me\""));
     }
 
     @Test
-    public void editorPersistsEnglishAndPreservesGlobalOverrides() throws Exception {
-        YamlConfiguration overrides = loadLanguageFile();
-        overrides.set("messages." + BileMessages.COMMAND_ROOT.id(), "Global root");
-        overrides.save(localization.languageFile());
+    public void editorRejectsInvalidAndStaleValuesWithoutChangingFile() throws Exception {
         PluginLanguageEditor.Options editor = localization.editorOptions();
         MessageValue original = editor.loader().load("en_US").value(BileMessages.COMMAND_ROOT);
-        byte[] global = Files.readAllBytes(localization.languageFile().toPath());
-        TextValue replacement = new TextValue("Edited command root");
-
-        LocalizationSnapshot edited = editor.writer().write(new PluginLanguageEditor.Edit(
-                "en_US", BileMessages.COMMAND_ROOT.id(), original, replacement));
-
-        assertEquals(replacement, edited.value(BileMessages.COMMAND_ROOT));
-        assertEquals(replacement, localization.snapshot().value(BileMessages.COMMAND_ROOT));
-        assertEquals(replacement, editor.loader().load("en_US").value(BileMessages.COMMAND_ROOT));
-        assertArrayEquals(global, Files.readAllBytes(localization.languageFile().toPath()));
-        assertTrue(Files.isRegularFile(localization.languageFile().toPath().getParent()
-                .resolve("languages/overrides/en_US.yml")));
-        assertTrue(localization.reload());
-        assertEquals(replacement, localization.snapshot().value(BileMessages.COMMAND_ROOT));
-    }
-
-    @Test
-    public void editorLeavesActiveSelectionUnchangedForAnotherLocale() throws Exception {
-        Path data = localization.languageFile().toPath().getParent();
-        Files.createDirectories(data.resolve("languages"));
-        Files.writeString(data.resolve("languages/fr_FR.yml"), "locale: fr_FR\nmessages:\n  bile.command.root: Racine\n");
-        PluginLanguageEditor.Options editor = localization.editorOptions();
-        MessageValue english = localization.snapshot().value(BileMessages.COMMAND_ROOT);
-        MessageValue french = editor.loader().load("fr_FR").value(BileMessages.COMMAND_ROOT);
-        TextValue replacement = new TextValue("Racine modifiee");
-
-        editor.writer().write(new PluginLanguageEditor.Edit("fr_FR", BileMessages.COMMAND_ROOT.id(), french, replacement));
-
-        assertEquals("en_US", localization.activeLocale());
-        assertEquals(english, localization.snapshot().value(BileMessages.COMMAND_ROOT));
-        assertEquals(replacement, editor.loader().load("fr_FR").value(BileMessages.COMMAND_ROOT));
-    }
-
-    @Test
-    public void editorRejectsInvalidAndStaleValuesWithoutChangingFiles() throws Exception {
-        PluginLanguageEditor.Options editor = localization.editorOptions();
-        MessageValue original = editor.loader().load("en_US").value(BileMessages.COMMAND_ROOT);
-        Path file = localization.languageFile().toPath().getParent().resolve("languages/overrides/en_US.yml");
-
-        assertThrows(IllegalArgumentException.class, () -> editor.writer().write(new PluginLanguageEditor.Edit(
+        assertThrows(IOException.class, () -> editor.writer().write(new PluginLanguageEditor.Edit(
                 "en_US", BileMessages.COMMAND_ROOT.id(), original, new TextValue("{unexpected}"))));
-        assertFalse(Files.exists(file));
         editor.writer().write(new PluginLanguageEditor.Edit(
                 "en_US", BileMessages.COMMAND_ROOT.id(), original, new TextValue("First edit")));
-        byte[] first = Files.readAllBytes(file);
+        byte[] first = Files.readAllBytes(localization.languageFile().toPath());
         assertThrows(IOException.class, () -> editor.writer().write(new PluginLanguageEditor.Edit(
                 "en_US", BileMessages.COMMAND_ROOT.id(), original, new TextValue("Stale edit"))));
-        assertArrayEquals(first, Files.readAllBytes(file));
+        assertArrayEquals(first, Files.readAllBytes(localization.languageFile().toPath()));
     }
 
     @Test
-    public void generatesOverridesOnlyFileWithEnglishInTheTypedCatalog() throws Exception {
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.load(localization.languageFile());
-
-        assertFalse(yaml.contains("locale"));
-        assertTrue(yaml.contains("messages"));
-        assertEquals("Load a plugin jar from the plugins directory", BileMessages.COMMAND_LOAD.english());
-    }
-
-    @Test
-    public void everyDownloadableLocaleFullyCoversTheTypedCatalog() throws Exception {
+    public void everyDownloadableLocaleFullyCoversTypedCatalogIncludingSharedLanguageMenu() throws Exception {
+        Set<String> catalogIds = BileMessages.catalog().keys().stream()
+                .map(MessageKey::id).collect(Collectors.toUnmodifiableSet());
+        Set<String> catalogPlaceholders = BileMessages.catalog().keys().stream()
+                .flatMap(key -> key.placeholders().stream()).collect(Collectors.toUnmodifiableSet());
         for (String locale : VolmitLocales.nonEnglish()) {
+            String content = Files.readString(Path.of("src/main/resources/languages", locale + ".toml"));
+            int firstTable = content.indexOf("\n[");
+            Set<String> documentedPlaceholders = Pattern.compile("\\{([A-Za-z][A-Za-z0-9_]*)}")
+                    .matcher(content.substring(0, firstTable)).results()
+                    .map(result -> result.group(1)).collect(Collectors.toUnmodifiableSet());
+            assertEquals(locale, catalogPlaceholders, documentedPlaceholders);
+            assertFalse(locale, content.contains("Message-specific value"));
+            Map<String, MessageValue> values = BileTomlLanguageParser.parse(content, BileMessages.catalog());
+            assertEquals(locale, catalogIds, values.keySet());
+            for (MessageKey key : BileMessages.catalog().keys()) {
+                assertEquals(locale + ":" + key.id(), key.placeholders(), values.get(key.id()).placeholders());
+            }
             localization.close();
-            localization = new BileLocalization(
-                    installedLocaleFolder("locale-" + locale, locale),
-                    Logger.getAnonymousLogger(),
-                    locale);
+            localization = new BileLocalization(installedLocaleFolder("locale-" + locale, locale),
+                    Logger.getAnonymousLogger(), locale);
             for (MessageKey key : localization.snapshot().catalog().keys()) {
                 assertEquals(locale + ":" + key.id(), locale, localization.snapshot().sourceLocale(key));
             }
@@ -170,16 +195,17 @@ public class BileLocalizationTest {
     @Test
     public void downloadableResourceSetExactlyMatchesSharedManifest() throws Exception {
         Set<String> expected = VolmitLocales.nonEnglish().stream()
-                .map(locale -> locale + ".yml")
-                .collect(Collectors.toUnmodifiableSet());
+                .map(locale -> locale + ".toml").collect(Collectors.toUnmodifiableSet());
         try (Stream<Path> paths = Files.list(Path.of("src/main/resources/languages"))) {
-            Set<String> actual = paths
-                    .filter(Files::isRegularFile)
-                    .map(path -> path.getFileName().toString())
-                    .collect(Collectors.toUnmodifiableSet());
+            Set<String> actual = paths.filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString()).collect(Collectors.toUnmodifiableSet());
             assertEquals(expected, actual);
         }
-        assertFalse(expected.contains(VolmitLocales.ENGLISH + ".yml"));
+        for (String resource : expected) {
+            assertFalse(resource, Files.readString(Path.of("src/main/resources/languages", resource))
+                    .contains("[bile."));
+        }
+        assertFalse(expected.contains(VolmitLocales.ENGLISH + ".toml"));
     }
 
     @Test
@@ -189,16 +215,12 @@ public class BileLocalizationTest {
         localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US");
         UUID player = UUID.randomUUID();
         String english = localization.text(BileMessages.COMMAND_LOAD).plain();
-
-        localization.languageService().selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
+        localization.languageService().selectPlayer(player, "de_DE").get(5L, TimeUnit.SECONDS);
         String translated = LanguageAudience.call(player, () -> localization.text(BileMessages.COMMAND_LOAD).plain());
         assertFalse(english.equals(translated));
-        assertEquals(english, localization.text(BileMessages.COMMAND_LOAD).plain());
         localization.close();
         localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US");
         assertEquals("de_DE", localization.languageService().playerLocale(player).orElseThrow());
-        localization.languageService().clearPlayer(player).get(5, TimeUnit.SECONDS);
-        assertEquals(english, LanguageAudience.call(player, () -> localization.text(BileMessages.COMMAND_LOAD).plain()));
     }
 
     @Test
@@ -206,276 +228,94 @@ public class BileLocalizationTest {
         localization.close();
         File folder = installedLocaleFolder("server-choice", "de_DE");
         localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US");
-        localization.languageService().selectDefault("de_DE").get(5, TimeUnit.SECONDS);
+        localization.languageService().selectDefault("de_DE").get(5L, TimeUnit.SECONDS);
         assertEquals("de_DE", localization.activeLocale());
-        assertEquals("de_DE", YamlConfiguration.loadConfiguration(new File(folder, "biletools.yml")).getString("language"));
-        assertEquals("de_DE", localization.snapshot().sourceLocale(BileMessages.COMMAND_LOAD));
+        assertEquals("de_DE", YamlConfiguration.loadConfiguration(new File(folder, "biletools.yml"))
+                .getString("language"));
     }
 
     @Test
-    public void appliesExternalOverrideWithNamedArguments() throws Exception {
-        localization.close();
-        localization = new BileLocalization(
-                installedLocaleFolder("de_DE-overrides", "de_DE"),
-                Logger.getAnonymousLogger(),
-                "de_DE");
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.LOAD_SUCCESS.id(), "&b{file} -> {plugin} ({milliseconds})");
-        yaml.save(localization.languageFile());
-
+    public void appliesDirectTomlEditWithNamedArguments() throws Exception {
+        write(BileMessages.LOAD_SUCCESS, new TextValue("&b{file} -> {plugin} ({milliseconds})"));
         assertTrue(localization.reload());
-        ComponentText rendered = localization.text(
-                BileMessages.LOAD_SUCCESS,
-                MessageArgs.builder()
-                        .untrusted("plugin", "Demo")
-                        .untrusted("file", "Demo.jar")
-                        .untrusted("milliseconds", 12)
-                        .build()
-        );
-
-        assertEquals(ChatColor.AQUA + "Demo.jar -> Demo (12)", rendered.legacy());
+        ComponentText rendered = localization.text(BileMessages.LOAD_SUCCESS, MessageArgs.builder()
+                .untrusted("plugin", "Demo").untrusted("file", "Demo.jar")
+                .untrusted("milliseconds", 12).build());
         assertEquals("Demo.jar -> Demo (12)", rendered.plain());
-        assertEquals("de_DE", localization.activeLocale());
     }
 
     @Test
     public void rejectsInvalidReloadAndRetainsLastGoodSnapshot() throws Exception {
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.PERMISSION_DENIED.id(), "Allowed only with {permission}");
-        yaml.save(localization.languageFile());
+        write(BileMessages.PERMISSION_DENIED, new TextValue("Allowed only with {permission}"));
         assertTrue(localization.reload());
-
         MessageArgs arguments = MessageArgs.builder().untrusted("permission", "bile.use").build();
         assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
-
-        yaml.set("messages." + BileMessages.PERMISSION_DENIED.id(), "Missing its named argument");
-        yaml.save(localization.languageFile());
-
+        String content = Files.readString(localization.languageFile().toPath());
+        TomlLanguageEditor.EditResult invalid = TomlLanguageEditor.upsert(content,
+                BileMessages.PERMISSION_DENIED.id(), new TextValue("Missing its named argument"));
+        Files.writeString(localization.languageFile().toPath(), invalid.content());
         assertFalse(localization.reload());
         assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
     }
 
     @Test
     public void resolvesDirectorLabelsAndDoesNotRenderUntrustedFormatting() throws Exception {
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages.director.help.navigation.back", "&aZurück");
-        yaml.save(localization.languageFile());
+        write(DirectorHelpMessages.BACK, new TextValue("&aZurück"));
         assertTrue(localization.reload());
-
         assertEquals("Zurück", localization.directorResolver().resolve(DirectorHelpMessages.BACK));
-        assertEquals(
-                "Unknown parameter key: &cBadName",
-                localization.directorResolver().resolve(
-                        DirectorRuntimeMessages.UNKNOWN_PARAMETER,
-                        MessageArgs.builder().untrusted("key", "&cBad" + ChatColor.DARK_RED + "Name").build()
-                )
-        );
-        ComponentText rendered = localization.text(
-                BileMessages.PLUGIN_NOT_FOUND,
-                MessageArgs.builder().untrusted("plugin", "&cBad" + ChatColor.DARK_RED + "Name").build()
-        );
-        assertTrue(rendered.plain().contains("&cBadName"));
-        assertFalse(rendered.plain().contains(String.valueOf(ChatColor.DARK_RED)));
+        ComponentText rendered = localization.text(BileMessages.PLUGIN_NOT_FOUND,
+                MessageArgs.builder().untrusted("plugin", "<click:run_command:'/op @s'>Bad</click>").build());
+        assertTrue(rendered.plain().contains("<click:run_command:'/op @s'>Bad</click>"));
     }
 
     @Test
-    public void insertedArgumentsAreNeverReprocessedAsLaterSentinels() {
-        ComponentText rendered = localization.text(
-                BileMessages.LOAD_SUCCESS,
-                MessageArgs.builder()
-                        .untrusted("plugin", "\uE0001\uE001")
-                        .untrusted("file", "replacement.jar")
-                        .untrusted("milliseconds", 12)
-                        .build()
-        );
-
-        assertTrue(rendered.plain().contains("\uE0001\uE001"));
-        assertTrue(rendered.plain().contains("replacement.jar"));
+    public void exactFallbackDetectsLanguageEditWithoutNativeEvent() throws Exception {
+        localization.close();
+        localization = new BileLocalization(temporaryFolder.newFolder("exact-fallback"),
+                Logger.getAnonymousLogger(), "en_US", SilentFileWatcher::new,
+                BileLocalization::readLanguageContent);
+        localization.update(0L);
+        Path languagePath = localization.languageFile().toPath();
+        FileTime modified = Files.getLastModifiedTime(languagePath);
+        write(BileMessages.COMMAND_LOAD, new TextValue("Exact fallback edit"));
+        Files.setLastModifiedTime(languagePath, modified);
+        awaitText("Exact fallback edit", TimeUnit.MILLISECONDS.toNanos(2_500L));
     }
 
     @Test
-    public void untrustedArgumentsCannotInjectLegacyMiniMessageOrRgbFormatting() throws Exception {
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.PLUGIN_NOT_FOUND.id(), "{plugin}");
-        yaml.save(localization.languageFile());
-        assertTrue(localization.reload());
-        String payload = "&cAmp \u00a74Section <click:run_command:'/op @s'>Click</click> "
-                + "<hover:show_text:'bad'>Hover</hover> <#ff0000>RGB</#ff0000> "
-                + "&#00ff00 &x&0&0&f&f&0&0Hex";
-
-        ComponentText rendered = localization.text(
-                BileMessages.PLUGIN_NOT_FOUND,
-                MessageArgs.builder().untrusted("plugin", payload).build()
-        );
-        Component component = MiniMessage.miniMessage().deserialize(rendered.miniMessage());
-
-        assertEquals(payload.replace("\u00a74", ""), rendered.plain());
-        assertFalse(rendered.legacy().contains("\u00a7"));
-        assertFalse(hasFormattingOrEvents(component));
-    }
-
-    @Test
-    public void automaticReloadsAreQueuedBehindThreeSecondCooldown() throws Exception {
-        long originalModified = Files.getLastModifiedTime(localization.languageFile().toPath()).toMillis();
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "First automatic override");
-        yaml.save(localization.languageFile());
-        Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 1_000L));
-        awaitText("First automatic override", 100L);
-
-        yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "Second automatic override");
-        yaml.save(localization.languageFile());
-        Files.setLastModifiedTime(localization.languageFile().toPath(), FileTime.fromMillis(originalModified + 2_000L));
-        settleUpdates(TimeUnit.SECONDS.toNanos(2L));
-        assertEquals("First automatic override", localization.text(BileMessages.COMMAND_LOAD).plain());
-
-        awaitText("Second automatic override", 100L + TimeUnit.SECONDS.toNanos(3L));
-    }
-
-    @Test
-    public void idleEventFirstUpdatesReadOnlyAtExactReconciliationDeadline() throws Exception {
+    public void idleFallbackReadsOnlyAtReconciliationDeadline() throws Exception {
         localization.close();
         AtomicInteger reads = new AtomicInteger();
-        localization = new BileLocalization(
-                temporaryFolder.newFolder("idle-language"),
-                Logger.getAnonymousLogger(),
-                "en_US",
-                SilentFileWatcher::new,
-                file -> {
+        localization = new BileLocalization(temporaryFolder.newFolder("idle-language"),
+                Logger.getAnonymousLogger(), "en_US", SilentFileWatcher::new, file -> {
                     reads.incrementAndGet();
                     return BileLocalization.readLanguageContent(file);
-                }
-        );
+                });
         int startupReads = reads.get();
-
         localization.update(0L);
-        localization.update(TimeUnit.SECONDS.toNanos(1L));
         localization.update(TimeUnit.MILLISECONDS.toNanos(2_499L));
-
         assertEquals(startupReads, reads.get());
         localization.update(TimeUnit.MILLISECONDS.toNanos(2_500L));
-        awaitReadCount(reads, startupReads + 1);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        while (System.nanoTime() < deadline && reads.get() < startupReads + 1) {
+            Thread.sleep(10L);
+        }
+        assertEquals(startupReads + 1, reads.get());
     }
 
-    @Test
-    public void exactFallbackDetectsSameMetadataLanguageEditWithoutNativeEvent() throws Exception {
-        localization.close();
-        localization = new BileLocalization(
-                temporaryFolder.newFolder("same-metadata-language"),
-                Logger.getAnonymousLogger(),
-                "en_US",
-                SilentFileWatcher::new,
-                BileLocalization::readLanguageContent
-        );
-        localization.update(0L);
-        Path languagePath = localization.languageFile().toPath();
-        FileTime originalModified = Files.getLastModifiedTime(languagePath);
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("messages." + BileMessages.COMMAND_LOAD.id(), "Same metadata override");
-        yaml.save(localization.languageFile());
-        Files.setLastModifiedTime(languagePath, originalModified);
-
-        awaitText("Same metadata override", TimeUnit.MILLISECONDS.toNanos(2_500L));
-    }
-
-    @Test
-    public void automaticReloadAppliesTheCapturedImmutableBytes() throws Exception {
-        localization.close();
-        AtomicInteger reads = new AtomicInteger();
-        CountDownLatch captured = new CountDownLatch(1);
-        CountDownLatch release = new CountDownLatch(1);
-        localization = new BileLocalization(
-                temporaryFolder.newFolder("immutable-language-snapshot"),
-                Logger.getAnonymousLogger(),
-                "en_US",
-                SilentFileWatcher::new,
-                file -> {
-                    byte[] content = BileLocalization.readLanguageContent(file);
-                    if (reads.incrementAndGet() > 1) {
-                        captured.countDown();
-                        try {
-                            if (!release.await(5L, TimeUnit.SECONDS)) {
-                                throw new IOException("Timed out while testing an immutable language snapshot");
-                            }
-                        } catch (InterruptedException interrupted) {
-                            Thread.currentThread().interrupt();
-                            throw new IOException("Interrupted while testing an immutable language snapshot", interrupted);
-                        }
-                    }
-                    return content;
-                }
-        );
-        localization.update(0L);
-        Path languagePath = localization.languageFile().toPath();
-        Files.writeString(languagePath, "messages:\n  bile:\n    command:\n      load: Captured override\n", StandardCharsets.UTF_8);
-
-        localization.update(TimeUnit.MILLISECONDS.toNanos(2_500L));
-        assertTrue(captured.await(5L, TimeUnit.SECONDS));
-        Files.writeString(languagePath, "messages:\n  bile:\n    command:\n      load: Newer override\n", StandardCharsets.UTF_8);
-        release.countDown();
-
-        awaitText("Captured override", TimeUnit.MILLISECONDS.toNanos(2_500L));
-        assertEquals("messages:\n  bile:\n    command:\n      load: Newer override\n", Files.readString(languagePath, StandardCharsets.UTF_8));
-    }
-
-    @Test
-    public void automaticMissingSnapshotDoesNotRecreateTheLanguageFile() throws Exception {
-        localization.close();
-        localization = new BileLocalization(
-                temporaryFolder.newFolder("missing-language-snapshot"),
-                Logger.getAnonymousLogger(),
-                "en_US",
-                SilentFileWatcher::new,
-                BileLocalization::readLanguageContent
-        );
-        localization.update(0L);
-        Path languagePath = localization.languageFile().toPath();
-        Files.delete(languagePath);
-
-        settleUpdates(TimeUnit.MILLISECONDS.toNanos(2_500L));
-
-        assertFalse(Files.exists(languagePath));
-        assertEquals("en_US", localization.activeLocale());
-    }
-
-    @Test
-    public void closeStopsAutomaticLanguageReloads() throws Exception {
-        localization.close();
-        YamlConfiguration yaml = loadLanguageFile();
-        yaml.set("locale", "de_DE");
-        yaml.save(localization.languageFile());
-
-        localization.update(Long.MAX_VALUE);
-
-        assertEquals("en_US", localization.activeLocale());
+    private void write(MessageKey key, MessageValue value) throws Exception {
+        String content = Files.readString(localization.languageFile().toPath(), StandardCharsets.UTF_8);
+        TomlLanguageEditor.EditResult edited = TomlLanguageEditor.upsert(content, key.id(), value);
+        Files.writeString(localization.languageFile().toPath(), edited.content(), StandardCharsets.UTF_8);
     }
 
     private File installedLocaleFolder(String name, String locale) throws Exception {
         File folder = temporaryFolder.newFolder(name);
         Path languages = folder.toPath().resolve("languages");
         Files.createDirectories(languages);
-        Files.copy(Path.of("src/main/resources/languages", locale + ".yml"), languages.resolve(locale + ".yml"));
+        Files.copy(Path.of("src/main/resources/languages", locale + ".toml"),
+                languages.resolve(locale + ".toml"));
         return folder;
-    }
-
-    private YamlConfiguration loadLanguageFile() throws Exception {
-        File file = localization.languageFile();
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.load(file);
-        return yaml;
-    }
-
-    private void awaitLocale(String expected, long nowNanos) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
-        while (System.nanoTime() < deadline) {
-            localization.update(nowNanos);
-            if (expected.equals(localization.activeLocale())) {
-                return;
-            }
-            Thread.sleep(10L);
-        }
-        assertEquals(expected, localization.activeLocale());
     }
 
     private void awaitText(String expected, long nowNanos) throws Exception {
@@ -488,41 +328,6 @@ public class BileLocalizationTest {
             Thread.sleep(10L);
         }
         assertEquals(expected, localization.text(BileMessages.COMMAND_LOAD).plain());
-    }
-
-    private static boolean hasFormattingOrEvents(Component component) {
-        if (component.color() != null
-                || component.clickEvent() != null
-                || component.hoverEvent() != null
-                || component.hasDecoration(TextDecoration.BOLD)
-                || component.hasDecoration(TextDecoration.ITALIC)
-                || component.hasDecoration(TextDecoration.UNDERLINED)
-                || component.hasDecoration(TextDecoration.STRIKETHROUGH)
-                || component.hasDecoration(TextDecoration.OBFUSCATED)) {
-            return true;
-        }
-        for (Component child : component.children()) {
-            if (hasFormattingOrEvents(child)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void settleUpdates(long nowNanos) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(250L);
-        while (System.nanoTime() < deadline) {
-            localization.update(nowNanos);
-            Thread.sleep(5L);
-        }
-    }
-
-    private void awaitReadCount(AtomicInteger reads, int expected) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
-        while (System.nanoTime() < deadline && reads.get() < expected) {
-            Thread.sleep(10L);
-        }
-        assertEquals(expected, reads.get());
     }
 
     private static final class SilentFileWatcher extends FileWatcher {

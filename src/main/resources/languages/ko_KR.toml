@@ -1,0 +1,251 @@
+# BileTools language: ko_KR
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools 명령어 그룹"
+load = "plugins 디렉터리에서 플러그인 JAR 불러오기"
+unload = "설치된 플러그인 언로드"
+reload = "설치된 플러그인 다시 불러오기"
+uninstall = "plugins 디렉터리에서 플러그인 JAR 삭제"
+install = "Bile 라이브러리에서 플러그인 설치"
+library = "라이브러리 플러그인 또는 플러그인 버전 표시"
+debug_dump = "진단 보고서를 생성하고 선택적으로 업로드"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "설치된 플러그인 이름"
+library_plugin = "라이브러리 플러그인 이름"
+version = "라이브러리 플러그인 버전"
+sender = "명령어 발신자"
+debug_upload = "보고서를 mclo.gs에 업로드"
+
+[error]
+plugin_name_required = "플러그인 이름은 비워 둘 수 없습니다"
+library_plugin_name_required = "라이브러리 플러그인 이름은 비워 둘 수 없습니다"
+version_required = "버전은 비워 둘 수 없습니다"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7&f{permission}&7 권한 또는 OP가 필요합니다."
+unknown_command = "&a[&8Bile&a]: &7알 수 없는 명령어 \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7은 서버를 완전히 다시 시작해야 합니다."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7은 수명 주기 실패 후 오류 상태로 표시되었습니다. 이 플러그인의 자동 다시 불러오기가 일시 중지되었습니다."
+reloading_context = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7플러그인을 찾을 수 없음: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7&f{host}&7에서 &f{file}&7 수신 중."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7을 &f{count}&7개의 원격 서버에 배포했습니다."
+one = "&a[&8Bile&a]: &7&f{plugin}&7을 &f{count}&7개의 원격 서버에 배포했습니다."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7핫 배포 완료: &f{file}&7."
+failed = "&a[&8Bile&a]: &7핫 배포 실패: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7다시 불러오기 완료: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7다시 불러오기 실패: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7다시 불러오기 대기열 추가: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7다시 불러오기 완료: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7다시 불러오기 실패: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7언로드 완료: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7언로드 실패: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7언로드 대기열 추가: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7언로드 완료: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7언로드 실패: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7로드 대기열 추가: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7로드 완료: &f{plugin}&7, &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7로드 실패: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7제거 대기열 추가: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7&f{file}&7에서 &f{plugin}&7을 제거했습니다."
+delete_failed = "&a[&8Bile&a]: &7플러그인을 언로드했지만 &c{file}&7을 삭제하지 못했습니다. 다시 설치하기 전에 파일을 삭제하세요."
+failed = "&a[&8Bile&a]: &7제거 실패: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7라이브러리에서 플러그인을 찾을 수 없음: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7\"&f{plugin}&7\"의 버전 \"&f{version}&7\"을 찾을 수 없습니다."
+install_queued = "&a[&8Bile&a]: &7라이브러리 설치 대기열 추가: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7라이브러리에서 설치됨: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7을 설치했습니다. 서버를 완전히 다시 시작해야 합니다."
+install_failed = "&a[&8Bile&a]: &7설치 실패: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7라이브러리가 비어 있습니다."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} 설치됨) &f{latestVersion}&7 (최신)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (최신)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (최신)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &a게임 내 전체 구성 편집기를 열었습니다.&r"
+save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c적용할 수 없습니다:{reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7을(를) &f{new}&7(으)로 변경했습니다. 이전 값: &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&d일반&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&d언어&r"
+
+[gui.navigation]
+back = "&e뒤로&r"
+close = "&c닫기&r"
+
+[gui.lore]
+state = "&7현재:&r{value}"
+toggle = "&8클릭하여 전환.&r"
+number = "&8왼쪽 +1, 오른쪽 -1, 시프트 ×10, 형식에 드롭.&r"
+text = "&8채팅에서 새 값을 입력하려면 클릭하세요.&r"
+language = "&8사용 가능한 언어를 선택하거나 로케일을 입력하려면 클릭하세요.&r"
+category = "&8이 카테고리의 모든 설정을 편집하려면 클릭하세요.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &e채팅에서&f{setting}&r&e의 새 값을 입력하세요.&r"
+list = "&a[&8Bile&a]: &7목록 항목을 쉼표로 구분하세요. 빈 목록의 경우&fnone&r&7을 입력하세요.&r"
+cancel = "&a[&8Bile&a]: &7중지하려면&fcancel&r&7을 입력하세요. 이 프롬프트는 60초 후 만료됩니다.&r"
+cancelled = "&a[&8Bile&a]: &e설정 편집을 취소했습니다.&r"
+timeout = "&a[&8Bile&a]: &e변경 없이 구성 편집이 만료되었습니다.&r"
+
+[gui.setting.general]
+language = "&d활성 언어 로케일&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&d익명 bStats 통계&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "이 페이지에는 하위 명령어가 없습니다."
+no_description = "설명이 없습니다"
+command_group = "명령어 그룹입니다. 클릭하여 엽니다."
+category = "명령어 카테고리"
+no_parameters = "매개변수가 없습니다. 클릭하여 명령어를 미리 입력합니다."
+parameters_hover = "매개변수 위에 마우스를 올리면 자세한 내용을 볼 수 있습니다."
+
+[director.help.navigation]
+back = "뒤로"
+page = "페이지"
+
+[director.help.navigation.parent]
+hover = "상위 명령어 그룹으로 돌아가기"
+
+[director.help.navigation.previous]
+hover = "이전 페이지"
+
+[director.help.navigation.next]
+hover = "다음 페이지"
+
+[director.help.parameter]
+required = "이 매개변수는 필수입니다."
+optional = "이 매개변수는 선택 사항입니다."
+default = "지정하지 않으면 기본값은 \"{value}\"입니다."
+type = "이 매개변수의 유형은 {type}입니다."
+
+[director.runtime]
+usage = "사용법: {usage}"
+
+[director.runtime.error]
+invalid_origin = "이 실행 위치에서는 이 명령어를 실행할 수 없습니다."
+unknown_parameter = "알 수 없는 매개변수 키: {key}"
+unexpected_argument = "예상하지 못한 인수 \"{argument}\". 선택적 매개변수는 키와 함께 지정해야 합니다. 예: seed=123"
+unclosed_group = "매개변수 {key}의 닫는 \"]\"가 누락되었습니다"
+conversion_failed = "\"{value}\" 값을 {parameter}용 {type} 형식으로 변환할 수 없습니다"
+default_parse_failed = "매개변수 {parameter}의 기본값을 분석할 수 없습니다"
+missing_argument = "인수 \"{parameter}\" ({type})가 필요합니다"
+execution_failed = "명령어 {command} 실행에 실패했습니다: {reason}"
+
+[language.menu]
+your_language = "내 언어"
+reset_your_language = "내 언어 재설정"
+server_default = "서버 기본값"
+edit_messages = "언어 메시지 편집"
+use_server_default = "서버 기본값 사용"
+current = "현재: {locale}"
+current_with_personal = "현재: {locale} (내 언어: {personal})"
+your_description = "나에게 표시되는 메시지만 변경합니다."
+reset_description = "서버 기본 언어를 사용합니다."
+server_description = "서버 기본 언어를 변경합니다."
+edit_description = "언어별 메시지 편집기를 엽니다."
+select_description = "클릭하여 이 언어를 선택합니다."
+remove_personal_description = "개인 언어 선택을 제거합니다."
+no_controls = "사용할 수 있는 언어 설정이 없습니다."

@@ -8,8 +8,11 @@ commands:
   biletools:
     aliases: [bile, bi, b, vomit, vom]
 permissions:
-  biletools.debugdump:
+  biletools.debug:
     description: Allows creating and optionally uploading diagnostic reports.
+    default: op
+  biletools.config:
+    description: Allows editing the BileTools server configuration and server language.
     default: op
   biletools.language.self:
     description: Allows choosing your own language for this plugin.

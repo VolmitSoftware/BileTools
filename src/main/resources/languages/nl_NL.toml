@@ -1,0 +1,251 @@
+# BileTools language: nl_NL
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools-opdrachtgroep"
+load = "Een plugin-JAR uit de pluginsmap laden"
+unload = "Een geïnstalleerde plugin uit het geheugen verwijderen"
+reload = "Een geïnstalleerde plugin opnieuw laden"
+uninstall = "Een plugin-JAR uit de pluginsmap verwijderen"
+install = "Een plugin uit de Bile-bibliotheek installeren"
+library = "Bibliotheekplugins of versies van één plugin weergeven"
+debug_dump = "Maak een diagnostisch rapport en upload het desgewenst"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Naam van geïnstalleerde plugin"
+library_plugin = "Naam van bibliotheekplugin"
+version = "Versie van bibliotheekplugin"
+sender = "Opdrachtzender"
+debug_upload = "Upload het rapport naar mclo.gs"
+
+[error]
+plugin_name_required = "Pluginnaam mag niet leeg zijn"
+library_plugin_name_required = "Naam van bibliotheekplugin mag niet leeg zijn"
+version_required = "Versie mag niet leeg zijn"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Je hebt &f{permission}&7 of OP nodig."
+unknown_command = "&a[&8Bile&a]: &7Onbekende opdracht \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 vereist een volledige serverherstart."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 is na een levenscyclusfout als defect gemarkeerd. Automatisch opnieuw laden is voor deze plugin gepauzeerd."
+reloading_context = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Plugin niet gevonden: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7Ontvangt &f{file}&7 van &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7 uitgerold naar &f{count}&7 externe servers."
+one = "&a[&8Bile&a]: &7&f{plugin}&7 uitgerold naar &f{count}&7 externe server."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Hotdeployment voltooid: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Hotdeployment mislukt: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Opnieuw geladen: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Opnieuw laden mislukt: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Opnieuw laden in wachtrij: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Opnieuw geladen: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Opnieuw laden mislukt: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Uit geheugen verwijderd: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Verwijderen uit geheugen mislukt: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Verwijderen uit geheugen in wachtrij: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Uit geheugen verwijderd: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Verwijderen uit geheugen mislukt: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Laden in wachtrij: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Geladen: &f{plugin}&7 uit &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Laden mislukt: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Verwijderen in wachtrij: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 verwijderd uit &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7De plugin is uit het geheugen verwijderd, maar &c{file}&7 kon niet worden verwijderd. Verwijder het bestand voordat je de plugin opnieuw installeert."
+failed = "&a[&8Bile&a]: &7Verwijderen mislukt: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Plugin niet gevonden in de bibliotheek: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Versie \"&f{version}&7\" niet gevonden voor \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Bibliotheekinstallatie in wachtrij: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Geïnstalleerd uit de bibliotheek: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 is geïnstalleerd en vereist een volledige serverherstart."
+install_failed = "&a[&8Bile&a]: &7Installatie mislukt: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7De bibliotheek is leeg."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} geïnstalleerd) &f{latestVersion}&7 (nieuwste)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (nieuwste)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (nieuwste)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aDe volledige configuratie-editor in het spel is geopend.&r"
+save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c kon niet worden toegepast: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 is gewijzigd naar &f{new}&7; voorheen &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dAlgemeen&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dTalen&r"
+
+[gui.navigation]
+back = "&eTerug&r"
+close = "&cSluiten&r"
+
+[gui.lore]
+state = "&7Huidig:&r {value}"
+toggle = "&8Klik om te wisselen.&r"
+number = "&8Links +1, rechts -1, shift ×10, laat vallen om te typen.&r"
+text = "&8Klik om een nieuwe waarde in de chat te typen.&r"
+language = "&8Klik om een beschikbare taal te kiezen of typ een landinstelling.&r"
+category = "&8Klik om elke instelling in deze categorie te bewerken.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eTyp een nieuwe waarde voor &f{setting}&r&e in de chat.&r"
+list = "&a[&8Bile&a]: &7Scheid lijstitems met komma's. Typ &fnone&r&7 voor een lege lijst.&r"
+cancel = "&a[&8Bile&a]: &7Typ &fcancel&r&7 om te stoppen. Deze invoer verloopt na 60 seconden.&r"
+cancelled = "&a[&8Bile&a]: &eConfiguratiebewerking geannuleerd.&r"
+timeout = "&a[&8Bile&a]: &eDe configuratiebewerking is verlopen zonder iets te wijzigen.&r"
+
+[gui.setting.general]
+language = "&dActieve landinstelling&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dAnonieme bStats-statistieken&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Geen subopdrachten op deze pagina."
+no_description = "Geen beschrijving opgegeven"
+command_group = "Opdrachtgroep. Klik om te openen."
+category = "Commandocategorie"
+no_parameters = "Geen parameters. Klik om de opdracht vooraf in te vullen."
+parameters_hover = "Beweeg de muis over de parameters voor meer informatie."
+
+[director.help.navigation]
+back = "Terug"
+page = "Pagina"
+
+[director.help.navigation.parent]
+hover = "Terug naar de bovenliggende opdrachtgroep"
+
+[director.help.navigation.previous]
+hover = "Vorige pagina"
+
+[director.help.navigation.next]
+hover = "Volgende pagina"
+
+[director.help.parameter]
+required = "Deze parameter is verplicht."
+optional = "Deze parameter is optioneel."
+default = "Standaard \"{value}\" indien niet opgegeven."
+type = "Deze parameter is van het type {type}."
+
+[director.runtime]
+usage = "Gebruik: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Deze opdracht kan niet vanuit deze bron worden uitgevoerd."
+unknown_parameter = "Onbekende parametersleutel: {key}"
+unexpected_argument = "Onverwacht argument \"{argument}\". Optionele parameters moeten met een sleutel worden opgegeven, bijv. seed=123"
+unclosed_group = "Ontbrekende sluitende \"]\" voor parameter {key}"
+conversion_failed = "Kan \"{value}\" voor {parameter} niet naar {type} converteren"
+default_parse_failed = "Kan de standaardwaarde voor parameter {parameter} niet verwerken"
+missing_argument = "Ontbrekend argument \"{parameter}\" ({type})"
+execution_failed = "Opdracht {command} kon niet worden uitgevoerd: {reason}"
+
+[language.menu]
+your_language = "Jouw taal"
+reset_your_language = "Jouw taalkeuze herstellen"
+server_default = "Standaardtaal van de server"
+edit_messages = "Taalberichten bewerken"
+use_server_default = "Standaardtaal van de server gebruiken"
+current = "Huidig: {locale}"
+current_with_personal = "Huidig: {locale} (Jouw keuze: {personal})"
+your_description = "Wijzig alleen de berichten die jij ziet."
+reset_description = "Gebruik de standaardtaal van de server."
+server_description = "Wijzig de standaardtaal van de server."
+edit_description = "Open de berichteneditor voor elke taal."
+select_description = "Klik om deze taal te selecteren."
+remove_personal_description = "Verwijder jouw persoonlijke taalkeuze."
+no_controls = "Je hebt geen toegang tot taalinstellingen."

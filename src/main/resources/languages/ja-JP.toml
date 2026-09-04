@@ -1,0 +1,251 @@
+# BileTools language: ja-JP
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileToolsコマンドグループ"
+load = "pluginsディレクトリからプラグインJARを読み込む"
+unload = "インストール済みプラグインをアンロードする"
+reload = "インストール済みプラグインを再読み込みする"
+uninstall = "pluginsディレクトリからプラグインJARを削除する"
+install = "Bileライブラリからプラグインをインストールする"
+library = "ライブラリのプラグインまたはプラグインのバージョンを一覧表示する"
+debug_dump = "診断レポートを作成し、必要に応じてアップロードする"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "インストール済みプラグイン名"
+library_plugin = "ライブラリのプラグイン名"
+version = "ライブラリのプラグインバージョン"
+sender = "コマンド送信者"
+debug_upload = "レポートを mclo.gs にアップロードする"
+
+[error]
+plugin_name_required = "プラグイン名は空にできません"
+library_plugin_name_required = "ライブラリのプラグイン名は空にできません"
+version_required = "バージョンは空にできません"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7&f{permission}&7権限またはOPが必要です."
+unknown_command = "&a[&8Bile&a]: &7不明なコマンド \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7にはサーバーの完全な再起動が必要です."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7はライフサイクル障害後に異常と判定されました。このプラグインの自動再読み込みは一時停止されています."
+reloading_context = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7プラグインが見つかりません: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7&f{host}&7から&f{file}&7を受信中."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7を&f{count}&7台のリモートサーバーへデプロイしました."
+one = "&a[&8Bile&a]: &7&f{plugin}&7を&f{count}&7台のリモートサーバーへデプロイしました."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7ホットデプロイ完了: &f{file}&7."
+failed = "&a[&8Bile&a]: &7ホットデプロイ失敗: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7再読み込み失敗: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7再読み込み待ち: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7再読み込み失敗: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7アンロード失敗: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7アンロード待ち: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7アンロード失敗: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7読み込み待ち: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7読み込み完了: &f{plugin}&7、&f{file}&7から (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7読み込み失敗: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7アンインストール待ち: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7&f{file}&7から&f{plugin}&7をアンインストールしました."
+delete_failed = "&a[&8Bile&a]: &7プラグインをアンロードしましたが、&c{file}&7を削除できませんでした。再インストール前にファイルを削除してください."
+failed = "&a[&8Bile&a]: &7アンインストール失敗: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7ライブラリにプラグインがありません: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7\"&f{plugin}&7\"のバージョン\"&f{version}&7\"が見つかりません."
+install_queued = "&a[&8Bile&a]: &7ライブラリからのインストール待ち: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7ライブラリからインストールしました: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7をインストールしました。サーバーの完全な再起動が必要です."
+install_failed = "&a[&8Bile&a]: &7インストール失敗: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7ライブラリは空です."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} インストール済み) &f{latestVersion}&7 (最新)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (最新)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (最新)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aゲーム内の完全な設定エディターを開きました。&r"
+save_failed = "&a[&8Bile&a]: &c&f{setting}&r&cを適用できませんでした:{reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 を &f{new}&7 に変更しました（変更前: &f{old}&7）。"
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&d一般&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&d言語&r"
+
+[gui.navigation]
+back = "&e戻る&r"
+close = "&c閉じる&r"
+
+[gui.lore]
+state = "&7現在:&r{value}"
+toggle = "&8切り替えるにはクリック.&r"
+number = "&8左 +1、右 -1、Shift ×10、タイプにドロップ.&r"
+text = "&8チャットで新しい値を入力するにはクリックしてください。&r"
+language = "&8利用可能な言語を選択するか、ロケールを入力するにはクリックしてください。&r"
+category = "&8このカテゴリのすべての設定を編集するにはクリックしてください。&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eチャットで&f{setting}&r&eの新しい値を入力してください。&r"
+list = "&a[&8Bile&a]: &7リストの項目をカンマで区切ってください。空のリストには&fnone&r&7と入力してください。&r"
+cancel = "&a[&8Bile&a]: &7停止するには&fcancel&r&7と入力してください。このプロンプトは60秒で期限切れになります。&r"
+cancelled = "&a[&8Bile&a]: &e設定の編集をキャンセルしました。&r"
+timeout = "&a[&8Bile&a]: &e設定編集は何も変更せずに期限切れになりました。&r"
+
+[gui.setting.general]
+language = "&dアクティブな言語ロケール&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&d匿名のbStats統計&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "このページにサブコマンドはありません。"
+no_description = "説明はありません"
+command_group = "コマンドグループ。クリックして開きます。"
+category = "コマンド分類"
+no_parameters = "パラメーターはありません。クリックしてコマンドを入力します。"
+parameters_hover = "パラメータにカーソルを合わせると詳細が表示されます。"
+
+[director.help.navigation]
+back = "戻る"
+page = "ページ"
+
+[director.help.navigation.parent]
+hover = "親コマンドグループに戻る"
+
+[director.help.navigation.previous]
+hover = "前のページ"
+
+[director.help.navigation.next]
+hover = "次のページ"
+
+[director.help.parameter]
+required = "このパラメータは必須です。"
+optional = "このパラメータは任意です。"
+default = "未指定の場合は \"{value}\" になります。"
+type = "このパラメータの型は {type} です。"
+
+[director.runtime]
+usage = "使用法: {usage}"
+
+[director.runtime.error]
+invalid_origin = "この実行元からはコマンドを実行できません。"
+unknown_parameter = "不明なパラメーターキー: {key}"
+unexpected_argument = "予期しない引数 \"{argument}\"。オプションのパラメーターはキー付きで指定してください。例: seed=123"
+unclosed_group = "パラメータ {key} の閉じかっこ \"]\" がありません"
+conversion_failed = "\"{value}\" を {parameter} 用の {type} に変換できません"
+default_parse_failed = "パラメーター {parameter} のデフォルト値を解析できません"
+missing_argument = "引数 \"{parameter}\" ({type}) が必要です"
+execution_failed = "コマンド {command} の実行に失敗しました: {reason}"
+
+[language.menu]
+your_language = "あなたの言語"
+reset_your_language = "自分の言語をリセット"
+server_default = "サーバーのデフォルト"
+edit_messages = "言語メッセージを編集"
+use_server_default = "サーバーのデフォルトを使用"
+current = "現在: {locale}"
+current_with_personal = "現在: {locale} (あなた: {personal})"
+your_description = "表示されるメッセージだけを変更します。"
+reset_description = "サーバーのデフォルト言語を使用します。"
+server_description = "サーバーのデフォルト言語を変更します。"
+edit_description = "言語ごとのメッセージエディターを開きます。"
+select_description = "クリックしてこの言語を選択します。"
+remove_personal_description = "個人の言語選択を削除します。"
+no_controls = "利用できる言語設定はありません。"

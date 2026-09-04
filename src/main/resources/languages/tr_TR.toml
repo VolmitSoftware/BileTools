@@ -1,0 +1,251 @@
+# BileTools language: tr_TR
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools komut grubu"
+load = "plugins dizininden bir eklenti JAR dosyası yükle"
+unload = "Yüklü bir eklentiyi bellekten kaldır"
+reload = "Yüklü bir eklentiyi yeniden yükle"
+uninstall = "plugins dizininden eklenti JAR dosyasını sil"
+install = "Bile kütüphanesinden bir eklenti yükle"
+library = "Kütüphane eklentilerini veya bir eklentinin sürümlerini listele"
+debug_dump = "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Yüklü eklenti adı"
+library_plugin = "Kütüphane eklentisi adı"
+version = "Kütüphane eklentisi sürümü"
+sender = "Komut gönderen"
+debug_upload = "Raporu mclo.gs üzerine yükle"
+
+[error]
+plugin_name_required = "Eklenti adı boş olamaz"
+library_plugin_name_required = "Kütüphane eklentisi adı boş olamaz"
+version_required = "Sürüm boş olamaz"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7&f{permission}&7 izni veya OP gerekli."
+unknown_command = "&a[&8Bile&a]: &7Bilinmeyen komut \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 sunucunun tamamen yeniden başlatılmasını gerektiriyor."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 yaşam döngüsü hatasından sonra bozuk olarak işaretlendi. Bu eklentinin otomatik yeniden yüklemeleri duraklatıldı."
+reloading_context = "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Eklenti bulunamadı: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7&f{host}&7 üzerinden &f{file}&7 alınıyor."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7&f{plugin}&7, &f{count}&7 uzak sunucuya dağıtıldı."
+one = "&a[&8Bile&a]: &7&f{plugin}&7, &f{count}&7 uzak sunucuya dağıtıldı."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Çalışırken dağıtım tamamlandı: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Çalışırken dağıtım başarısız: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Yeniden yüklendi: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Yeniden yükleme başarısız: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Yeniden yükleme sıraya alındı: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Yeniden yüklendi: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Yeniden yükleme başarısız: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Bellekten kaldırıldı: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Bellekten kaldırma başarısız: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Bellekten kaldırma sıraya alındı: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Bellekten kaldırıldı: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Bellekten kaldırma başarısız: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Yükleme sıraya alındı: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Yüklendi: &f{plugin}&7, &f{file}&7 dosyasından (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Yükleme başarısız: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Kaldırma sıraya alındı: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7&f{plugin}&7, &f{file}&7 dosyasından kaldırıldı."
+delete_failed = "&a[&8Bile&a]: &7Eklenti bellekten kaldırıldı ancak &c{file}&7 silinemedi. Eklentiyi yeniden yüklemeden önce dosyayı silin."
+failed = "&a[&8Bile&a]: &7Kaldırma başarısız: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Eklenti kütüphanede bulunamadı: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7\"&f{plugin}&7\" için \"&f{version}&7\" sürümü bulunamadı."
+install_queued = "&a[&8Bile&a]: &7Kütüphane kurulumu sıraya alındı: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Kütüphaneden yüklendi: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 yüklendi ve sunucunun tamamen yeniden başlatılmasını gerektiriyor."
+install_failed = "&a[&8Bile&a]: &7Yükleme başarısız: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7Kütüphane boş."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} yüklü) &f{latestVersion}&7 (en yeni)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (en yeni)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (en yeni)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aEksiksiz oyun içi yapılandırma düzenleyicisi açıldı.&r"
+save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c uygulanamadı: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7, &f{new}&7 olarak değiştirildi; önceki değer &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dGenel&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dDiller&r"
+
+[gui.navigation]
+back = "&eGeri&r"
+close = "&cKapat&r"
+
+[gui.lore]
+state = "&7Geçerli:&r {value}"
+toggle = "&8Değiştirmek için tıklayın.&r"
+number = "&8Sol +1, sağ -1, shift ×10, yazmak için bırakma tuşu.&r"
+text = "&8Sohbette yeni bir değer yazmak için tıklayın.&r"
+language = "&8Kullanılabilir bir dil seçmek veya yerel ayar yazmak için tıklayın.&r"
+category = "&8Bu kategorideki her ayarı düzenlemek için tıklayın.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eSohbette &f{setting}&r&e için yeni bir değer yazın.&r"
+list = "&a[&8Bile&a]: &7Liste girdilerini virgülle ayırın. Boş bir liste için &fnone&r&7 yazın.&r"
+cancel = "&a[&8Bile&a]: &7Durdurmak için &fcancel&r&7 yazın. Bu istem 60 saniye içinde sona erer.&r"
+cancelled = "&a[&8Bile&a]: &eYapılandırma düzenlemesi iptal edildi.&r"
+timeout = "&a[&8Bile&a]: &eYapılandırma düzenlemesinin süresi hiçbir şey değişmeden doldu.&r"
+
+[gui.setting.general]
+language = "&dEtkin dil yerel ayarı&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dAnonim bStats istatistikleri&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Bu sayfada alt komut yok."
+no_description = "Açıklama sağlanmadı"
+command_group = "Komut grubu. Açmak için tıklayın."
+category = "Komut kategorisi"
+no_parameters = "Parametre yok. Komutu önceden doldurmak için tıklayın."
+parameters_hover = "Daha fazla bilgi için imleci parametrelerin üzerine getirin."
+
+[director.help.navigation]
+back = "Geri"
+page = "Sayfa"
+
+[director.help.navigation.parent]
+hover = "Üst komut grubuna dön"
+
+[director.help.navigation.previous]
+hover = "Önceki sayfa"
+
+[director.help.navigation.next]
+hover = "Sonraki sayfa"
+
+[director.help.parameter]
+required = "Bu parametre zorunludur."
+optional = "Bu parametre isteğe bağlıdır."
+default = "Belirtilmezse varsayılan değer \"{value}\" olur."
+type = "Bu parametrenin türü {type}."
+
+[director.runtime]
+usage = "Kullanım: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Bu komut bu kaynaktan çalıştırılamaz."
+unknown_parameter = "Bilinmeyen parametre anahtarı: {key}"
+unexpected_argument = "Beklenmeyen bağımsız değişken \"{argument}\". İsteğe bağlı parametreler anahtarla belirtilmelidir, ör. seed=123"
+unclosed_group = "{key} parametresi için kapanış \"]\" karakteri eksik"
+conversion_failed = "\"{value}\", {parameter} için {type} türüne dönüştürülemiyor"
+default_parse_failed = "{parameter} parametresinin varsayılan değeri ayrıştırılamıyor"
+missing_argument = "Eksik bağımsız değişken \"{parameter}\" ({type})"
+execution_failed = "{command} komutu çalıştırılamadı: {reason}"
+
+[language.menu]
+your_language = "Diliniz"
+reset_your_language = "Dil seçiminizi sıfırla"
+server_default = "Sunucu varsayılanı"
+edit_messages = "Dil mesajlarını düzenle"
+use_server_default = "Sunucu varsayılanını kullan"
+current = "Geçerli: {locale}"
+current_with_personal = "Geçerli: {locale} (Sizin: {personal})"
+your_description = "Yalnızca gördüğünüz mesajları değiştirin."
+reset_description = "Sunucunun varsayılan dilini kullanın."
+server_description = "Sunucunun varsayılan dilini değiştirin."
+edit_description = "Her dil için mesaj düzenleyicisini açın."
+select_description = "Bu dili seçmek için tıklayın."
+remove_personal_description = "Kişisel dil seçiminizi kaldırın."
+no_controls = "Kullanabileceğiniz dil ayarı yok."

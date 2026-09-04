@@ -1,0 +1,251 @@
+# BileTools language: fi_FI
+#
+# This file is editable in a text editor or through /biletools config.
+# BileTools creates or downloads it only when missing. Local changes are not replaced.
+# Missing messages use the built-in English catalog.
+#
+# Formatting
+#   Colors and styles  &0 through &f, &k through &r
+#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
+#   Custom markup      MiniMessage is supported
+#   Literal text       Put a backslash before & or [
+#
+# Placeholders
+# Keep the placeholders already used by a message. Do not rename them.
+#   {argument}            Unexpected command argument
+#   {category}            Configuration editor category
+#   {command}             Command path or submitted command
+#   {context}             Reason or trigger for a plugin reload
+#   {count}               Configured remote deployment target count and plural selector
+#   {file}                Plugin jar filename
+#   {host}                Inbound sender IP address
+#   {installedVersion}    Currently installed plugin version
+#   {key}                 Command parameter key
+#   {latestVersion}       Latest available library version
+#   {locale}              Locale identifier
+#   {milliseconds}        Load, unload, or reload duration in milliseconds
+#   {new}                 Newly saved language message value
+#   {old}                 Previous language message value
+#   {parameter}           Command parameter name
+#   {permission}          Required permission node
+#   {personal}            Personal locale when different from the server default
+#   {plugin}              Plugin name
+#   {reason}              Failure reason
+#   {setting}             Configuration setting name
+#   {type}                Command parameter type
+#   {usage}               Command usage syntax
+#   {value}               Current, default, or submitted value
+#   {version}             Requested or listed library plugin version
+
+[command]
+root = "BileTools-komentoryhmä"
+load = "Lataa pluginin JAR-tiedosto plugins-hakemistosta"
+unload = "Poista asennettu lisäosa muistista"
+reload = "Lataa asennettu lisäosa uudelleen"
+uninstall = "Poista pluginin JAR-tiedosto plugins-hakemistosta"
+install = "Asenna lisäosa Bile-kirjastosta"
+library = "Luettele kirjaston lisäosat tai yhden lisäosan versiot"
+debug_dump = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
+debug = "BileTools diagnostic tools"
+config = "Open the complete in-game configuration editor"
+language = "Choose your language or the server language"
+
+[parameter]
+installed_plugin = "Asennetun lisäosan nimi"
+library_plugin = "Kirjaston lisäosan nimi"
+version = "Kirjaston lisäosan versio"
+sender = "Komennon lähettäjä"
+debug_upload = "Lähetä raportti mclo.gs-palveluun"
+
+[error]
+plugin_name_required = "Lisäosan nimi ei voi olla tyhjä"
+library_plugin_name_required = "Kirjaston lisäosan nimi ei voi olla tyhjä"
+version_required = "Versio ei voi olla tyhjä"
+
+[message]
+permission_denied = "&a[&8Bile&a]: &7Tarvitset oikeuden &f{permission}&7 tai OP-aseman."
+unknown_command = "&a[&8Bile&a]: &7Tuntematon komento \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 vaatii palvelimen täydellisen uudelleenkäynnistyksen."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 merkittiin vialliseksi elinkaarivirheen jälkeen. Sen automaattiset uudelleenlataukset on keskeytetty."
+reloading_context = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Lisäosaa ei löytynyt: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+
+[message.remote]
+receiving = "&a[&8Bile&a]: &7Vastaanotetaan &f{file}&7 palvelimelta &f{host}&7."
+
+[message.remote.deployed]
+other = "&a[&8Bile&a]: &7Otettiin käyttöön &f{plugin}&7 palvelimilla: &f{count}&7 etäpalvelinta."
+one = "&a[&8Bile&a]: &7Otettiin käyttöön &f{plugin}&7 palvelimella: &f{count}&7 etäpalvelin."
+
+[message.hot_drop]
+success = "&a[&8Bile&a]: &7Pikakäyttöönotto valmis: &f{file}&7."
+failed = "&a[&8Bile&a]: &7Pikakäyttöönotto epäonnistui: &c{file}&7."
+
+[message.reload]
+success = "&a[&8Bile&a]: &7Ladattu uudelleen: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Uudelleenlataus epäonnistui: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Uudelleenlataus lisätty jonoon: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Ladattu uudelleen: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Uudelleenlataus epäonnistui: \"&f{plugin}&7\"."
+
+[message.unload]
+success = "&a[&8Bile&a]: &7Poistettu muistista: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Muistista poistaminen epäonnistui: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Muistista poisto lisätty jonoon: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Poistettu muistista: &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Muistista poistaminen epäonnistui: \"&f{plugin}&7\"."
+
+[message.load]
+queued = "&a[&8Bile&a]: &7Lataus lisätty jonoon: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Ladattu: &f{plugin}&7 tiedostosta &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Lataus epäonnistui: \"&f{plugin}&7\"."
+
+[message.uninstall]
+queued = "&a[&8Bile&a]: &7Asennuksen poisto lisätty jonoon: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Poistettu asennus: &f{plugin}&7 tiedostosta &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7Lisäosa poistettiin muistista, mutta tiedostoa &c{file}&7 ei voitu poistaa. Poista tiedosto ennen uutta asennusta."
+failed = "&a[&8Bile&a]: &7Asennuksen poisto epäonnistui: \"&f{plugin}&7\"."
+
+[message.library]
+plugin_not_found = "&a[&8Bile&a]: &7Lisäosaa ei löytynyt kirjastosta: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Versiota \"&f{version}&7\" ei löytynyt lisäosalle \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Kirjastoasennus lisätty jonoon: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7Asennettu kirjastosta: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 asennettiin ja se vaatii palvelimen täydellisen uudelleenkäynnistyksen."
+install_failed = "&a[&8Bile&a]: &7Asennus epäonnistui: \"&f{plugin}&7\"."
+empty = "&a[&8Bile&a]: &7Kirjasto on tyhjä."
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} asennettu) &f{latestVersion}&7 (uusin)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (uusin)"
+version_entry = "&a[&8Bile&a]: &7{version}"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (uusin)"
+
+[message.config]
+opened = "&a[&8Bile&a]: &aKattava pelinsisäinen asetuseditori avattiin.&r"
+save_failed = "&a[&8Bile&a]: &cAsetusta &f{setting}&r&c ei voitu ottaa käyttöön: {reason}&r"
+
+[message.change]
+saved = "&a[&8Bile&a]: &f{setting}&7 muutettiin arvoon &f{new}&7; aiemmin &f{old}&7."
+
+[gui.title]
+root = "&2BileTools Configuration"
+category = "&2BileTools &8› {category}"
+
+[gui.category]
+general = "&dYleiset&r"
+metrics = "&aMetrics"
+remote_slave = "&aRemote Receiver"
+remote_master = "&aRemote Deployment"
+network = "&aNetwork Limits"
+watcher = "&aPlugin Watcher"
+lifecycle = "&aLifecycle"
+languages = "&dKielet&r"
+
+[gui.navigation]
+back = "&eTakaisin&r"
+close = "&cSulje&r"
+
+[gui.lore]
+state = "&7Nykyinen:&r {value}"
+toggle = "&8Napsauta vaihtaaksesi.&r"
+number = "&8Vasen +1, oikea -1, vaihto ×10, pudota kirjoittaaksesi.&r"
+text = "&8Napsauta kirjoittaaksesi uuden arvon chattiin.&r"
+language = "&8Napsauta valitaksesi käytettävissä olevan kielen tai kirjoita kielitunnus.&r"
+category = "&8Napsauta muokataksesi tämän luokan kaikkia asetuksia.&r"
+file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+
+[gui.prompt]
+request = "&a[&8Bile&a]: &eKirjoita asetuksen &f{setting}&r&e uusi arvo chattiin.&r"
+list = "&a[&8Bile&a]: &7Erota luettelon kohdat pilkuilla. Kirjoita &fnone&r&7, jos haluat tyhjän luettelon.&r"
+cancel = "&a[&8Bile&a]: &7Kirjoita &fcancel&r&7 lopettaaksesi. Kehote vanhenee 60 sekunnissa.&r"
+cancelled = "&a[&8Bile&a]: &eAsetusten muokkaus peruutettiin.&r"
+timeout = "&a[&8Bile&a]: &eAsetusten muokkaus vanheni muuttamatta mitään.&r"
+
+[gui.setting.general]
+language = "&dAktiivinen kielitunnus&r"
+archive_plugins = "&aArchive plugin jars before replacement"
+
+[gui.setting.metrics]
+enabled = "&dAnonyymit bStats-mittarit&r"
+
+[gui.setting.remote_slave]
+enabled = "&aRemote receiver"
+port = "&aRemote receiver port"
+payload = "&aRemote receiver secret"
+
+[gui.setting.remote_master]
+enabled = "&aRemote deployment"
+targets = "&aRemote deployment targets"
+signatures = "&aRemote deployment plugin names"
+
+[gui.setting.network]
+socket_timeout = "&aRemote socket timeout milliseconds"
+max_transfer = "&aMaximum transfer bytes"
+
+[gui.setting.watcher]
+idle = "&aIdle poll ticks"
+active = "&aActive poll ticks"
+debounce = "&aFingerprint debounce ticks"
+ignore = "&aIgnored plugin names"
+only = "&aAllowed plugin names"
+
+[gui.setting.lifecycle]
+log_timings = "&aLifecycle timing logs"
+health_check = "&aPost-load health checks"
+
+[director.help]
+no_subcommands = "Tällä sivulla ei ole alikomentoja."
+no_description = "Kuvausta ei ole annettu"
+command_group = "Komentoryhmä. Avaa napsauttamalla."
+category = "Komentokategoria"
+no_parameters = "Ei parametreja. Esitäytä komento napsauttamalla."
+parameters_hover = "Vie hiiri parametrien päälle saadaksesi lisätietoja."
+
+[director.help.navigation]
+back = "Takaisin"
+page = "Sivu"
+
+[director.help.navigation.parent]
+hover = "Palaa ylempään komentoryhmään"
+
+[director.help.navigation.previous]
+hover = "Edellinen sivu"
+
+[director.help.navigation.next]
+hover = "Seuraava sivu"
+
+[director.help.parameter]
+required = "Tämä parametri on pakollinen."
+optional = "Tämä parametri on valinnainen."
+default = "Oletusarvo on \"{value}\", jos sitä ei määritetä."
+type = "Tämän parametrin tyyppi on {type}."
+
+[director.runtime]
+usage = "Käyttö: {usage}"
+
+[director.runtime.error]
+invalid_origin = "Tätä komentoa ei voi suorittaa tästä lähteestä."
+unknown_parameter = "Tuntematon parametriavain: {key}"
+unexpected_argument = "Odottamaton argumentti \"{argument}\". Valinnaiset parametrit on annettava avaimella, esim. seed=123"
+unclosed_group = "Sulkeva \"]\" puuttuu parametrilta {key}"
+conversion_failed = "Arvoa \"{value}\" ei voi muuntaa tyypiksi {type} parametrille {parameter}"
+default_parse_failed = "Parametrin {parameter} oletusarvoa ei voi jäsentää"
+missing_argument = "Puuttuva argumentti \"{parameter}\" ({type})"
+execution_failed = "Komennon {command} suoritus epäonnistui: {reason}"
+
+[language.menu]
+your_language = "Oma kielesi"
+reset_your_language = "Palauta oma kielesi"
+server_default = "Palvelimen oletuskieli"
+edit_messages = "Muokkaa kieliviestejä"
+use_server_default = "Käytä palvelimen oletuskieltä"
+current = "Nykyinen: {locale}"
+current_with_personal = "Nykyinen: {locale} (Omasi: {personal})"
+your_description = "Vaihda vain näkemäsi viestit."
+reset_description = "Käytä palvelimen oletuskieltä."
+server_description = "Vaihda palvelimen oletuskieli."
+edit_description = "Avaa kielikohtainen viestieditori."
+select_description = "Napsauta valitaksesi tämän kielen."
+remove_personal_description = "Poista henkilökohtainen kielivalintasi."
+no_controls = "Sinulla ei ole käytettävissä kieliasetuksia."
