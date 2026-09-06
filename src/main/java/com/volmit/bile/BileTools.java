@@ -30,6 +30,7 @@ import com.volmit.bile.watch.JarSnapshotStager;
 import com.volmit.bile.watch.PluginDependencyOrder;
 import com.volmit.bile.watch.PluginJarDirectoryWatcher;
 import com.volmit.bile.watch.WatcherStateHandoff;
+import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
@@ -158,6 +159,12 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         return thread;
     });
     public static volatile BileConfig cfg;
+
+    public BileTools() {
+        getLogger().info("Loading libraries...");
+        new SpigotApplicationBuilder(this).build();
+        getLogger().info("Libraries loaded.");
+    }
 
     static void debug(Supplier<String> messageSupplier) {
         Logger logger = operatorLogger();

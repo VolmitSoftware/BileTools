@@ -1,11 +1,26 @@
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.WriteProperties
 
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = uri('https://jitpack.io') }
+    }
+    dependencies {
+        classpath('com.github.VolmitSoftware.VolmLib:packaging:master-SNAPSHOT')
+    }
+}
+
 plugins {
     id 'java-library'
     alias libs.plugins.lombok
     alias libs.plugins.shadow
+    alias libs.plugins.slimjar
 }
+
+apply plugin: 'art.arcane.volmit-packaging'
+
+tasks.named('slimJar').get()
 
 version = '3.0.1-26.2'
 def apiVersion = '1.20'
@@ -81,6 +96,11 @@ tasks.named('compileTestJava', JavaCompile) {
     options.release.set(17)
 }
 
+tasks.named('test', Test) {
+    dependsOn tasks.named('shadowJar')
+    systemProperty('biletools.runtimeArtifact', tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath)
+}
+
 configurations {
     spigotCompatibility
     currentPaperCompatibility
@@ -96,12 +116,13 @@ dependencies {
         changing = true
         transitive = false
     }
-    implementation('com.google.code.gson:gson:2.10.1')
-    implementation('com.moandjiezana.toml:toml4j:0.7.2')
-    implementation('net.kyori:adventure-api:4.26.1')
-    implementation('net.kyori:adventure-text-minimessage:4.26.1')
-    implementation('net.kyori:adventure-text-serializer-legacy:4.26.1')
-    implementation('net.kyori:adventure-text-serializer-plain:4.26.1')
+    implementation('de.crazydev22.slimjar.helper:spigot:2.1.9')
+    slimApi('com.google.code.gson:gson:2.10.1')
+    slimApi('com.moandjiezana.toml:toml4j:0.7.2')
+    slimApi('net.kyori:adventure-api:4.26.1')
+    slimApi('net.kyori:adventure-text-minimessage:4.26.1')
+    slimApi('net.kyori:adventure-text-serializer-legacy:4.26.1')
+    slimApi('net.kyori:adventure-text-serializer-plain:4.26.1')
     implementation libs.bstats
     testImplementation libs.paper
     testImplementation 'junit:junit:4.13.2'
@@ -148,14 +169,22 @@ tasks.register('compileCurrentSpigotCompatibility', JavaCompile) {
     options.release.set(25)
 }
 
+slimJar {
+    relocate('com.google.gson', 'com.volmit.bile.libs.gson')
+    relocate('com.moandjiezana.toml', 'com.volmit.bile.libs.toml')
+    relocate('net.kyori', 'com.volmit.bile.libs.kyori')
+}
+
 tasks.named('shadowJar') {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     // bStats internals are reflection/callable driven, keep the minimizer off them.
     minimize {
         exclude(dependency('org.bstats:.*:.*'))
+        exclude(dependency('de.crazydev22.slimjar.helper:.*:.*'))
     }
     // bStats refuses to enable unless its package is relocated. VolmLib stays unrelocated on purpose.
     relocate('org.bstats', 'com.volmit.bile.libs.bstats')
+    relocate('io.github.slimjar', 'com.volmit.bile.libs.slimjar')
     relocate('com.google.gson', 'com.volmit.bile.libs.gson')
     relocate('com.moandjiezana.toml', 'com.volmit.bile.libs.toml')
     relocate('net.kyori', 'com.volmit.bile.libs.kyori') {
@@ -185,6 +214,14 @@ tasks.register('verifyCompatibilityArtifact') {
                 if (!entry.name.endsWith('.class')) {
                     continue
                 }
+                if (entry.name.startsWith('com/volmit/bile/libs/gson/')
+                        || entry.name.startsWith('com/volmit/bile/libs/toml/')
+                        || entry.name.startsWith('com/volmit/bile/libs/kyori/')
+                        || entry.name.startsWith('com/google/gson/')
+                        || entry.name.startsWith('com/moandjiezana/toml/')
+                        || entry.name.startsWith('net/kyori/')) {
+                    throw new GradleException("Runtime dependency is bundled in ${artifact.name}: ${entry.name}")
+                }
 
                 java.io.DataInputStream input = new java.io.DataInputStream(archive.getInputStream(entry))
                 try {
@@ -203,6 +240,11 @@ tasks.register('verifyCompatibilityArtifact') {
             }
 
             java.util.zip.ZipEntry descriptor = archive.getEntry('plugin.yml')
+            if (archive.getEntry('slimjar.dat') == null
+                    || archive.getEntry('slimjar-resolutions.dat') == null
+                    || archive.getEntry('com/volmit/bile/libs/slimjar/app/builder/SpigotApplicationBuilder.class') == null) {
+                throw new GradleException("${artifact.name} is missing its runtime dependency bootstrap")
+            }
             if (descriptor == null) {
                 throw new GradleException("${artifact.name} does not contain plugin.yml")
             }
@@ -299,6 +341,17 @@ void createOutputTask(String name, String path, boolean doRename) {
                     rename { String ignored -> "BileTools-${project.version}.jar" }
                 }
             }
+        }
+    }
+}
+
+pluginPackaging {
+    artifacts {
+        create('distribution') {
+            taskName = 'shadowJar'
+            policyName = 'BileTools'
+            prunePrefixes = ['art/arcane/volmlib/']
+            keepPrefixes = ['art/arcane/volmlib/util/matter/slices/']
         }
     }
 }

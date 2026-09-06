@@ -2,6 +2,7 @@
 # Plugins
 lombok = "9.2.0"
 shadow = "9.0.0-rc3"
+slimjar = "2.1.9"
 runTask = "2.3.1"
 
 # Libraries
@@ -21,4 +22,5 @@ bstats = { module = "org.bstats:bstats-bukkit", version.ref = "bstats" }
 [plugins]
 lombok = { id = "io.freefair.lombok", version.ref = "lombok" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+slimjar = { id = "de.crazydev22.slimjar", version.ref = "slimjar" }
 runPaper = { id = "xyz.jpenilla.run-paper", version.ref = "runTask" }
