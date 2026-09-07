@@ -97,6 +97,15 @@ tasks.named('compileTestJava', JavaCompile) {
 }
 
 tasks.named('test', Test) {
+    exclude('com/volmit/bile/RuntimeLibraryBootstrapTest.class')
+}
+
+tasks.register('runtimeArtifactTest', Test) {
+    group = 'verification'
+    description = 'Runs the tests that exercise the packaged runtime artifact.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    include('com/volmit/bile/RuntimeLibraryBootstrapTest.class')
     dependsOn tasks.named('shadowJar')
     systemProperty('biletools.runtimeArtifact', tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath)
 }
@@ -267,6 +276,7 @@ tasks.register('verifyCompatibilityArtifact') {
 }
 
 tasks.named('check') {
+    dependsOn tasks.named('runtimeArtifactTest')
     dependsOn tasks.named('compileSpigotCompatibility')
     dependsOn tasks.named('compileCurrentPaperCompatibility')
     dependsOn tasks.named('compileCurrentSpigotCompatibility')

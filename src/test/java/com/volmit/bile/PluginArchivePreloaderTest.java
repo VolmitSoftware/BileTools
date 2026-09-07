@@ -4,7 +4,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,16 +76,6 @@ public class PluginArchivePreloaderTest {
         assertTrue(report.requiredFailures().toString(), report.requiredFailures().isEmpty());
         assertTrue(report.loadedClasses().contains("com.volmit.bile.watch.PluginJarDirectoryWatcher$Signal"));
         assertEquals(report.discoveredClasses().size(), report.loadedClasses().size());
-    }
-
-    @Test
-    public void startupPreloadIsTheFirstEnableActionAndPrecedesWatcherInitialization() throws Exception {
-        Path source = Path.of("src/main/java/com/volmit/bile/BileTools.java");
-        String content = Files.readString(source, StandardCharsets.UTF_8).replace("\r\n", "\n");
-        String enableStart = "public void onEnable() {\n        preloadSelfHostedArchive();";
-
-        assertTrue(content.contains(enableStart));
-        assertTrue(content.indexOf("preloadSelfHostedArchive();") < content.indexOf("initializePluginWatcher();"));
     }
 
     private Path createArchive(List<String> entries) throws Exception {

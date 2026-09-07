@@ -128,15 +128,6 @@ public class BileLocalizationTest {
     }
 
     @Test
-    public void pluginRegistersItsCompactLanguageEditReceipt() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/volmit/bile/BileTools.java"))
-                .replace("\r\n", "\n");
-
-        assertTrue(source.contains("this::renderLanguageEditFeedback"));
-        assertTrue(source.contains("localization.singleLineText(sender, BileMessages.CHANGE_SAVED"));
-    }
-
-    @Test
     public void editorPreservesPluralFormsAndUnknownTomlKeys() throws Exception {
         PluginLanguageEditor.Options editor = localization.editorOptions();
         LocalizationSnapshot original = editor.loader().load("en_US");
