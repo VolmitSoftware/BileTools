@@ -362,6 +362,12 @@ pluginPackaging {
             policyName = 'BileTools'
             prunePrefixes = ['art/arcane/volmlib/']
             keepPrefixes = ['art/arcane/volmlib/util/matter/slices/']
+            shrinkRules = [file('packaging/shrink.pro')]
+            shrinkRelocations = [
+                'com.google.gson': 'com.volmit.bile.libs.gson',
+                'com.moandjiezana.toml': 'com.volmit.bile.libs.toml',
+                'net.kyori': 'com.volmit.bile.libs.kyori'
+            ]
         }
     }
 }
