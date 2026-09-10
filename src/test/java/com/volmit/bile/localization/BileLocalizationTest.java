@@ -2,6 +2,7 @@ package com.volmit.bile.localization;
 
 import art.arcane.volmlib.util.director.help.DirectorHelpMessages;
 import art.arcane.volmlib.util.io.FileWatcher;
+import art.arcane.volmlib.util.localization.TomlLanguageParser;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.MessageArgs;
@@ -77,13 +78,13 @@ public class BileLocalizationTest {
     public void englishReferenceUsesCanonicalKeysAndSpecificPlaceholderDescriptions() throws Exception {
         String english = Files.readString(localization.languageFile().toPath(), StandardCharsets.UTF_8);
         assertFalse(english.contains("Message-specific value"));
-        assertTrue(english.contains("{file}              Plugin jar filename"));
-        assertTrue(english.contains("{milliseconds}      Load, unload, or reload duration in milliseconds"));
-        assertTrue(english.contains("{new}               Newly saved language message value"));
-        assertTrue(english.contains("{old}               Previous language message value"));
-        assertTrue(english.contains("{permission}        Required permission node"));
-        assertTrue(english.contains("{personal}          Personal locale when different from the server default"));
-        assertTrue(english.contains("{setting}           Configuration setting name"));
+        assertTrue(english.contains("{file}  Plugin jar filename"));
+        assertTrue(english.contains("{milliseconds}  Load, unload, or reload duration in milliseconds"));
+        assertTrue(english.contains("{new}  Newly saved language message value"));
+        assertTrue(english.contains("{old}  Previous language message value"));
+        assertTrue(english.contains("{permission}  Required permission node"));
+        assertTrue(english.contains("{personal}  Personal locale when different from the server default"));
+        assertTrue(english.contains("{setting}  Configuration setting name"));
         assertTrue(english.contains("[gui.setting.general]"));
         assertFalse(english.contains("[bile."));
         int firstTable = english.indexOf("\n[");
@@ -171,7 +172,7 @@ public class BileLocalizationTest {
                     .map(result -> result.group(1)).collect(Collectors.toUnmodifiableSet());
             assertEquals(locale, catalogPlaceholders, documentedPlaceholders);
             assertFalse(locale, content.contains("Message-specific value"));
-            Map<String, MessageValue> values = BileTomlLanguageParser.parse(content, BileMessages.catalog());
+            Map<String, MessageValue> values = TomlLanguageParser.parseValidValues(content, BileMessages.catalog());
             assertEquals(locale, catalogIds, values.keySet());
             for (MessageKey key : BileMessages.catalog().keys()) {
                 assertEquals(locale + ":" + key.id(), key.placeholders(), values.get(key.id()).placeholders());
@@ -209,7 +210,6 @@ public class BileLocalizationTest {
                 "src/main/resources/languages",
                 ".toml",
                 "biletools-language-source.properties",
-                temporaryFolder.getRoot().toPath().resolve("language-cache"),
                 BileLocalization.class.getClassLoader()
         ));
         try {
@@ -260,7 +260,7 @@ public class BileLocalizationTest {
     }
 
     @Test
-    public void rejectsInvalidReloadAndRetainsLastGoodSnapshot() throws Exception {
+    public void invalidEntryFallsBackToEnglishWhileValidMessagesStayActive() throws Exception {
         write(BileMessages.PERMISSION_DENIED, new TextValue("Allowed only with {permission}"));
         assertTrue(localization.reload());
         MessageArgs arguments = MessageArgs.builder().untrusted("permission", "bile.use").build();
@@ -269,8 +269,11 @@ public class BileLocalizationTest {
         TomlLanguageEditor.EditResult invalid = TomlLanguageEditor.upsert(content,
                 BileMessages.PERMISSION_DENIED.id(), new TextValue("Missing its named argument"));
         Files.writeString(localization.languageFile().toPath(), invalid.content());
-        assertFalse(localization.reload());
-        assertEquals("Allowed only with bile.use", localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
+        write(DirectorHelpMessages.BACK, new TextValue("Zurück"));
+        assertTrue(localization.reload());
+        assertEquals(BileLocalization.english(BileMessages.PERMISSION_DENIED, arguments).plain(),
+                localization.text(BileMessages.PERMISSION_DENIED, arguments).plain());
+        assertEquals("Zurück", localization.directorResolver().resolve(DirectorHelpMessages.BACK));
     }
 
     @Test

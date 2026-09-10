@@ -1,41 +1,49 @@
-# BileTools language: tr_TR
+# BileTools — tr_TR
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Dosyayı düzenleme ===
+# plugins/BileTools/languages/tr_TR.toml
+# Bu dosyayı doğrudan düzenleyebilirsiniz. Yerel değişiklikler korunur; eksik veya geçersiz girdiler yerleşik İngilizce metni kullanır.
+# /biletools language server edit tr_TR
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Önek ===
+# &a[&8Bile&a]: öneki her iletide doğrudan yazılıdır; ilgili iletilerde düzenleyin.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Biçimlendirme ===
+# Renkler: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B ve [RRGGBB]. Özel biçimlendirme için MiniMessage da kullanılabilir.
+#
+# === Değişkenler ===
+# Değişken adlarını değiştirmeyin ve yalnızca ilgili iletinin değişkenlerini kullanın.
+#   {after}  Değişim sonrası Değer
+#   {argument}  beklenmeyen argüman
+#   {before}  Değişim öncesinde değer
+#   {category}  kategori
+#   {command}  komut yolu
+#   {context}  Eklentinin yeniden yüklenme nedeni
+#   {count}  Uzak hedef sayısı ve çoğul biçim seçicisi; İleti sayısı
+#   {file}  Eklenti JAR dosyasının adı
+#   {group}  kategori
+#   {host}  Gönderenin IP adresi
+#   {installedVersion}  Şu anda kurulu eklenti sürümü
+#   {key}  İleti veya parametre anahtarı
+#   {latestVersion}  Kütüphanedeki en yeni sürüm
+#   {line}  Source line or line number
+#   {locale}  yerel ayar
+#   {maximum}  Maksimum izin verilen değer
+#   {milliseconds}  Yükleme, kaldırma veya yeniden yükleme süresi (milisaniye)
+#   {new}  yeni değer
+#   {old}  önceki değer
+#   {parameter}  parametre adı
+#   {permission}  Gerekli izin
+#   {personal}  kişisel yerel ayar
+#   {plugin}  Plugin name
+#   {reason}  hata nedeni
+#   {setting}  ayar adı
+#   {target}  Plugin name
+#   {type}  tür
+#   {usage}  komut kullanımı
+#   {value}  geçerli, varsayılan veya ham değer
+#   {variables}  geçerli yer tutucular
+#   {version}  İstenen veya gösterilen kütüphane eklentisi sürümü
 
 [command]
 root = "BileTools komut grubu"
@@ -46,9 +54,9 @@ uninstall = "plugins dizininden eklenti JAR dosyasını sil"
 install = "Bile kütüphanesinden bir eklenti yükle"
 library = "Kütüphane eklentilerini veya bir eklentinin sürümlerini listele"
 debug_dump = "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "BileTools tanılama araçları"
+config = "Oyun içindeki tam yapılandırma düzenleyicisini aç"
+language = "Kendi dilini veya sunucu dilini seç"
 
 [parameter]
 installed_plugin = "Yüklü eklenti adı"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 yaşam döngüsü hatasından 
 reloading_context = "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Eklenti bulunamadı: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Yeniden yükleniyor: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cBu komutu yalnızca bir oyuncu kullanabilir."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7&f{host}&7 üzerinden &f{file}&7 alınıyor."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c uygulanamadı: {reason}&r"
 saved = "&a[&8Bile&a]: &f{setting}&7, &f{new}&7 olarak değiştirildi; önceki değer &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2BileTools Yapılandırması"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dGenel&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aİstatistikler"
+remote_slave = "&aUzak Alıcı"
+remote_master = "&aUzak Dağıtım"
+network = "&aAğ Sınırları"
+watcher = "&aEklenti İzleyicisi"
+lifecycle = "&aYaşam Döngüsü"
 languages = "&dDiller&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8Sol +1, sağ -1, shift ×10, yazmak için bırakma tuşu.&r"
 text = "&8Sohbette yeni bir değer yazmak için tıklayın.&r"
 language = "&8Kullanılabilir bir dil seçmek veya yerel ayar yazmak için tıklayın.&r"
 category = "&8Bu kategorideki her ayarı düzenlemek için tıklayın.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Hassas değer; biletools.yml dosyasını düzenleyip BileTools’u yeniden yükleyin."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eSohbette &f{setting}&r&e için yeni bir değer yazın.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eYapılandırma düzenlemesinin süresi hiçbir şey d
 
 [gui.setting.general]
 language = "&dEtkin dil yerel ayarı&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aDeğiştirmeden önce eklenti JAR dosyalarını arşivle"
 
 [gui.setting.metrics]
 enabled = "&dAnonim bStats istatistikleri&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aUzak alıcı"
+port = "&aUzak alıcı bağlantı noktası"
+payload = "&aUzak alıcı gizli anahtarı"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aUzak dağıtım"
+targets = "&aUzak dağıtım hedefleri"
+signatures = "&aUzak dağıtım eklentilerinin adları"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aUzak bağlantı zaman aşımı (milisaniye)"
+max_transfer = "&aEn fazla aktarım boyutu (bayt)"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aBoştayken denetleme aralığı (tik)"
+active = "&aEtkin denetleme aralığı (tik)"
+debounce = "&aDosya parmak izi kararlılık gecikmesi (tik)"
+ignore = "&aYok sayılan eklenti adları"
+only = "&aİzin verilen eklenti adları"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aYaşam döngüsü süre günlükleri"
+health_check = "&aYükleme sonrası çalışma denetimleri"
 
 [director.help]
 no_subcommands = "Bu sayfada alt komut yok."
@@ -249,3 +257,92 @@ edit_description = "Her dil için mesaj düzenleyicisini açın."
 select_description = "Bu dili seçmek için tıklayın."
 remove_personal_description = "Kişisel dil seçiminizi kaldırın."
 no_controls = "Kullanabileceğiniz dil ayarı yok."
+command = "Komut: {command}"
+selected = "Seçili"
+all-volmit-plugins = "Tüm Volmit eklentileri"
+
+[language.error]
+stopping = "Dil seçimi, eklenti durdurulduğunda kullanılamaz."
+editor-player-only = "Oyundaki dil editörü açın."
+no-providers = "Kullanılabilir Volmit dil sağlayıcısı yok."
+numeric-page = "Sayfa numarasını rakamla girin."
+personal-player-only = "Oyuncu dili tercihleri oyunda seçilmelidir."
+personal-permission = "Dilinizi seçmek için izniniz yok."
+plugin-personal-permission = "{plugin} için kendi dilinizi seçme izniniz yok."
+plugin-server-permission = "{plugin} için sunucu dilini değiştirme izniniz yok."
+server-locale-required = "Sunucunun varsayılan dili için en_US gibi bir dil kodu seçin."
+unavailable-for-all = "{locale} dili, seçilen eklentilerin tümünde kullanılamıyor."
+
+[language.usage]
+editor = "Kullanım: /{command} language server edit [locale]"
+selection = "Kullanım: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Kullanım: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "{target} için {locale} dili hazırlanıyor..."
+save-failed = "{plugin}: dil seçimi kaydedilemedi; sunucu konsolunu kontrol edin."
+english-fallback = "{plugin}: {locale} kullanılamıyor; İngilizce (en_US) kullanılıyor."
+personal-selected = "{plugin}: Diliniz şimdi {locale}."
+server-selected = "{plugin}: sunucu dili şimdi {locale}."
+server-default-selected = "{plugin}: diliniz artık sunucunun varsayılan dilini kullanıyor."
+
+[language.editor]
+loading = "{locale} mesajları yükleniyor..."
+
+[language.editor.section]
+languages = "Diller"
+search = "Arama"
+search-title = "{locale} / Arama"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Mesaj anahtarı veya metni arayın. Geri dönmek için cancel yazın."
+value = "Sohbete {key} için yeni bir değer yazın."
+current = "Geçerli değer: {value}"
+variables = "Değişkenler: {variables}"
+guidance = "Yeni satır için \\n, ters eğik çizgi için \\\\ kullanın veya geri dönmek için cancel yazın."
+
+[language.editor.input]
+expired = "Dil düzenleyicisinin giriş süresi doldu."
+too-long = "Girdi en fazla {maximum} karakter içerebilir."
+unable-to-save = "Kaydedilemedi: {reason}"
+
+[language.editor.navigation]
+back = "&eGeri&r"
+close = "&cKapat&r"
+previous-page = "&eÖnceki Sayfa&r"
+next-page = "&eSonraki sayfa&r"
+
+[language.editor.search]
+messages = "Mesajları ara"
+messages-lore = "Tüm mesajları aramak için tıklayın."
+clear = "Aramayı temizle"
+
+[language.editor.message]
+current-value = "&7Mevcut Değer:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Bir çoğul biçimini düzenlemek için tıklayın.&r"
+edit-lines = "&7Satırları ayrı ayrı düzenlemek için tıklayın.&r"
+edit-chat = "&7Sohbette düzenlemek için tıklayın.&r"
+
+[language.editor.locale]
+open = "&8Bu dili açmak için tıklayın.&r"
+
+[language.editor.category]
+message-count = "&7{count} mesaj&r"
+open = "&8Bu kategoriyi açmak için tıklayın.&r"
+
+[language.editor.error]
+no-permission = "{plugin} dillerini düzenleme izniniz yok."
+unable-to-edit = "Düzenlenemedi: {reason}"
+
+[language.editor.saved]
+summary = "{locale} kaydedildi. Dil seçimleri değişmedi."
+change = "{key}: “{before}” değeri “{after}” olarak değiştirildi."
+
+[language.editor.part]
+line = "Satır {line}"
+
+[language.editor.value]
+none = "Yok"
+empty = "(boş)"

@@ -1,41 +1,49 @@
-# BileTools language: fi_FI
+# BileTools — fi_FI
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Tiedoston muokkaus ===
+# plugins/BileTools/languages/fi_FI.toml
+# Voit muokata tätä tiedostoa suoraan. Paikalliset muutokset säilyvät; puuttuvat tai virheelliset kohdat käyttävät sisäänrakennettua englantia.
+# /biletools language server edit fi_FI
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Etuliite ===
+# Etuliite &a[&8Bile&a]: on kirjoitettu suoraan jokaiseen viestiin; muokkaa sitä kyseisissä viesteissä.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Muotoilu ===
+# Värit: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B ja [RRGGBB]. MiniMessage toimii myös omissa muotoiluissa.
+#
+# === Muuttujat ===
+# Säilytä muuttujien nimet ja käytä vain kunkin viestin omia muuttujia.
+#   {after}  Arvo muutoksen jälkeen
+#   {argument}  odottamaton argumentti
+#   {before}  Arvo ennen muutosta
+#   {category}  luokka
+#   {command}  komentopolku
+#   {context}  Lisäosan uudelleenlatauksen syy
+#   {count}  Etäkohteiden määrä ja monikkomuodon valitsin; Viestien määrä
+#   {file}  Lisäosan JAR-tiedoston nimi
+#   {group}  luokka
+#   {host}  Lähettäjän IP-osoite
+#   {installedVersion}  Lisäosan tällä hetkellä asennettu versio
+#   {key}  Viestin tai parametrin avain
+#   {latestVersion}  Kirjaston uusin saatavilla oleva versio
+#   {line}  Lähderivi tai viivanumero
+#   {locale}  kielitunnus
+#   {maximum}  Suurin sallittu arvo
+#   {milliseconds}  Lataamisen, purkamisen tai uudelleenlataamisen kesto millisekunteina
+#   {new}  uusi arvo
+#   {old}  edellinen arvo
+#   {parameter}  parametrin nimi
+#   {permission}  Vaadittu käyttöoikeus
+#   {personal}  henkilökohtainen kielitunnus
+#   {plugin}  Liitännäisen nimi
+#   {reason}  virheen syy
+#   {setting}  asetuksen nimi
+#   {target}  Liitännäisen nimi
+#   {type}  tyyppi
+#   {usage}  komennon käyttö
+#   {value}  nykyinen, oletus- tai raaka-arvo
+#   {variables}  sallitut paikkamerkit
+#   {version}  Kirjastolisäosan pyydetty tai näytetty versio
 
 [command]
 root = "BileTools-komentoryhmä"
@@ -46,9 +54,9 @@ uninstall = "Poista pluginin JAR-tiedosto plugins-hakemistosta"
 install = "Asenna lisäosa Bile-kirjastosta"
 library = "Luettele kirjaston lisäosat tai yhden lisäosan versiot"
 debug_dump = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "BileToolsin diagnostiikkatyökalut"
+config = "Avaa kaikki asetukset sisältävä pelinsisäinen editori"
+language = "Valitse oma kielesi tai palvelimen kieli"
 
 [parameter]
 installed_plugin = "Asennetun lisäosan nimi"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 merkittiin vialliseksi elinkaa
 reloading_context = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Lisäosaa ei löytynyt: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cVain pelaaja voi käyttää tätä komentoa."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Vastaanotetaan &f{file}&7 palvelimelta &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &cAsetusta &f{setting}&r&c ei voitu ottaa käyttö�
 saved = "&a[&8Bile&a]: &f{setting}&7 muutettiin arvoon &f{new}&7; aiemmin &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2BileToolsin asetukset"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dYleiset&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aTilastot"
+remote_slave = "&aEtävastaanotin"
+remote_master = "&aEtäkäyttöönotto"
+network = "&aVerkkorajat"
+watcher = "&aLisäosien valvonta"
+lifecycle = "&aElinkaari"
 languages = "&dKielet&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8Vasen +1, oikea -1, vaihto ×10, pudota kirjoittaaksesi.&r"
 text = "&8Napsauta kirjoittaaksesi uuden arvon chattiin.&r"
 language = "&8Napsauta valitaksesi käytettävissä olevan kielen tai kirjoita kielitunnus.&r"
 category = "&8Napsauta muokataksesi tämän luokan kaikkia asetuksia.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Arkaluonteinen arvo; muokkaa biletools.yml-tiedostoa ja lataa BileTools uudelleen."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eKirjoita asetuksen &f{setting}&r&e uusi arvo chattiin.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eAsetusten muokkaus vanheni muuttamatta mitään.&r"
 
 [gui.setting.general]
 language = "&dAktiivinen kielitunnus&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aArkistoi lisäosien JAR-tiedostot ennen korvaamista"
 
 [gui.setting.metrics]
 enabled = "&dAnonyymit bStats-mittarit&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aEtävastaanotin"
+port = "&aEtävastaanottimen portti"
+payload = "&aEtävastaanottimen salaisuus"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aEtäkäyttöönotto"
+targets = "&aEtäkäyttöönoton kohteet"
+signatures = "&aEtäkäyttöönotettavien lisäosien nimet"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aEtäyhteyksien aikakatkaisu millisekunteina"
+max_transfer = "&aSiirron enimmäiskoko tavuina"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aTarkistusväli lepotilassa tikkeinä"
+active = "&aTarkistusväli aktiivisena tikkeinä"
+debounce = "&aTarkistussummien vakautumisviive tikkeinä"
+ignore = "&aOhitettavien lisäosien nimet"
+only = "&aSallittujen lisäosien nimet"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aElinkaaren kestoaikojen lokit"
+health_check = "&aToimintatarkistukset lataamisen jälkeen"
 
 [director.help]
 no_subcommands = "Tällä sivulla ei ole alikomentoja."
@@ -249,3 +257,92 @@ edit_description = "Avaa kielikohtainen viestieditori."
 select_description = "Napsauta valitaksesi tämän kielen."
 remove_personal_description = "Poista henkilökohtainen kielivalintasi."
 no_controls = "Sinulla ei ole käytettävissä kieliasetuksia."
+command = "Komento: {command}"
+selected = "valittu"
+all-volmit-plugins = "Kaikki Volmit-lisäosat"
+
+[language.error]
+stopping = "Kielivalintaa ei ole saatavilla, kun plugin pysähtyy."
+editor-player-only = "Avaa kielieditori pelissä."
+no-providers = "Yhtään Volmit-kielipalvelua ei ole saatavilla."
+numeric-page = "Anna sivunumero numerona."
+personal-player-only = "Pelaajan kieliasetukset on valittava pelissä."
+personal-permission = "Sinulla ei ole lupaa valita kieltäsi."
+plugin-personal-permission = "Sinulla ei ole oikeutta valita kieltäsi lisäosalle {plugin}."
+plugin-server-permission = "Sinulla ei ole oikeutta muuttaa lisäosan {plugin} palvelinkieltä."
+server-locale-required = "Valitse palvelimen oletuskieleksi kielikoodi, kuten en_US."
+unavailable-for-all = "Kieli {locale} ei ole saatavilla kaikille valituille lisäosille."
+
+[language.usage]
+editor = "Käyttö: /{command} language server edit [locale]"
+selection = "Käyttö: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Käyttö: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "Valmistellaan kieltä {locale} kohteelle {target}..."
+save-failed = "{plugin}: kielivalintaa ei voitu tallentaa; tarkista palvelinkonsoli."
+english-fallback = "{plugin}: {locale} ei ole saatavilla; käytetään englantia (en_US)."
+personal-selected = "{plugin}: kieli on nyt {locale}."
+server-selected = "{plugin}: palvelinkieli on nyt {locale}."
+server-default-selected = "{plugin}: kielesi noudattaa nyt palvelimen oletuskieltä."
+
+[language.editor]
+loading = "Ladataan kielen {locale} viestejä..."
+
+[language.editor.section]
+languages = "Kielet"
+search = "Etsi"
+search-title = "{locale} / Etsi"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Hae viestin avainta tai tekstiä. Palaa kirjoittamalla cancel."
+value = "Kirjoita avaimen {key} uusi arvo chattiin."
+current = "Nykyinen arvo: {value}"
+variables = "Muuttujat: {variables}"
+guidance = "Käytä \\n rivinvaihtoon ja \\\\ kenoviivaan tai palaa kirjoittamalla cancel."
+
+[language.editor.input]
+expired = "Kielieditorin syöttöaika päättyi."
+too-long = "Syöte saa sisältää enintään {maximum} merkkiä."
+unable-to-save = "Tallennus epäonnistui: {reason}"
+
+[language.editor.navigation]
+back = "&eTakaisin&r"
+close = "&cSulje&r"
+previous-page = "&eEdellinen sivu&r"
+next-page = "&eSeuraava sivu&r"
+
+[language.editor.search]
+messages = "Hae viestejä"
+messages-lore = "Napsauta hakeaksesi kaikista viesteistä."
+clear = "Tyhjennä haku"
+
+[language.editor.message]
+current-value = "&7Nykyinen arvo:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Muokkaa monikkomuotoa napsauttamalla.&r"
+edit-lines = "&7Muokkaa yksittäisiä rivejä napsauttamalla.&r"
+edit-chat = "&7Muokkaa chatissa napsauttamalla.&r"
+
+[language.editor.locale]
+open = "&8Avaa tämä kieli napsauttamalla.&r"
+
+[language.editor.category]
+message-count = "&7{count} viestiä&r"
+open = "&8Avaa tämä luokka napsauttamalla.&r"
+
+[language.editor.error]
+no-permission = "Sinulla ei ole oikeutta muokata lisäosan {plugin} kieliä."
+unable-to-edit = "Muokkaus epäonnistui: {reason}"
+
+[language.editor.saved]
+summary = "{locale} tallennettu. Kielivalinnat säilyvät ennallaan."
+change = "{key}: ”{before}” muutettiin arvoon ”{after}”."
+
+[language.editor.part]
+line = "Rivi {line}"
+
+[language.editor.value]
+none = "Ei ole"
+empty = "(tyhjä)"

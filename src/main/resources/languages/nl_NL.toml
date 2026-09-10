@@ -1,41 +1,49 @@
-# BileTools language: nl_NL
+# BileTools — nl_NL
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Bestand bewerken ===
+# plugins/BileTools/languages/nl_NL.toml
+# Je kunt dit bestand rechtstreeks bewerken. Lokale wijzigingen blijven behouden; ontbrekende of ongeldige vermeldingen gebruiken het ingebouwde Engels.
+# /biletools language server edit nl_NL
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Voorvoegsel ===
+# Het voorvoegsel &a[&8Bile&a]: staat rechtstreeks in elk bericht; bewerk het in de betreffende berichten.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Opmaak ===
+# Kleuren: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B en [RRGGBB]. MiniMessage blijft beschikbaar voor eigen opmaak.
+#
+# === Variabelen ===
+# Behoud de namen van variabelen en gebruik alleen de variabelen die bij het bericht horen.
+#   {after}  Waarde na de wijziging
+#   {argument}  onverwacht argument
+#   {before}  Waarde vóór de wijziging
+#   {category}  categorie
+#   {command}  opdrachtpad
+#   {context}  Reden voor het herladen van de plugin
+#   {count}  Aantal externe doelen en keuze van de meervoudsvorm; Aantal berichten
+#   {file}  Naam van het JAR-bestand van de plugin
+#   {group}  categorie
+#   {host}  IP-adres van de afzender
+#   {installedVersion}  Momenteel geïnstalleerde pluginversie
+#   {key}  Bericht- of parametersleutel
+#   {latestVersion}  Nieuwste beschikbare versie in de bibliotheek
+#   {line}  Bronregel of regelnummer
+#   {locale}  landinstelling
+#   {maximum}  Maximaal toegestane waarde
+#   {milliseconds}  Duur van laden, ontladen of herladen in milliseconden
+#   {new}  nieuwe waarde
+#   {old}  vorige waarde
+#   {parameter}  parameternaam
+#   {permission}  Vereiste toestemming
+#   {personal}  persoonlijke landinstelling
+#   {plugin}  Pluginnaam
+#   {reason}  foutreden
+#   {setting}  instellingsnaam
+#   {target}  Pluginnaam
+#   {type}  type
+#   {usage}  opdrachtgebruik
+#   {value}  huidige, standaard- of ruwe waarde
+#   {variables}  geldige tijdelijke aanduidingen
+#   {version}  Aangevraagde of getoonde versie van de bibliotheekplugin
 
 [command]
 root = "BileTools-opdrachtgroep"
@@ -46,9 +54,9 @@ uninstall = "Een plugin-JAR uit de pluginsmap verwijderen"
 install = "Een plugin uit de Bile-bibliotheek installeren"
 library = "Bibliotheekplugins of versies van één plugin weergeven"
 debug_dump = "Maak een diagnostisch rapport en upload het desgewenst"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "Diagnosehulpmiddelen van BileTools"
+config = "De volledige configuratie-editor in het spel openen"
+language = "Je eigen taal of de servertaal kiezen"
 
 [parameter]
 installed_plugin = "Naam van geïnstalleerde plugin"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 is na een levenscyclusfout als
 reloading_context = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Plugin niet gevonden: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cAlleen een speler kan dit commando gebruiken."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Ontvangt &f{file}&7 van &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c kon niet worden toegepast: {reaso
 saved = "&a[&8Bile&a]: &f{setting}&7 is gewijzigd naar &f{new}&7; voorheen &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2BileTools-configuratie"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dAlgemeen&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aStatistieken"
+remote_slave = "&aExterne ontvanger"
+remote_master = "&aExterne uitrol"
+network = "&aNetwerklimieten"
+watcher = "&aPluginbewaking"
+lifecycle = "&aLevenscyclus"
 languages = "&dTalen&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8Links +1, rechts -1, shift ×10, laat vallen om te typen.&r"
 text = "&8Klik om een nieuwe waarde in de chat te typen.&r"
 language = "&8Klik om een beschikbare taal te kiezen of typ een landinstelling.&r"
 category = "&8Klik om elke instelling in deze categorie te bewerken.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Gevoelige waarde; bewerk biletools.yml en herlaad BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eTyp een nieuwe waarde voor &f{setting}&r&e in de chat.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eDe configuratiebewerking is verlopen zonder iets te w
 
 [gui.setting.general]
 language = "&dActieve landinstelling&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aPlugin-JAR’s archiveren vóór vervanging"
 
 [gui.setting.metrics]
 enabled = "&dAnonieme bStats-statistieken&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aExterne ontvanger"
+port = "&aPoort van de externe ontvanger"
+payload = "&aGeheim van de externe ontvanger"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aExterne uitrol"
+targets = "&aDoelen voor externe uitrol"
+signatures = "&aPluginnamen voor externe uitrol"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aTime-out van externe verbindingen in milliseconden"
+max_transfer = "&aMaximale overdrachtsgrootte in bytes"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aControle-interval bij inactiviteit in ticks"
+active = "&aControle-interval bij activiteit in ticks"
+debounce = "&aWachttijd voor stabiele bestandsvingerafdrukken in ticks"
+ignore = "&aGenegeerde pluginnamen"
+only = "&aToegestane pluginnamen"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aLogboeken met levenscyclustijden"
+health_check = "&aWerkingscontroles na het laden"
 
 [director.help]
 no_subcommands = "Geen subopdrachten op deze pagina."
@@ -249,3 +257,92 @@ edit_description = "Open de berichteneditor voor elke taal."
 select_description = "Klik om deze taal te selecteren."
 remove_personal_description = "Verwijder jouw persoonlijke taalkeuze."
 no_controls = "Je hebt geen toegang tot taalinstellingen."
+command = "Commando: {command}"
+selected = "geselecteerd"
+all-volmit-plugins = "Alle Volmit-plugins"
+
+[language.error]
+stopping = "Taalselectie is niet beschikbaar terwijl de plugin stopt."
+editor-player-only = "Open de taalbewerker in het spel."
+no-providers = "Er zijn geen Volmit-taalaanbieders beschikbaar."
+numeric-page = "Voer een paginanummer in."
+personal-player-only = "Spelertaalvoorkeuren moeten in het spel worden geselecteerd."
+personal-permission = "U hebt geen toestemming om uw taal te selecteren."
+plugin-personal-permission = "Je hebt geen toestemming om je taal voor {plugin} te kiezen."
+plugin-server-permission = "Je hebt geen toestemming om de servertaal voor {plugin} te wijzigen."
+server-locale-required = "Kies een taalcode zoals en_US voor de standaardtaal van de server."
+unavailable-for-all = "De taal {locale} is niet voor alle geselecteerde plugins beschikbaar."
+
+[language.usage]
+editor = "Gebruik: /{command} language server edit [locale]"
+selection = "Gebruik: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Gebruik: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "Taal {locale} wordt voorbereid voor {target}..."
+save-failed = "{plugin}: de taalkeuze kon niet worden opgeslagen; controleer de serverconsole."
+english-fallback = "{plugin}: {locale} is niet beschikbaar; Engels (en_US) wordt gebruikt."
+personal-selected = "{plugin}: uw taal is nu {locale}."
+server-selected = "{plugin}: servertaal is nu {locale}."
+server-default-selected = "{plugin}: je taal volgt nu de standaardtaal van de server."
+
+[language.editor]
+loading = "Berichten voor {locale} laden..."
+
+[language.editor.section]
+languages = "Talen"
+search = "Zoeken"
+search-title = "{locale} / Zoeken"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Zoek op berichtsleutel of tekst. Typ cancel om terug te gaan."
+value = "Typ in de chat een nieuwe waarde voor {key}."
+current = "Huidige waarde: {value}"
+variables = "Variabelen: {variables}"
+guidance = "Gebruik \\n voor een nieuwe regel, \\\\ voor een backslash, of typ cancel om terug te gaan."
+
+[language.editor.input]
+expired = "De invoer voor de taalbewerker is verlopen."
+too-long = "De invoer mag maximaal {maximum} tekens bevatten."
+unable-to-save = "Opslaan mislukt: {reason}"
+
+[language.editor.navigation]
+back = "&eTerug&r"
+close = "&cSluiten&r"
+previous-page = "&eVorige pagina&r"
+next-page = "&eVolgende pagina&r"
+
+[language.editor.search]
+messages = "Berichten doorzoeken"
+messages-lore = "Klik om alle berichten te doorzoeken."
+clear = "Zoekopdracht wissen"
+
+[language.editor.message]
+current-value = "&7Huidige waarde:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Klik om een meervoudsvorm te bewerken.&r"
+edit-lines = "&7Klik om afzonderlijke regels te bewerken.&r"
+edit-chat = "&7Klik om in de chat te bewerken.&r"
+
+[language.editor.locale]
+open = "&8Klik om deze taal te openen.&r"
+
+[language.editor.category]
+message-count = "&7{count} berichten&r"
+open = "&8Klik om deze categorie te openen.&r"
+
+[language.editor.error]
+no-permission = "Je hebt geen toestemming om de talen van {plugin} te bewerken."
+unable-to-edit = "Bewerken mislukt: {reason}"
+
+[language.editor.saved]
+summary = "{locale} opgeslagen. De taalkeuzes blijven ongewijzigd."
+change = "{key}: “{before}” is gewijzigd in “{after}”."
+
+[language.editor.part]
+line = "Regel {line}"
+
+[language.editor.value]
+none = "Geen"
+empty = "(leeg)"

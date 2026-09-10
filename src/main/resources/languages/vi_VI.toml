@@ -1,41 +1,49 @@
-# BileTools language: vi_VI
+# BileTools — vi_VI
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Chỉnh sửa tệp ===
+# plugins/BileTools/languages/vi_VI.toml
+# Bạn có thể chỉnh sửa trực tiếp tệp này. Thay đổi cục bộ được giữ lại; mục thiếu hoặc không hợp lệ dùng bản tiếng Anh tích hợp.
+# /biletools language server edit vi_VI
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Tiền tố ===
+# Tiền tố &a[&8Bile&a]: được viết trực tiếp trong mỗi thông báo; hãy sửa tại các thông báo tương ứng.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Định dạng ===
+# Màu: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B và [RRGGBB]. MiniMessage vẫn dùng được cho định dạng tùy chỉnh.
+#
+# === Biến ===
+# Giữ nguyên tên biến và chỉ dùng những biến có sẵn trong từng thông báo.
+#   {after}  Giá trị sau khi thay đổi
+#   {argument}  đối số ngoài dự kiến
+#   {before}  Giá trị trước khi thay đổi
+#   {category}  danh mục
+#   {command}  đường dẫn lệnh
+#   {context}  Lý do tải lại plugin
+#   {count}  Số đích từ xa và giá trị chọn dạng số nhiều; Số thông báo
+#   {file}  Tên tệp JAR của plugin
+#   {group}  danh mục
+#   {host}  Địa chỉ IP của người gửi
+#   {installedVersion}  Phiên bản plugin hiện được cài đặt
+#   {key}  Khóa thông báo hoặc tham số
+#   {latestVersion}  Phiên bản mới nhất có trong thư viện
+#   {line}  Số dòng hay dòng nguồn
+#   {locale}  mã vùng
+#   {maximum}  Giá trị được chấp nhận tối đa
+#   {milliseconds}  Thời gian tải, gỡ hoặc tải lại tính bằng mili giây
+#   {new}  giá trị mới
+#   {old}  giá trị trước
+#   {parameter}  tên tham số
+#   {permission}  Quyền cần có
+#   {personal}  mã vùng cá nhân
+#   {plugin}  Tên phần bổ sung
+#   {reason}  lý do lỗi
+#   {setting}  tên cài đặt
+#   {target}  Tên phần bổ sung
+#   {type}  kiểu
+#   {usage}  cách dùng lệnh
+#   {value}  giá trị hiện tại, mặc định hoặc thô
+#   {variables}  chỗ giữ chỗ hợp lệ
+#   {version}  Phiên bản plugin thư viện được yêu cầu hoặc liệt kê
 
 [command]
 root = "Nhóm lệnh BileTools"
@@ -46,9 +54,9 @@ uninstall = "Xóa tệp JAR plugin khỏi thư mục plugins"
 install = "Cài plugin từ thư viện Bile"
 library = "Liệt kê plugin trong thư viện hoặc các phiên bản của một plugin"
 debug_dump = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "Công cụ chẩn đoán BileTools"
+config = "Mở trình chỉnh sửa toàn bộ cấu hình trong trò chơi"
+language = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
 
 [parameter]
 installed_plugin = "Tên plugin đã cài"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 bị đánh dấu lỗi sau s�
 reloading_context = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy plugin: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cChỉ người chơi mới có thể dùng lệnh này."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Đang nhận &f{file}&7 từ &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &cKhông thể áp dụng &f{setting}&r&c: {reason}
 saved = "&a[&8Bile&a]: &f{setting}&7 đã đổi thành &f{new}&7; trước đó là &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2Cấu hình BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dChung&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aThống kê"
+remote_slave = "&aBộ nhận từ xa"
+remote_master = "&aTriển khai từ xa"
+network = "&aGiới hạn mạng"
+watcher = "&aTheo dõi plugin"
+lifecycle = "&aVòng đời"
 languages = "&dNgôn ngữ&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8Trái +1, phải -1, shift ×10, thả để nhập.&r"
 text = "&8Nhấp để nhập giá trị mới trong trò chuyện.&r"
 language = "&8Nhấp để chọn ngôn ngữ khả dụng hoặc nhập mã vùng.&r"
 category = "&8Nhấp để sửa mọi thiết lập trong mục này.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Giá trị nhạy cảm; sửa biletools.yml rồi tải lại BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eNhập giá trị mới cho &f{setting}&r&e trong trò chuyện.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eChỉnh sửa cấu hình đã hết hạn mà không
 
 [gui.setting.general]
 language = "&dMã vùng ngôn ngữ đang dùng&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aLưu trữ JAR của plugin trước khi thay thế"
 
 [gui.setting.metrics]
 enabled = "&dThống kê bStats ẩn danh&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aBộ nhận từ xa"
+port = "&aCổng của bộ nhận từ xa"
+payload = "&aMã bí mật của bộ nhận từ xa"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aTriển khai từ xa"
+targets = "&aĐích triển khai từ xa"
+signatures = "&aTên plugin triển khai từ xa"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aThời gian chờ kết nối từ xa tính bằng mili giây"
+max_transfer = "&aKích thước truyền tối đa tính bằng byte"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aKhoảng kiểm tra khi rảnh tính bằng tick"
+active = "&aKhoảng kiểm tra khi hoạt động tính bằng tick"
+debounce = "&aĐộ trễ ổn định dấu vân tay tệp tính bằng tick"
+ignore = "&aTên plugin bị bỏ qua"
+only = "&aTên plugin được phép"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aNhật ký thời gian vòng đời"
+health_check = "&aKiểm tra hoạt động sau khi tải"
 
 [director.help]
 no_subcommands = "Không có lệnh con trên trang này."
@@ -249,3 +257,92 @@ edit_description = "Mở trình chỉnh sửa thông báo cho từng ngôn ngữ
 select_description = "Nhấp để chọn ngôn ngữ này."
 remove_personal_description = "Xóa lựa chọn ngôn ngữ cá nhân của bạn."
 no_controls = "Bạn không có quyền dùng các tùy chọn ngôn ngữ."
+command = "Câu lệnh: {command}"
+selected = "Đã chọn"
+all-volmit-plugins = "Tất cả plugin Volmit"
+
+[language.error]
+stopping = "Không có khả năng chọn ngôn ngữ trong khi bổ sung đang dừng."
+editor-player-only = "Mở trình soạn thảo ngôn ngữ trong trò chơi."
+no-providers = "Không có nhà cung cấp ngôn ngữ Volmit nào khả dụng."
+numeric-page = "Nhập số trang bằng chữ số."
+personal-player-only = "Bạn phải chọn ngôn ngữ cá nhân trong trò chơi."
+personal-permission = "Bạn không có quyền chọn ngôn ngữ của mình."
+plugin-personal-permission = "Bạn không có quyền chọn ngôn ngữ cá nhân cho {plugin}."
+plugin-server-permission = "Bạn không có quyền thay đổi ngôn ngữ máy chủ cho {plugin}."
+server-locale-required = "Chọn mã ngôn ngữ như en_US làm ngôn ngữ mặc định của máy chủ."
+unavailable-for-all = "Ngôn ngữ {locale} không khả dụng cho tất cả plugin đã chọn."
+
+[language.usage]
+editor = "Cách dùng: /{command} language server edit [locale]"
+selection = "Cách dùng: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Cách dùng: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "Đang chuẩn bị ngôn ngữ {locale} cho {target}..."
+save-failed = "{plugin}: không thể lưu lựa chọn ngôn ngữ; hãy kiểm tra bảng điều khiển máy chủ."
+english-fallback = "{plugin}: {locale} không khả dụng; sẽ dùng tiếng Anh (en_US)."
+personal-selected = "{plugin}: ngôn ngữ của bạn hiện là {locale}."
+server-selected = "{plugin}: ngôn ngữ máy chủ hiện là {locale}."
+server-default-selected = "{plugin}: ngôn ngữ của bạn hiện theo ngôn ngữ mặc định của máy chủ."
+
+[language.editor]
+loading = "Đang tải tin nhắn cho {locale}..."
+
+[language.editor.section]
+languages = "Ngôn ngữ"
+search = "Tìm kiếm"
+search-title = "{locale} / Tìm kiếm"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Tìm khóa hoặc nội dung tin nhắn. Nhập cancel để quay lại."
+value = "Nhập giá trị mới cho {key} trong trò chuyện."
+current = "Giá trị hiện tại: {value}"
+variables = "Biến: {variables}"
+guidance = "Dùng \\n để xuống dòng, \\\\ để nhập dấu gạch chéo ngược, hoặc nhập cancel để quay lại."
+
+[language.editor.input]
+expired = "Đã hết thời gian nhập trong trình chỉnh sửa ngôn ngữ."
+too-long = "Nội dung nhập chỉ được có tối đa {maximum} ký tự."
+unable-to-save = "Không thể lưu: {reason}"
+
+[language.editor.navigation]
+back = "&eQuay lại&r"
+close = "&cĐóng&r"
+previous-page = "&eTrang trước&r"
+next-page = "&eTrang kế&r"
+
+[language.editor.search]
+messages = "Tìm tin nhắn"
+messages-lore = "Nhấn vào để tìm kiếm mọi tin nhắn."
+clear = "Xóa tìm kiếm"
+
+[language.editor.message]
+current-value = "&7Giá trị hiện có:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Nhấp để chỉnh sửa một dạng số nhiều.&r"
+edit-lines = "&7Nhấp để chỉnh sửa từng dòng.&r"
+edit-chat = "&7Nhấp để chỉnh sửa trong trò chuyện.&r"
+
+[language.editor.locale]
+open = "&8Nhấn vào để mở ngôn ngữ này.&r"
+
+[language.editor.category]
+message-count = "&7{count} tin nhắn&r"
+open = "&8Nhấn vào để mở phân loại này.&r"
+
+[language.editor.error]
+no-permission = "Bạn không có quyền chỉnh sửa ngôn ngữ của {plugin}."
+unable-to-edit = "Không thể chỉnh sửa: {reason}"
+
+[language.editor.saved]
+summary = "Đã lưu {locale}. Các lựa chọn ngôn ngữ không thay đổi."
+change = "{key}: “{before}” đã đổi thành “{after}”."
+
+[language.editor.part]
+line = "Dòng {line}"
+
+[language.editor.value]
+none = "Không có"
+empty = "(trống)"

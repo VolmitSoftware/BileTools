@@ -1,5 +1,8 @@
 package com.volmit.bile.localization;
 
+import art.arcane.volmlib.util.localization.TomlLanguageParser;
+import art.arcane.volmlib.util.localization.LanguageFileHeader;
+
 import art.arcane.volmlib.util.director.DirectorTextResolver;
 import art.arcane.volmlib.util.io.AtomicFileIO;
 import art.arcane.volmlib.util.io.FileWatcher;
@@ -11,6 +14,7 @@ import art.arcane.volmlib.util.localization.LocalizationIssue;
 import art.arcane.volmlib.util.localization.LocalizationManager;
 import art.arcane.volmlib.util.localization.LocalizationReloadResult;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
+import art.arcane.volmlib.util.localization.LocalizationValidator;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.MessageArgumentKind;
 import art.arcane.volmlib.util.localization.MessageArgs;
@@ -426,7 +430,6 @@ public final class BileLocalization implements AutoCloseable {
                     "src/main/resources/languages",
                     ".toml",
                     "biletools-language-source.properties",
-                    new File(dataFolder, ".language-cache").toPath(),
                     BileLocalization.class.getClassLoader()
             ));
             return new RemoteCatalogState(catalog, null);
@@ -486,6 +489,13 @@ public final class BileLocalization implements AutoCloseable {
     }
 
     private synchronized LocalizationSnapshot saveEditor(PluginLanguageEditor.Edit edit) throws Exception {
+        try {
+            LocaleOverlay edited = LocaleOverlay.builder("editor", edit.locale()).put(edit.key(), edit.value()).build();
+            LocalizationValidator.validate(CATALOG, List.of(edited)).throwIfInvalid();
+            validateValue("editor:" + edit.key(), edit.value());
+        } catch (IllegalArgumentException invalid) {
+            throw new IOException("Invalid language message: " + edit.key(), invalid);
+        }
         LocalizationSnapshot current = loadSelectionSnapshot(edit.locale());
         MessageKey definition = CATALOG.require(edit.key());
         if (!current.value(definition).equals(edit.expected())) {
@@ -622,16 +632,20 @@ public final class BileLocalization implements AutoCloseable {
     private LocaleOverlay createOverlay(String locale, String source, String content) throws IOException {
         Map<String, MessageValue> values;
         try {
-            values = BileTomlLanguageParser.parse(content, CATALOG);
+            values = TomlLanguageParser.parseValidValues(content, CATALOG);
         } catch (IOException exception) {
             throw new IOException("Invalid TOML in " + new File(source).getName() + ": " + exception.getMessage(), exception);
         }
         LocaleOverlay.Builder overlay = LocaleOverlay.builder(source, locale);
         for (Map.Entry<String, MessageValue> entry : values.entrySet()) {
-            validateValue("language:" + entry.getKey(), entry.getValue());
-            overlay.put(entry.getKey(), entry.getValue());
+            try {
+                validateValue("language:" + entry.getKey(), entry.getValue());
+                overlay.put(entry.getKey(), entry.getValue());
+            } catch (IllegalArgumentException invalid) {
+                continue;
+            }
         }
-        return overlay.build();
+        return LocalizationValidator.validValues(CATALOG, overlay.build());
     }
 
     private String readLanguageText(File file) throws IOException {
@@ -655,9 +669,6 @@ public final class BileLocalization implements AutoCloseable {
             throw new IOException("Language file exceeds the 2 MiB safety limit");
         }
         LocaleOverlay overlay = createOverlay(locale, "download:" + locale, content);
-        if (overlay.values().isEmpty()) {
-            throw new IOException("Downloaded locale does not contain any recognized BileTools messages: " + locale);
-        }
         try {
             LocalizationSnapshot.create(new LocalizationCandidate(CATALOG, List.of(overlay), ENGLISH_PLURALS));
         } catch (RuntimeException exception) {
@@ -759,46 +770,43 @@ public final class BileLocalization implements AutoCloseable {
     }
 
     private List<String> englishHeader(String locale) {
-        return List.of(
-                "BileTools language: " + locale,
-                "",
-                "This file is editable in a text editor or through /biletools config.",
-                "BileTools creates or downloads it only when missing. Local changes are not replaced.",
-                "Missing messages use the built-in English catalog.",
-                "",
-                "Formatting",
-                "  Colors and styles  &0 through &f, &k through &r",
-                "  RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]",
-                "  Custom markup      MiniMessage is supported",
-                "  Literal text       Put a backslash before & or [",
-                "",
-                "Placeholders",
-                "Keep the placeholders already used by a message. Do not rename them.",
-                "  {argument}          Unexpected command argument",
-                "  {category}          Configuration editor category",
-                "  {command}           Command path or submitted command",
-                "  {context}           Reason or trigger for a plugin reload",
-                "  {count}             Configured remote deployment target count and plural selector",
-                "  {file}              Plugin jar filename",
-                "  {host}              Inbound sender IP address",
-                "  {installedVersion}  Currently installed plugin version",
-                "  {key}               Command parameter key",
-                "  {latestVersion}     Latest available library version",
-                "  {locale}            Locale identifier",
-                "  {milliseconds}      Load, unload, or reload duration in milliseconds",
-                "  {new}               Newly saved language message value",
-                "  {old}               Previous language message value",
-                "  {parameter}         Command parameter name",
-                "  {permission}        Required permission node",
-                "  {personal}          Personal locale when different from the server default",
-                "  {plugin}            Plugin name",
-                "  {reason}            Failure reason",
-                "  {setting}           Configuration setting name",
-                "  {type}              Command parameter type",
-                "  {usage}             Command usage syntax",
-                "  {value}             Current, default, or submitted value",
-                "  {version}           Requested or listed library plugin version"
-        );
+        return LanguageFileHeader.render(new LanguageFileHeader.Options(
+                "BileTools", locale,
+                List.of("The &a[&8Bile&a]: prefix is part of each chat message; edit it there.", "There is no separate prefix setting or prefix placeholder."),
+                List.of("Colors and styles: &0-&f, &k-&r.", "RGB colors: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].", "MiniMessage supports custom formatting. Put a backslash before & or [ to display it literally."),
+                Map.ofEntries(
+                        Map.entry("after", "Message value after the edit"),
+                        Map.entry("argument", "Unexpected command argument"),
+                        Map.entry("before", "Message value before the edit"),
+                        Map.entry("category", "Configuration editor category"),
+                        Map.entry("command", "Command path or submitted command"),
+                        Map.entry("context", "Reason or trigger for a plugin reload"),
+                        Map.entry("count", "Configured remote deployment target count and plural selector"),
+                        Map.entry("file", "Plugin jar filename"),
+                        Map.entry("group", "Language editor message group"),
+                        Map.entry("host", "Inbound sender IP address"),
+                        Map.entry("installedVersion", "Currently installed plugin version"),
+                        Map.entry("key", "Command parameter key"),
+                        Map.entry("latestVersion", "Latest available library version"),
+                        Map.entry("line", "Line number within a list message"),
+                        Map.entry("locale", "Locale identifier"),
+                        Map.entry("maximum", "Maximum editor input length"),
+                        Map.entry("milliseconds", "Load, unload, or reload duration in milliseconds"),
+                        Map.entry("new", "Newly saved language message value"),
+                        Map.entry("old", "Previous language message value"),
+                        Map.entry("parameter", "Command parameter name"),
+                        Map.entry("permission", "Required permission node"),
+                        Map.entry("personal", "Personal locale when different from the server default"),
+                        Map.entry("plugin", "Plugin name"),
+                        Map.entry("reason", "Failure reason"),
+                        Map.entry("setting", "Configuration setting name"),
+                        Map.entry("target", "Language selection target"),
+                        Map.entry("type", "Command parameter type"),
+                        Map.entry("usage", "Command usage syntax"),
+                        Map.entry("value", "Current, default, or submitted value"),
+                        Map.entry("variables", "Required message variable names"),
+                        Map.entry("version", "Requested or listed library plugin version")
+                )));
     }
 
     private LocalizationSnapshot selectedSnapshot(CommandSender sender) {

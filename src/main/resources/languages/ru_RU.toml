@@ -1,41 +1,49 @@
-# BileTools language: ru_RU
+# BileTools — ru_RU
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Редактирование файла ===
+# plugins/BileTools/languages/ru_RU.toml
+# Этот файл можно редактировать напрямую. Локальные изменения сохраняются; для отсутствующих или неверных записей используется встроенный английский текст.
+# /biletools language server edit ru_RU
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Префикс ===
+# Префикс &a[&8Bile&a]: записан непосредственно в каждом сообщении; меняйте его в нужных сообщениях.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Форматирование ===
+# Цвета: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B и [RRGGBB]. Для своего оформления также доступен MiniMessage.
+#
+# === Переменные ===
+# Не меняйте имена переменных и используйте только переменные исходного сообщения.
+#   {after}  Ценность после изменения
+#   {argument}  неожиданный аргумент
+#   {before}  Ценность перед изменением
+#   {category}  категория
+#   {command}  путь команды
+#   {context}  Причина перезагрузки плагина
+#   {count}  Количество удалённых целей и выбор формы множественного числа; Количество сообщений
+#   {file}  Имя JAR-файла плагина
+#   {group}  категория
+#   {host}  IP-адрес отправителя
+#   {installedVersion}  Установленная сейчас версия плагина
+#   {key}  Ключ сообщения или параметра
+#   {latestVersion}  Последняя доступная версия в библиотеке
+#   {line}  Источник строки или номер строки
+#   {locale}  локаль
+#   {maximum}  Максимально допустимая стоимость
+#   {milliseconds}  Длительность загрузки, выгрузки или перезагрузки в миллисекундах
+#   {new}  новое значение
+#   {old}  предыдущее значение
+#   {parameter}  имя параметра
+#   {permission}  Необходимое право доступа
+#   {personal}  личная локаль
+#   {plugin}  Название плагина
+#   {reason}  причина ошибки
+#   {setting}  название настройки
+#   {target}  Название плагина
+#   {type}  тип
+#   {usage}  использование команды
+#   {value}  текущее, стандартное или исходное значение
+#   {variables}  допустимые заполнители
+#   {version}  Запрошенная или указанная версия плагина из библиотеки
 
 [command]
 root = "Группа команд BileTools"
@@ -46,9 +54,9 @@ uninstall = "Удалить JAR-файл плагина из каталога pl
 install = "Установить плагин из библиотеки Bile"
 library = "Показать плагины библиотеки или версии одного плагина"
 debug_dump = "Создать диагностический отчёт и при желании загрузить его"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "Средства диагностики BileTools"
+config = "Открыть полный редактор настроек в игре"
+language = "Выбрать свой язык или язык сервера"
 
 [parameter]
 installed_plugin = "Имя установленного плагина"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 помечен как повр
 reloading_context = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Плагин не найден: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cЭту команду может использовать только игрок."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Получение &f{file}&7 от &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &cНе удалось применить &f{setting
 saved = "&a[&8Bile&a]: &f{setting}&7 изменено на &f{new}&7; ранее &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2Настройки BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dОбщие&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aСтатистика"
+remote_slave = "&aУдалённый приёмник"
+remote_master = "&aУдалённое развёртывание"
+network = "&aСетевые ограничения"
+watcher = "&aНаблюдение за плагинами"
+lifecycle = "&aЖизненный цикл"
 languages = "&dЯзыки&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8ЛКМ +1, ПКМ -1, Shift ×10, выбросить для ввод
 text = "&8Нажмите, чтобы ввести новое значение в чат.&r"
 language = "&8Нажмите, чтобы выбрать доступный язык или ввести локаль.&r"
 category = "&8Нажмите, чтобы изменить все параметры этой категории.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Секретное значение; измените biletools.yml и перезагрузите BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eВведите в чат новое значение для &f{setting}&r&e.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eВремя изменения конфигураци�
 
 [gui.setting.general]
 language = "&dАктивная языковая локаль&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aАрхивировать JAR плагинов перед заменой"
 
 [gui.setting.metrics]
 enabled = "&dАнонимная статистика bStats&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aУдалённый приёмник"
+port = "&aПорт удалённого приёмника"
+payload = "&aСекрет удалённого приёмника"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aУдалённое развёртывание"
+targets = "&aЦели удалённого развёртывания"
+signatures = "&aНазвания плагинов для удалённого развёртывания"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aТайм-аут удалённых соединений в миллисекундах"
+max_transfer = "&aМаксимальный размер передачи в байтах"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aИнтервал проверки при простое в тиках"
+active = "&aИнтервал проверки при активности в тиках"
+debounce = "&aЗадержка стабилизации отпечатков файлов в тиках"
+ignore = "&aНазвания игнорируемых плагинов"
+only = "&aНазвания разрешённых плагинов"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aЖурналы времени операций жизненного цикла"
+health_check = "&aПроверки работоспособности после загрузки"
 
 [director.help]
 no_subcommands = "На этой странице нет подкоманд."
@@ -249,3 +257,92 @@ edit_description = "Открыть редактор сообщений для к
 select_description = "Нажмите, чтобы выбрать этот язык."
 remove_personal_description = "Удалить ваш личный выбор языка."
 no_controls = "У вас нет доступа к настройкам языка."
+command = "Команда: {command}"
+selected = "выбранный"
+all-volmit-plugins = "Все плагины Volmit"
+
+[language.error]
+stopping = "Выбор языка недоступен, пока плагин останавливается."
+editor-player-only = "Откройте редактор языка в игре."
+no-providers = "Нет доступных языковых провайдеров Volmit."
+numeric-page = "Введите номер страницы числом."
+personal-player-only = "Личный язык игрока нужно выбрать в игре."
+personal-permission = "У вас нет разрешения на выбор языка."
+plugin-personal-permission = "У вас нет разрешения выбирать свой язык для {plugin}."
+plugin-server-permission = "У вас нет разрешения менять язык сервера для {plugin}."
+server-locale-required = "Выберите код языка, например en_US, для языка сервера по умолчанию."
+unavailable-for-all = "Язык {locale} доступен не для всех выбранных плагинов."
+
+[language.usage]
+editor = "Использование: /{command} language server edit [locale]"
+selection = "Использование: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Использование: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "Подготовка языка {locale} для {target}..."
+save-failed = "{plugin}: не удалось сохранить выбор языка; проверьте консоль сервера."
+english-fallback = "{plugin}: {locale} недоступен; используется английский (en_US)."
+personal-selected = "{plugin}: Ваш язык сейчас {locale}."
+server-selected = "{plugin}: Язык сервера теперь {locale}."
+server-default-selected = "{plugin}: теперь ваш язык соответствует языку сервера по умолчанию."
+
+[language.editor]
+loading = "Загрузка сообщений для {locale}..."
+
+[language.editor.section]
+languages = "Языки"
+search = "Поиск"
+search-title = "{locale} / Поиск"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Найдите ключ или текст сообщения. Введите cancel, чтобы вернуться."
+value = "Введите в чат новое значение для {key}."
+current = "Текущее значение: {value}"
+variables = "Переменные: {variables}"
+guidance = "Используйте \\n для новой строки, \\\\ для обратной косой черты или введите cancel, чтобы вернуться."
+
+[language.editor.input]
+expired = "Время ввода в редакторе языка истекло."
+too-long = "Ввод должен содержать не более {maximum} символов."
+unable-to-save = "Не удалось сохранить: {reason}"
+
+[language.editor.navigation]
+back = "&eНазад&r"
+close = "&cЗакрыть&r"
+previous-page = "&eПредыдущая страница&r"
+next-page = "&eСледующая страница&r"
+
+[language.editor.search]
+messages = "Поиск сообщений"
+messages-lore = "Нажмите для поиска среди всех сообщений."
+clear = "Сбросить поиск"
+
+[language.editor.message]
+current-value = "&7Текущее значение:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Нажмите, чтобы изменить форму множественного числа.&r"
+edit-lines = "&7Нажмите, чтобы изменить отдельные строки.&r"
+edit-chat = "&7Нажмите, чтобы изменить текст в чате.&r"
+
+[language.editor.locale]
+open = "&8Нажмите, чтобы открыть этот язык.&r"
+
+[language.editor.category]
+message-count = "&7{count} сообщения&r"
+open = "&8Нажмите, чтобы открыть эту категорию.&r"
+
+[language.editor.error]
+no-permission = "У вас нет разрешения редактировать языки {plugin}."
+unable-to-edit = "Не удалось отредактировать: {reason}"
+
+[language.editor.saved]
+summary = "{locale} сохранён. Выбранные языки не изменились."
+change = "{key}: «{before}» заменено на «{after}»."
+
+[language.editor.part]
+line = "Строка {line}"
+
+[language.editor.value]
+none = "Нет"
+empty = "(пусто)"

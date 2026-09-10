@@ -1,41 +1,49 @@
-# BileTools language: he_IL
+# BileTools — he_IL
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === עריכת הקובץ ===
+# plugins/BileTools/languages/he_IL.toml
+# אפשר לערוך קובץ זה ישירות. שינויים מקומיים נשמרים; ערכים חסרים או לא תקינים משתמשים באנגלית המובנית.
+# /biletools language server edit he_IL
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === קידומת ===
+# הקידומת &a[&8Bile&a]: כתובה ישירות בכל הודעה; יש לערוך אותה בהודעות המתאימות.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === עיצוב ===
+# צבעים: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B וגם [RRGGBB]. ניתן להשתמש גם ב-MiniMessage לעיצוב מותאם.
+#
+# === משתנים ===
+# יש לשמור על שמות המשתנים ולהשתמש רק במשתנים הקיימים בכל הודעה.
+#   {after}  ערך לאחר השינוי
+#   {argument}  ארגומנט לא צפוי
+#   {before}  ערך לפני השינוי
+#   {category}  קטגוריה
+#   {command}  נתיב פקודה
+#   {context}  הסיבה לטעינה מחדש של התוסף
+#   {count}  מספר היעדים המרוחקים ובורר צורת הרבים; מספר ההודעות
+#   {file}  שם קובץ ה-JAR של התוסף
+#   {group}  קטגוריה
+#   {host}  כתובת ה-IP של השולח
+#   {installedVersion}  גרסת התוסף המותקנת כעת
+#   {key}  מפתח הודעה או פרמטר
+#   {latestVersion}  הגרסה האחרונה הזמינה בספרייה
+#   {line}  מקור או קו מספר
+#   {locale}  אזור שפה
+#   {maximum}  ערך מותר מקסימלי
+#   {milliseconds}  משך הטעינה, הפריקה או הטעינה מחדש במילישניות
+#   {new}  הערך החדש
+#   {old}  הערך הקודם
+#   {parameter}  שם פרמטר
+#   {permission}  ההרשאה הנדרשת
+#   {personal}  אזור השפה האישי
+#   {plugin}  שם Plugin
+#   {reason}  סיבת כשל
+#   {setting}  שם הגדרה
+#   {target}  שם Plugin
+#   {type}  סוג
+#   {usage}  אופן שימוש
+#   {value}  ערך נוכחי, ברירת מחדל או גולמי
+#   {variables}  מצייני מקום תקינים
+#   {version}  גרסת תוסף הספרייה המבוקשת או המוצגת
 
 [command]
 root = "קבוצת הפקודות של BileTools"
@@ -46,9 +54,9 @@ uninstall = "מחיקת קובץ JAR של תוסף מתיקיית התוספים
 install = "התקנת תוסף מספריית Bile"
 library = "הצגת תוספי הספרייה או הגרסאות של תוסף"
 debug_dump = "יצירת דוח אבחון והעלאתו לפי בחירה"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "כלי אבחון של BileTools"
+config = "פתיחת עורך ההגדרות המלא בתוך המשחק"
+language = "בחירת השפה שלך או שפת השרת"
 
 [parameter]
 installed_plugin = "שם התוסף המותקן"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 סומן כפגום לאחר �
 reloading_context = "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7התוסף לא נמצא: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cרק שחקן יכול להשתמש בפקודה זו."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7מקבל את &f{file}&7 מאת &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &cלא ניתן להחיל את &f{setting}&r&c: {r
 saved = "&a[&8Bile&a]: &f{setting}&7 שונה ל-&f{new}&7; קודם &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2הגדרות BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dכללי&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aסטטיסטיקה"
+remote_slave = "&aמקלט מרוחק"
+remote_master = "&aפריסה מרוחקת"
+network = "&aמגבלות רשת"
+watcher = "&aמעקב אחר תוספים"
+lifecycle = "&aמחזור חיים"
 languages = "&dשפות&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8שמאל +1, ימין -1, Shift ×10, השלכה כדי להקליד
 text = "&8לחצו כדי להקליד ערך חדש בצ׳אט.&r"
 language = "&8לחצו כדי לבחור שפה זמינה או להקליד אזור שפה.&r"
 category = "&8לחצו כדי לערוך כל הגדרה בקטגוריה זו.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8ערך רגיש; יש לערוך את biletools.yml ולטעון מחדש את BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eהקלידו בצ׳אט ערך חדש עבור &f{setting}&r&e.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eזמן עריכת התצורה פג מבלי ששונ
 
 [gui.setting.general]
 language = "&dאזור השפה הפעיל&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aשמירת קובצי JAR של תוספים בארכיון לפני החלפתם"
 
 [gui.setting.metrics]
 enabled = "&dמדדי bStats אנונימיים&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aמקלט מרוחק"
+port = "&aיציאת המקלט המרוחק"
+payload = "&aהסוד של המקלט המרוחק"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aפריסה מרוחקת"
+targets = "&aיעדי הפריסה המרוחקת"
+signatures = "&aשמות תוספים לפריסה מרוחקת"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aזמן קצוב לחיבורים מרוחקים במילישניות"
+max_transfer = "&aגודל העברה מרבי בבתים"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aמרווח בדיקה במצב סרק בטיקים"
+active = "&aמרווח בדיקה במצב פעיל בטיקים"
+debounce = "&aהשהיה לייצוב טביעות קובץ בטיקים"
+ignore = "&aשמות תוספים להתעלמות"
+only = "&aשמות תוספים מורשים"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aרישום זמני מחזור החיים"
+health_check = "&aבדיקות תקינות לאחר הטעינה"
 
 [director.help]
 no_subcommands = "אין פקודות משנה בעמוד זה."
@@ -249,3 +257,92 @@ edit_description = "פתח את עורך ההודעות לכל שפה."
 select_description = "לחץ כדי לבחור בשפה זו."
 remove_personal_description = "הסר את בחירת השפה האישית שלך."
 no_controls = "אין לך גישה להגדרות שפה."
+command = "פקודה: {command}"
+selected = "נבחר"
+all-volmit-plugins = "כל תוספי Volmit"
+
+[language.error]
+stopping = "בחירת שפה אינה זמינה בזמן שהתוסף מפסיק."
+editor-player-only = "פתח את עורך השפה במשחק."
+no-providers = "אין ספקי שפה זמינים של Volmit."
+numeric-page = "יש להזין מספר עמוד."
+personal-player-only = "יש לבחור העדפות שפה של שחקן במשחק."
+personal-permission = "אין לך רשות לבחור את השפה שלך."
+plugin-personal-permission = "אין לך הרשאה לבחור שפה אישית עבור {plugin}."
+plugin-server-permission = "אין לך הרשאה לשנות את שפת השרת עבור {plugin}."
+server-locale-required = "יש לבחור קוד שפה כגון en_US כשפת ברירת המחדל של השרת."
+unavailable-for-all = "השפה {locale} אינה זמינה לכל התוספים שנבחרו."
+
+[language.usage]
+editor = "שימוש: /{command} language server edit [locale]"
+selection = "שימוש: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "שימוש: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "מכין את השפה {locale} עבור {target}..."
+save-failed = "{plugin}: לא ניתן לשמור את בחירת השפה; יש לבדוק את מסוף השרת."
+english-fallback = "{plugin}: השפה {locale} אינה זמינה; נעשה שימוש באנגלית (en_US)."
+personal-selected = "{plugin}: השפה שלך עכשיו {locale}."
+server-selected = "{plugin}: שפת השרת עכשיו {locale}."
+server-default-selected = "{plugin}: השפה שלך תואמת כעת לשפת ברירת המחדל של השרת."
+
+[language.editor]
+loading = "טוען הודעות עבור {locale}..."
+
+[language.editor.section]
+languages = "שפות"
+search = "חיפוש"
+search-title = "{locale} / חיפוש"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "יש לחפש מפתח הודעה או טקסט. לחזרה, יש להקליד cancel."
+value = "יש להקליד בצ׳אט ערך חדש עבור {key}."
+current = "ערך נוכחי: {value}"
+variables = "משתנים: {variables}"
+guidance = "יש להשתמש ב־\\n לשורה חדשה וב־\\\\ ללוכסן הפוך, או להקליד cancel כדי לחזור."
+
+[language.editor.input]
+expired = "זמן ההזנה בעורך השפה פג."
+too-long = "הקלט יכול להכיל לכל היותר {maximum} תווים."
+unable-to-save = "לא ניתן לשמור: {reason}"
+
+[language.editor.navigation]
+back = "&eחזרה&r"
+close = "&cסגור&r"
+previous-page = "&eהעמוד הקודם&r"
+next-page = "&eדף הבא&r"
+
+[language.editor.search]
+messages = "חיפוש הודעות"
+messages-lore = "לחיצה לחיפוש בכל ההודעות."
+clear = "ניקוי החיפוש"
+
+[language.editor.message]
+current-value = "&7ערך נוכחי:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7לחיצה לעריכת צורת רבים.&r"
+edit-lines = "&7לחיצה לעריכת שורות בודדות.&r"
+edit-chat = "&7לחיצה לעריכה בצ׳אט.&r"
+
+[language.editor.locale]
+open = "&8לחץ לפתוח את השפה.&r"
+
+[language.editor.category]
+message-count = "&7{count} הודעות&r"
+open = "&8לחץ לפתוח קטגוריה זו.&r"
+
+[language.editor.error]
+no-permission = "אין לך הרשאה לערוך את השפות של {plugin}."
+unable-to-edit = "לא ניתן לערוך: {reason}"
+
+[language.editor.saved]
+summary = "{locale} נשמרה. בחירות השפה לא השתנו."
+change = "{key}: הערך ״{before}״ הוחלף ב־״{after}״."
+
+[language.editor.part]
+line = "שורה {line}"
+
+[language.editor.value]
+none = "אין"
+empty = "(ריק)"

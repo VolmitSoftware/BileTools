@@ -1,41 +1,49 @@
-# BileTools language: zh_TW
+# BileTools — zh_TW
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === 編輯檔案 ===
+# plugins/BileTools/languages/zh_TW.toml
+# 可直接編輯此檔案。本機修改會保留；缺少或無效的項目使用內建英文文字。
+# /biletools language server edit zh_TW
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === 前綴 ===
+# 前綴 &a[&8Bile&a]: 直接寫在每則訊息中；請在相應訊息中修改。
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === 格式 ===
+# 顏色：&0-&f、&k-&r、&#RRGGBB、&xRRGGBB、&x&R&R&G&G&B&B 和 [RRGGBB]。自訂格式仍可使用 MiniMessage。
+#
+# === 變數 ===
+# 請勿變更變數名稱，僅使用各訊息中原有的變數。
+#   {after}  變更后的值
+#   {argument}  意外引數
+#   {before}  變更前的值
+#   {category}  編輯器分類
+#   {command}  指令路徑
+#   {context}  重新載入插件的原因
+#   {count}  遠端目標數量及複數形式選擇值; 訊息數量
+#   {file}  插件 JAR 檔案名稱
+#   {group}  編輯器分類
+#   {host}  傳送者的 IP 位址
+#   {installedVersion}  目前安裝的插件版本
+#   {key}  訊息或參數的鍵
+#   {latestVersion}  程式庫中可用的最新版本
+#   {line}  來源行或行號
+#   {locale}  地區設定
+#   {maximum}  最大允許值
+#   {milliseconds}  載入、卸載或重新載入的耗時（毫秒）
+#   {new}  新值
+#   {old}  舊值
+#   {parameter}  參數名稱
+#   {permission}  所需權限
+#   {personal}  個人地區設定
+#   {plugin}  插件名稱
+#   {reason}  失敗原因
+#   {setting}  設定名稱
+#   {target}  插件名稱
+#   {type}  類型
+#   {usage}  指令用法
+#   {value}  目前值、預設值或原始值
+#   {variables}  可用佔位符
+#   {version}  請求或列出的程式庫插件版本
 
 [command]
 root = "BileTools 指令群組"
@@ -46,9 +54,9 @@ uninstall = "從 plugins 目錄刪除外掛 JAR 檔案"
 install = "從 Bile 程式庫安裝外掛"
 library = "列出程式庫中的外掛或某個外掛的版本"
 debug_dump = "建立診斷報告並選擇是否上傳"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "BileTools 診斷工具"
+config = "開啟完整的遊戲內設定編輯器"
+language = "選擇個人語言或伺服器語言"
 
 [parameter]
 installed_plugin = "已安裝的外掛名稱"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 因生命週期故障被標記
 reloading_context = "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7(&f{context}&7)。"
 plugin_not_found = "&a[&8Bile&a]: &7找不到外掛: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7正在重新載入：&f{plugin}&7。"
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &c此指令只能由玩家使用。"
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7正在從 &f{host}&7 接收 &f{file}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &c無法套用&f{setting}&r&c：{reason}&r"
 saved = "&a[&8Bile&a]: &f{setting}&7 已變更為 &f{new}&7；原值為 &f{old}&7。"
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2BileTools 設定"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&d一般&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&a統計資料"
+remote_slave = "&a遠端接收器"
+remote_master = "&a遠端部署"
+network = "&a網路限制"
+watcher = "&a插件監視器"
+lifecycle = "&a生命週期"
 languages = "&d語言&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8左 +1，右 -1，Shift ×10，拖動至類型。&r"
 text = "&8點擊以在聊天中輸入新數值。&r"
 language = "&8點擊以選擇可用語言或輸入語言區域。&r"
 category = "&8點擊以編輯此類別中的所有設定。&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8敏感值；請編輯 biletools.yml，然後重新載入 BileTools。"
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &e在聊天中輸入&f{setting}&r&e的新數值。&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &e配置編輯到期且未更改任何內容。&r"
 
 [gui.setting.general]
 language = "&d活躍語言地區&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&a替換前封存插件 JAR 檔案"
 
 [gui.setting.metrics]
 enabled = "&d匿名 bStats 統計&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&a遠端接收器"
+port = "&a遠端接收器連接埠"
+payload = "&a遠端接收器密鑰"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&a遠端部署"
+targets = "&a遠端部署目標"
+signatures = "&a遠端部署的插件名稱"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&a遠端連線逾時（毫秒）"
+max_transfer = "&a最大傳輸大小（位元組）"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&a閒置時檢查間隔（刻）"
+active = "&a活動時檢查間隔（刻）"
+debounce = "&a檔案指紋穩定等待時間（刻）"
+ignore = "&a忽略的插件名稱"
+only = "&a允許的插件名稱"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&a生命週期耗時記錄"
+health_check = "&a載入後的運作狀況檢查"
 
 [director.help]
 no_subcommands = "此頁面沒有子命令。"
@@ -249,3 +257,92 @@ edit_description = "開啟各語言的訊息編輯器。"
 select_description = "點擊以選擇此語言。"
 remove_personal_description = "移除您的個人語言選擇。"
 no_controls = "您無權使用語言設定。"
+command = "命令: {command}"
+selected = "已選擇"
+all-volmit-plugins = "所有 Volmit 外掛"
+
+[language.error]
+stopping = "外掛停止期間無法選擇語言。"
+editor-player-only = "請在遊戲中開啟語言編輯器。"
+no-providers = "沒有可用的 Volmit 語言提供程式。"
+numeric-page = "請輸入數字頁碼。"
+personal-player-only = "玩家必須在遊戲中選擇個人語言。"
+personal-permission = "你沒有權限選擇個人語言。"
+plugin-personal-permission = "你沒有權限為 {plugin} 選擇個人語言。"
+plugin-server-permission = "你沒有權限變更 {plugin} 的伺服器語言。"
+server-locale-required = "請選擇 en_US 等語言代碼作為伺服器預設語言。"
+unavailable-for-all = "語言 {locale} 並非適用於所有選取的外掛。"
+
+[language.usage]
+editor = "用法: /{command} language server edit [locale]"
+selection = "用法: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "用法: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "正在為 {target} 準備語言 {locale}..."
+save-failed = "{plugin}：無法儲存語言選擇；請檢查伺服器主控台。"
+english-fallback = "{plugin}：{locale} 無法使用；將使用英語（en_US）。"
+personal-selected = "{plugin}：你的語言現在是 {locale}。"
+server-selected = "{plugin}：伺服器語言現在是 {locale}。"
+server-default-selected = "{plugin}：你的語言現在跟隨伺服器預設語言。"
+
+[language.editor]
+loading = "正在載入 {locale} 的訊息..."
+
+[language.editor.section]
+languages = "語言"
+search = "搜尋"
+search-title = "{locale} / 搜尋"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "搜尋訊息鍵或內容。輸入 cancel 返回。"
+value = "請在聊天中輸入 {key} 的新值。"
+current = "目前值： {value}"
+variables = "變數: {variables}"
+guidance = "使用 \\n 表示換行，\\\\ 表示反斜線，或輸入 cancel 返回。"
+
+[language.editor.input]
+expired = "語言編輯器的輸入時間已到期。"
+too-long = "輸入最多可包含 {maximum} 個字元。"
+unable-to-save = "無法儲存：{reason}"
+
+[language.editor.navigation]
+back = "&e返回&r"
+close = "&c關閉&r"
+previous-page = "&e前一頁&r"
+next-page = "&e下一頁&r"
+
+[language.editor.search]
+messages = "搜尋訊息"
+messages-lore = "點擊搜尋所有訊息。"
+clear = "清除搜尋"
+
+[language.editor.message]
+current-value = "&7目前值:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7點擊編輯複數形式。&r"
+edit-lines = "&7點擊逐行編輯。&r"
+edit-chat = "&7點擊在聊天中編輯。&r"
+
+[language.editor.locale]
+open = "&8點擊開啟此語言。&r"
+
+[language.editor.category]
+message-count = "&7{count} 則訊息&r"
+open = "&8點擊開啟此類別。&r"
+
+[language.editor.error]
+no-permission = "你沒有權限編輯 {plugin} 的語言。"
+unable-to-edit = "無法編輯：{reason}"
+
+[language.editor.saved]
+summary = "已儲存 {locale}。語言選擇保持不變。"
+change = "{key}：已將「{before}」改為「{after}」。"
+
+[language.editor.part]
+line = "第 {line} 行"
+
+[language.editor.value]
+none = "無"
+empty = "(空)"

@@ -1,41 +1,49 @@
-# BileTools language: ko_KR
+# BileTools — ko_KR
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === 파일 편집 ===
+# plugins/BileTools/languages/ko_KR.toml
+# 이 파일을 직접 편집할 수 있습니다. 로컬 변경은 유지되며, 누락되거나 잘못된 항목에는 내장 영어를 사용합니다.
+# /biletools language server edit ko_KR
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === 접두사 ===
+# 접두사 &a[&8Bile&a]: 는 각 메시지에 직접 적혀 있습니다. 변경하려면 해당 메시지를 수정하세요.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === 서식 ===
+# 색상: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]. 사용자 지정 서식에는 MiniMessage도 사용할 수 있습니다.
+#
+# === 변수 ===
+# 변수 이름을 변경하지 말고 각 메시지에 원래 있는 변수만 사용하세요.
+#   {after}  변경 후 가치
+#   {argument}  예상하지 못한 인수
+#   {before}  변경 전의 값
+#   {category}  편집기 범주
+#   {command}  명령 경로
+#   {context}  플러그인을 다시 불러오는 이유
+#   {count}  원격 대상 수와 복수형 선택 값; 메시지 수
+#   {file}  플러그인 JAR 파일 이름
+#   {group}  편집기 범주
+#   {host}  발신자의 IP 주소
+#   {installedVersion}  현재 설치된 플러그인 버전
+#   {key}  메시지 또는 매개변수 키
+#   {latestVersion}  라이브러리에서 사용 가능한 최신 버전
+#   {line}  소스 라인 또는 라인 번호
+#   {locale}  로케일
+#   {maximum}  최대 허용 값
+#   {milliseconds}  불러오기, 해제 또는 다시 불러오기에 걸린 시간(밀리초)
+#   {new}  새 값
+#   {old}  이전 값
+#   {parameter}  매개변수 이름
+#   {permission}  필요한 권한
+#   {personal}  개인 로케일
+#   {plugin}  Plugin 이름
+#   {reason}  실패 이유
+#   {setting}  설정 이름
+#   {target}  Plugin 이름
+#   {type}  형식
+#   {usage}  사용법
+#   {value}  현재값, 기본값 또는 원시값
+#   {variables}  사용 가능한 자리표시자
+#   {version}  요청되거나 표시된 라이브러리 플러그인 버전
 
 [command]
 root = "BileTools 명령어 그룹"
@@ -46,9 +54,9 @@ uninstall = "plugins 디렉터리에서 플러그인 JAR 삭제"
 install = "Bile 라이브러리에서 플러그인 설치"
 library = "라이브러리 플러그인 또는 플러그인 버전 표시"
 debug_dump = "진단 보고서를 생성하고 선택적으로 업로드"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "BileTools 진단 도구"
+config = "게임 내 전체 설정 편집기 열기"
+language = "개인 언어 또는 서버 언어 선택"
 
 [parameter]
 installed_plugin = "설치된 플러그인 이름"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7은 수명 주기 실패 후 �
 reloading_context = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7플러그인을 찾을 수 없음: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &c플레이어만 이 명령어를 사용할 수 있습니다."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7&f{host}&7에서 &f{file}&7 수신 중."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c적용할 수 없습니다:{reason
 saved = "&a[&8Bile&a]: &f{setting}&7을(를) &f{new}&7(으)로 변경했습니다. 이전 값: &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2BileTools 설정"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&d일반&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&a통계"
+remote_slave = "&a원격 수신기"
+remote_master = "&a원격 배포"
+network = "&a네트워크 제한"
+watcher = "&a플러그인 감시"
+lifecycle = "&a수명 주기"
 languages = "&d언어&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8왼쪽 +1, 오른쪽 -1, 시프트 ×10, 형식에 드롭.&r"
 text = "&8채팅에서 새 값을 입력하려면 클릭하세요.&r"
 language = "&8사용 가능한 언어를 선택하거나 로케일을 입력하려면 클릭하세요.&r"
 category = "&8이 카테고리의 모든 설정을 편집하려면 클릭하세요.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8민감한 값입니다. biletools.yml을 수정한 뒤 BileTools를 다시 불러오세요."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &e채팅에서&f{setting}&r&e의 새 값을 입력하세요.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &e변경 없이 구성 편집이 만료되었습니다.
 
 [gui.setting.general]
 language = "&d활성 언어 로케일&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&a교체 전에 플러그인 JAR 보관"
 
 [gui.setting.metrics]
 enabled = "&d익명 bStats 통계&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&a원격 수신기"
+port = "&a원격 수신기 포트"
+payload = "&a원격 수신기 비밀값"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&a원격 배포"
+targets = "&a원격 배포 대상"
+signatures = "&a원격 배포할 플러그인 이름"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&a원격 연결 제한 시간(밀리초)"
+max_transfer = "&a최대 전송 크기(바이트)"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&a유휴 상태 확인 간격(틱)"
+active = "&a활성 상태 확인 간격(틱)"
+debounce = "&a파일 지문 안정화 대기 시간(틱)"
+ignore = "&a무시할 플러그인 이름"
+only = "&a허용할 플러그인 이름"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&a수명 주기 소요 시간 로그"
+health_check = "&a불러온 후 정상 작동 검사"
 
 [director.help]
 no_subcommands = "이 페이지에는 하위 명령어가 없습니다."
@@ -249,3 +257,92 @@ edit_description = "언어별 메시지 편집기를 엽니다."
 select_description = "클릭하여 이 언어를 선택합니다."
 remove_personal_description = "개인 언어 선택을 제거합니다."
 no_controls = "사용할 수 있는 언어 설정이 없습니다."
+command = "명령어: {command}"
+selected = "선택됨"
+all-volmit-plugins = "모든 Volmit 플러그인"
+
+[language.error]
+stopping = "플러그인이 중지되는 동안에는 언어를 선택할 수 없습니다."
+editor-player-only = "게임 안에서 언어 편집기를 여세요."
+no-providers = "사용 가능한 Volmit 언어 제공자가 없습니다."
+numeric-page = "페이지 번호를 숫자로 입력하세요."
+personal-player-only = "개인 언어는 게임 안에서 선택해야 합니다."
+personal-permission = "개인 언어를 선택할 권한이 없습니다."
+plugin-personal-permission = "{plugin}의 개인 언어를 선택할 권한이 없습니다."
+plugin-server-permission = "{plugin}의 서버 언어를 변경할 권한이 없습니다."
+server-locale-required = "서버 기본 언어로 en_US 같은 언어 코드를 선택하세요."
+unavailable-for-all = "{locale} 언어는 선택한 모든 플러그인에서 지원되는 것은 아닙니다."
+
+[language.usage]
+editor = "사용법: /{command} language server edit [locale]"
+selection = "사용법: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "사용법: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "{target}의 {locale} 언어를 준비하는 중..."
+save-failed = "{plugin}: 언어 선택을 저장하지 못했습니다. 서버 콘솔을 확인하세요."
+english-fallback = "{plugin}: {locale}을 사용할 수 없어 영어(en_US)를 사용합니다."
+personal-selected = "{plugin}: 개인 언어를 {locale}으로 변경했습니다."
+server-selected = "{plugin}: 서버 언어를 {locale}으로 변경했습니다."
+server-default-selected = "{plugin}: 개인 언어가 이제 서버 기본 언어를 따릅니다."
+
+[language.editor]
+loading = "{locale} 메시지를 불러오는 중..."
+
+[language.editor.section]
+languages = "언어"
+search = "검색"
+search-title = "{locale} / 검색"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "메시지 키 또는 내용을 검색하세요. 돌아가려면 cancel을 입력하세요."
+value = "채팅에 {key}의 새 값을 입력하세요."
+current = "현재 값: {value}"
+variables = "변수: {variables}"
+guidance = "줄바꿈에는 \\n, 역슬래시에는 \\\\를 사용하세요. 돌아가려면 cancel을 입력하세요."
+
+[language.editor.input]
+expired = "언어 편집기의 입력 시간이 만료되었습니다."
+too-long = "입력은 최대 {maximum}자까지 가능합니다."
+unable-to-save = "저장하지 못했습니다: {reason}"
+
+[language.editor.navigation]
+back = "&e뒤로&r"
+close = "&c닫기&r"
+previous-page = "&e이전 페이지&r"
+next-page = "&e다음 페이지&r"
+
+[language.editor.search]
+messages = "메시지 검색"
+messages-lore = "클릭하여 모든 메시지를 검색합니다."
+clear = "검색 지우기"
+
+[language.editor.message]
+current-value = "&7현재 값:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7클릭하여 복수형을 편집합니다.&r"
+edit-lines = "&7클릭하여 개별 줄을 편집합니다.&r"
+edit-chat = "&7클릭하여 채팅에서 편집합니다.&r"
+
+[language.editor.locale]
+open = "&8클릭하여 이 언어를 엽니다.&r"
+
+[language.editor.category]
+message-count = "&7메시지 {count}개&r"
+open = "&8클릭하여 이 그룹을 엽니다.&r"
+
+[language.editor.error]
+no-permission = "{plugin}의 언어를 편집할 권한이 없습니다."
+unable-to-edit = "편집하지 못했습니다: {reason}"
+
+[language.editor.saved]
+summary = "{locale}을 저장했습니다. 언어 선택은 변경되지 않았습니다."
+change = "{key}: “{before}”에서 “{after}”로 변경했습니다."
+
+[language.editor.part]
+line = "{line}번째 줄"
+
+[language.editor.value]
+none = "없음"
+empty = "(비어 있음)"

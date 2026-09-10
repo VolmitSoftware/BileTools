@@ -1,41 +1,49 @@
-# BileTools language: it_IT
+# BileTools — it_IT
 #
-# This file is editable in a text editor or through /biletools config.
-# BileTools creates or downloads it only when missing. Local changes are not replaced.
-# Missing messages use the built-in English catalog.
+# === Modifica del file ===
+# plugins/BileTools/languages/it_IT.toml
+# Puoi modificare direttamente questo file. Le modifiche locali vengono conservate; le voci mancanti o non valide usano l’inglese incorporato.
+# /biletools language server edit it_IT
 #
-# Formatting
-#   Colors and styles  &0 through &f, &k through &r
-#   RGB                &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]
-#   Custom markup      MiniMessage is supported
-#   Literal text       Put a backslash before & or [
+# === Prefisso ===
+# Il prefisso &a[&8Bile&a]: è scritto direttamente in ogni messaggio; modificalo nei messaggi interessati.
 #
-# Placeholders
-# Keep the placeholders already used by a message. Do not rename them.
-#   {argument}            Unexpected command argument
-#   {category}            Configuration editor category
-#   {command}             Command path or submitted command
-#   {context}             Reason or trigger for a plugin reload
-#   {count}               Configured remote deployment target count and plural selector
-#   {file}                Plugin jar filename
-#   {host}                Inbound sender IP address
-#   {installedVersion}    Currently installed plugin version
-#   {key}                 Command parameter key
-#   {latestVersion}       Latest available library version
-#   {locale}              Locale identifier
-#   {milliseconds}        Load, unload, or reload duration in milliseconds
-#   {new}                 Newly saved language message value
-#   {old}                 Previous language message value
-#   {parameter}           Command parameter name
-#   {permission}          Required permission node
-#   {personal}            Personal locale when different from the server default
-#   {plugin}              Plugin name
-#   {reason}              Failure reason
-#   {setting}             Configuration setting name
-#   {type}                Command parameter type
-#   {usage}               Command usage syntax
-#   {value}               Current, default, or submitted value
-#   {version}             Requested or listed library plugin version
+# === Formattazione ===
+# Colori: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B e [RRGGBB]. MiniMessage resta disponibile per formati personalizzati.
+#
+# === Variabili ===
+# Mantieni i nomi delle variabili e usa solo quelle previste dal singolo messaggio.
+#   {after}  Valore dopo il cambiamento
+#   {argument}  argomento inatteso
+#   {before}  Valore prima della modifica
+#   {category}  categoria
+#   {command}  percorso del comando
+#   {context}  Motivo del ricaricamento del plugin
+#   {count}  Numero di destinazioni remote e selettore del plurale; Numero di messaggi
+#   {file}  Nome del file JAR del plugin
+#   {group}  categoria
+#   {host}  Indirizzo IP del mittente
+#   {installedVersion}  Versione del plugin attualmente installata
+#   {key}  Chiave del messaggio o del parametro
+#   {latestVersion}  Ultima versione disponibile nella libreria
+#   {line}  Linea di origine o numero di linea
+#   {locale}  codice locale
+#   {maximum}  Valore massimo consentito
+#   {milliseconds}  Durata di caricamento, scaricamento o ricaricamento in millisecondi
+#   {new}  valore nuovo
+#   {old}  valore precedente
+#   {parameter}  nome parametro
+#   {permission}  Permesso richiesto
+#   {personal}  codice locale personale
+#   {plugin}  Nome del plugin
+#   {reason}  motivo errore
+#   {setting}  nome impostazione
+#   {target}  Nome del plugin
+#   {type}  tipo
+#   {usage}  uso del comando
+#   {value}  valore corrente, predefinito o grezzo
+#   {variables}  segnaposto validi
+#   {version}  Versione richiesta o visualizzata del plugin della libreria
 
 [command]
 root = "Gruppo di comandi BileTools"
@@ -46,9 +54,9 @@ uninstall = "Elimina un file JAR di plugin dalla cartella dei plugin"
 install = "Installa un plugin dalla libreria Bile"
 library = "Elenca i plugin della libreria o le versioni di un plugin"
 debug_dump = "Crea un rapporto diagnostico e caricalo facoltativamente"
-debug = "BileTools diagnostic tools"
-config = "Open the complete in-game configuration editor"
-language = "Choose your language or the server language"
+debug = "Strumenti di diagnostica di BileTools"
+config = "Apri l’editor completo della configurazione nel gioco"
+language = "Scegli la tua lingua o quella del server"
 
 [parameter]
 installed_plugin = "Nome del plugin installato"
@@ -70,7 +78,7 @@ dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 è stato contrassegnato come d
 reloading_context = "&a[&8Bile&a]: &7Ricaricamento in corso: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Plugin non trovato: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Ricaricamento in corso: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cThis command can only be used by a player."
+player_only = "&a[&8Bile&a]: &cQuesto comando può essere usato solo da un giocatore."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Ricezione di &f{file}&7 da &f{host}&7."
@@ -129,17 +137,17 @@ save_failed = "&a[&8Bile&a]: &cImpossibile applicare &f{setting}&r&c: {reason}&r
 saved = "&a[&8Bile&a]: &f{setting}&7 è stato modificato in &f{new}&7; prima &f{old}&7."
 
 [gui.title]
-root = "&2BileTools Configuration"
+root = "&2Configurazione di BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
 general = "&dGenerale&r"
-metrics = "&aMetrics"
-remote_slave = "&aRemote Receiver"
-remote_master = "&aRemote Deployment"
-network = "&aNetwork Limits"
-watcher = "&aPlugin Watcher"
-lifecycle = "&aLifecycle"
+metrics = "&aStatistiche"
+remote_slave = "&aRicevitore remoto"
+remote_master = "&aDistribuzione remota"
+network = "&aLimiti di rete"
+watcher = "&aMonitoraggio dei plugin"
+lifecycle = "&aCiclo di vita"
 languages = "&dLingue&r"
 
 [gui.navigation]
@@ -153,7 +161,7 @@ number = "&8Sinistro +1, destro -1, Maiusc ×10, rilascia per digitare.&r"
 text = "&8Fai clic per digitare un nuovo valore nella chat.&r"
 language = "&8Fai clic per scegliere una lingua disponibile o digita un codice locale.&r"
 category = "&8Fai clic per modificare tutte le impostazioni di questa categoria.&r"
-file_only = "&8Sensitive value; edit biletools.yml, then reload BileTools."
+file_only = "&8Valore riservato; modifica biletools.yml e ricarica BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eDigita un nuovo valore per &f{setting}&r&e nella chat.&r"
@@ -164,35 +172,35 @@ timeout = "&a[&8Bile&a]: &eLa modifica della configurazione è scaduta senza app
 
 [gui.setting.general]
 language = "&dCodice locale attivo&r"
-archive_plugins = "&aArchive plugin jars before replacement"
+archive_plugins = "&aArchivia i JAR dei plugin prima di sostituirli"
 
 [gui.setting.metrics]
 enabled = "&dMetriche bStats anonime&r"
 
 [gui.setting.remote_slave]
-enabled = "&aRemote receiver"
-port = "&aRemote receiver port"
-payload = "&aRemote receiver secret"
+enabled = "&aRicevitore remoto"
+port = "&aPorta del ricevitore remoto"
+payload = "&aSegreto del ricevitore remoto"
 
 [gui.setting.remote_master]
-enabled = "&aRemote deployment"
-targets = "&aRemote deployment targets"
-signatures = "&aRemote deployment plugin names"
+enabled = "&aDistribuzione remota"
+targets = "&aDestinazioni della distribuzione remota"
+signatures = "&aNomi dei plugin per la distribuzione remota"
 
 [gui.setting.network]
-socket_timeout = "&aRemote socket timeout milliseconds"
-max_transfer = "&aMaximum transfer bytes"
+socket_timeout = "&aTimeout delle connessioni remote in millisecondi"
+max_transfer = "&aDimensione massima dei trasferimenti in byte"
 
 [gui.setting.watcher]
-idle = "&aIdle poll ticks"
-active = "&aActive poll ticks"
-debounce = "&aFingerprint debounce ticks"
-ignore = "&aIgnored plugin names"
-only = "&aAllowed plugin names"
+idle = "&aIntervallo dei controlli a riposo in tick"
+active = "&aIntervallo dei controlli attivi in tick"
+debounce = "&aAttesa di stabilizzazione delle impronte in tick"
+ignore = "&aNomi dei plugin ignorati"
+only = "&aNomi dei plugin consentiti"
 
 [gui.setting.lifecycle]
-log_timings = "&aLifecycle timing logs"
-health_check = "&aPost-load health checks"
+log_timings = "&aRegistri delle durate del ciclo di vita"
+health_check = "&aControlli di funzionamento dopo il caricamento"
 
 [director.help]
 no_subcommands = "Nessun sottocomando in questa pagina."
@@ -249,3 +257,92 @@ edit_description = "Apri l'editor dei messaggi per ogni lingua."
 select_description = "Fai clic per selezionare questa lingua."
 remove_personal_description = "Rimuovi la tua scelta personale della lingua."
 no_controls = "Non hai accesso alle impostazioni della lingua."
+command = "Comando: {command}"
+selected = "selezionato"
+all-volmit-plugins = "Tutti i plugin Volmit"
+
+[language.error]
+stopping = "La scelta della lingua non è disponibile durante l’arresto del plugin."
+editor-player-only = "Apri l’editor di lingua nel gioco."
+no-providers = "Non sono disponibili fornitori di lingue Volmit."
+numeric-page = "Inserisci un numero di pagina."
+personal-player-only = "Le preferenze della lingua del giocatore devono essere selezionate in gioco."
+personal-permission = "Non hai il permesso di selezionare la tua lingua."
+plugin-personal-permission = "Non hai il permesso di scegliere la tua lingua per {plugin}."
+plugin-server-permission = "Non hai il permesso di cambiare la lingua del server per {plugin}."
+server-locale-required = "Scegli un codice come en_US per la lingua predefinita del server."
+unavailable-for-all = "La lingua {locale} non è disponibile per tutti i plugin selezionati."
+
+[language.usage]
+editor = "Uso: /{command} language server edit [locale]"
+selection = "Uso: /{command} language self [locale|reset] or server [locale]"
+volmit-selection = "Uso: /volmit plugins languages [locale]"
+
+[language.selection]
+preparing = "Preparazione della lingua {locale} per {target}..."
+save-failed = "{plugin}: impossibile salvare la lingua scelta; controlla la console del server."
+english-fallback = "{plugin}: {locale} non è disponibile; verrà usato l’inglese (en_US)."
+personal-selected = "{plugin}: la tua lingua è ora {locale}."
+server-selected = "{plugin}: la lingua del server ora è {locale}."
+server-default-selected = "{plugin}: la tua lingua segue ora la lingua predefinita del server."
+
+[language.editor]
+loading = "Caricamento dei messaggi in {locale}..."
+
+[language.editor.section]
+languages = "Lingue"
+search = "Ricerca"
+search-title = "{locale} / Ricerca"
+group-title = "{locale} / {group}"
+
+[language.editor.prompt]
+search = "Cerca una chiave o il testo di un messaggio. Digita cancel per tornare indietro."
+value = "Digita un nuovo valore per {key} nella chat."
+current = "Valore attuale: {value}"
+variables = "Variabili: {variables}"
+guidance = "Usa \\n per andare a capo, \\\\ per una barra inversa, oppure digita cancel per tornare indietro."
+
+[language.editor.input]
+expired = "Il tempo per inserire il testo nell’editor di lingua è scaduto."
+too-long = "Il testo può contenere al massimo {maximum} caratteri."
+unable-to-save = "Impossibile salvare: {reason}"
+
+[language.editor.navigation]
+back = "&eIndietro&r"
+close = "&cChiudi&r"
+previous-page = "&ePagina precedente&r"
+next-page = "&ePagina successiva&r"
+
+[language.editor.search]
+messages = "Cerca messaggi"
+messages-lore = "Clicca per cercare tutti i messaggi."
+clear = "Cancella la ricerca"
+
+[language.editor.message]
+current-value = "&7Valore attuale:&r"
+variables = "&8{variables}&r"
+edit-plural = "&7Clicca per modificare una forma plurale.&r"
+edit-lines = "&7Clicca per modificare le singole righe.&r"
+edit-chat = "&7Clicca per modificare nella chat.&r"
+
+[language.editor.locale]
+open = "&8Clicca per aprire questa lingua.&r"
+
+[language.editor.category]
+message-count = "&7{count} messaggi&r"
+open = "&8Clicca per aprire questa categoria.&r"
+
+[language.editor.error]
+no-permission = "Non hai il permesso di modificare le lingue di {plugin}."
+unable-to-edit = "Impossibile modificare: {reason}"
+
+[language.editor.saved]
+summary = "{locale} salvato. Le lingue selezionate restano invariate."
+change = "{key}: «{before}» è stato cambiato in «{after}»."
+
+[language.editor.part]
+line = "Riga {line}"
+
+[language.editor.value]
+none = "Nessuno"
+empty = "(vuoto)"
