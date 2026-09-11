@@ -46,6 +46,7 @@
 #   {version}  请求或列出的库插件版本
 
 [command]
+version = "显示已安装的插件版本"
 root = "BileTools 命令组"
 load = "从 plugins 目录加载插件 JAR 文件"
 unload = "卸载已安装的插件"

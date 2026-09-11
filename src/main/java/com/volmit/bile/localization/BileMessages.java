@@ -12,6 +12,7 @@ import java.util.Map;
 
 public final class BileMessages {
     public static final TextKey DEBUG_DESCRIPTION = TextKey.of("command.debug", "BileTools diagnostic tools");
+    public static final TextKey VERSION_DESCRIPTION = TextKey.of("command.version", "Show the installed plugin version");
     public static final TextKey DEBUG_DUMP_DESCRIPTION = TextKey.of("command.debug_dump", "Create a comprehensive BileTools diagnostic report");
     public static final TextKey DEBUG_DUMP_UPLOAD = TextKey.of("parameter.debug_upload", "Upload the report to mclo.gs");
     public static final TextKey COMMAND_ROOT = TextKey.of("command.root", "BileTools command root");
@@ -136,7 +137,8 @@ public final class BileMessages {
         MessageCatalog.Builder builder = MessageCatalog.builder(VolmitLocales.ENGLISH);
         builder.addAll(List.of(
                 COMMAND_ROOT, COMMAND_CONFIG, COMMAND_LANGUAGE, COMMAND_LOAD, COMMAND_UNLOAD, COMMAND_RELOAD,
-                COMMAND_UNINSTALL, COMMAND_INSTALL, COMMAND_LIBRARY, DEBUG_DESCRIPTION, DEBUG_DUMP_DESCRIPTION));
+                COMMAND_UNINSTALL, COMMAND_INSTALL, COMMAND_LIBRARY, DEBUG_DESCRIPTION, DEBUG_DUMP_DESCRIPTION,
+                VERSION_DESCRIPTION));
         builder.addAll(List.of(
                 PARAMETER_INSTALLED_PLUGIN, PARAMETER_LIBRARY_PLUGIN, PARAMETER_VERSION, PARAMETER_SENDER,
                 DEBUG_DUMP_UPLOAD));

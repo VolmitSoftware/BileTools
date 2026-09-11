@@ -46,6 +46,7 @@
 #   {version}  İstenen veya gösterilen kütüphane eklentisi sürümü
 
 [command]
+version = "Yüklü eklenti sürümünü göster"
 root = "BileTools komut grubu"
 load = "plugins dizininden bir eklenti JAR dosyası yükle"
 unload = "Yüklü bir eklentiyi bellekten kaldır"

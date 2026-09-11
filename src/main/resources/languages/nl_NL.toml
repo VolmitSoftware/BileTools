@@ -46,6 +46,7 @@
 #   {version}  Aangevraagde of getoonde versie van de bibliotheekplugin
 
 [command]
+version = "Toon de geïnstalleerde pluginversie"
 root = "BileTools-opdrachtgroep"
 load = "Een plugin-JAR uit de pluginsmap laden"
 unload = "Een geïnstalleerde plugin uit het geheugen verwijderen"

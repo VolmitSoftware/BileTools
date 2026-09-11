@@ -46,6 +46,7 @@
 #   {version}  Phiên bản plugin thư viện được yêu cầu hoặc liệt kê
 
 [command]
+version = "Hiển thị phiên bản plugin đã cài đặt"
 root = "Nhóm lệnh BileTools"
 load = "Nạp tệp JAR plugin từ thư mục plugins"
 unload = "Gỡ plugin đã cài khỏi bộ nhớ"

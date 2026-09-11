@@ -32,6 +32,11 @@ public class CommandBile {
         debug = new BileDebugCommands(plugin);
     }
 
+    @Director(name = "version", hidden = true, description = "Show the installed plugin version", descriptionKey = "command.version")
+    public void version(@Param(name = "sender", contextual = true) CommandSender sender) {
+        debug.version(sender);
+    }
+
     @Director(name = "config", sync = true, description = "Open the complete in-game configuration editor", descriptionKey = "command.config")
     public void config(@Param(name = "sender", contextual = true) CommandSender sender) {
         if (!sender.hasPermission("biletools.config")) {

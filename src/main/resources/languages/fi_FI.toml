@@ -46,6 +46,7 @@
 #   {version}  Kirjastolisäosan pyydetty tai näytetty versio
 
 [command]
+version = "Näytä asennetun lisäosan versio"
 root = "BileTools-komentoryhmä"
 load = "Lataa pluginin JAR-tiedosto plugins-hakemistosta"
 unload = "Poista asennettu lisäosa muistista"

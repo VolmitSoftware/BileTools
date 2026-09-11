@@ -46,6 +46,7 @@
 #   {version}  Version demandée ou affichée du plugin de la bibliothèque
 
 [command]
+version = "Afficher la version du plugin installé"
 root = "Groupe de commandes BileTools"
 load = "Charger un fichier JAR de plugin depuis le dossier des plugins"
 unload = "Décharger un plugin installé"

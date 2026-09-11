@@ -46,6 +46,7 @@
 #   {version}  Angeforderte oder angezeigte Bibliotheks-Plugin-Version
 
 [command]
+version = "Installierte Plugin-Version anzeigen"
 root = "BileTools-Befehlsgruppe"
 load = "Plugin-JAR aus dem Plugin-Verzeichnis laden"
 unload = "Installiertes Plugin entladen"

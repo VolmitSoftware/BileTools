@@ -46,6 +46,7 @@
 #   {version}  요청되거나 표시된 라이브러리 플러그인 버전
 
 [command]
+version = "설치된 플러그인 버전 표시"
 root = "BileTools 명령어 그룹"
 load = "plugins 디렉터리에서 플러그인 JAR 불러오기"
 unload = "설치된 플러그인 언로드"

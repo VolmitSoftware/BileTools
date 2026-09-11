@@ -4,10 +4,12 @@ import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
+import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.localization.MessageCatalog;
 import art.arcane.volmlib.util.localization.MessageKey;
 import art.arcane.volmlib.util.localization.TextKey;
 import com.volmit.bile.localization.BileMessages;
+import org.bukkit.command.CommandSender;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
@@ -40,7 +42,18 @@ public class CommandDescriptionCatalogTest {
         DirectorMiniMenu.DirectorHelpPage page = DirectorMiniMenu.resolveHelp(
                 DirectorEngineFactory.create(new CommandBile(null)), List.of("debug")).orElseThrow();
         assertEquals("debug", page.node().getDescriptor().getName());
-        assertEquals("dump", page.entries().get(0).getDescriptor().getName());
+        assertEquals(List.of("dump", "version"), page.entries().stream()
+                .map(node -> node.getDescriptor().getName()).toList());
+    }
+
+    @Test
+    public void versionAliasIsHiddenFromRootHelp() throws ReflectiveOperationException {
+        DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandBile(null));
+        DirectorMiniMenu.DirectorHelpPage page = DirectorMiniMenu.resolveHelp(engine, List.of()).orElseThrow();
+
+        assertTrue(CommandBile.class.getMethod("version", CommandSender.class)
+                .getAnnotation(Director.class).hidden());
+        assertFalse(page.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
     }
 
     private void assertCommandType(Class<?> type, MessageCatalog catalog) {

@@ -46,6 +46,7 @@
 #   {version}  Prašoma arba rodoma bibliotekos papildinio versija
 
 [command]
+version = "Rodyti įdiegto papildinio versiją"
 root = "BileTools komandų grupė"
 load = "Įkelti įskiepio JAR failą iš plugins katalogo"
 unload = "Iškelti įdiegtą įskiepį iš atminties"

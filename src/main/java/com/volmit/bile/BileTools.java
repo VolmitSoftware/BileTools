@@ -342,7 +342,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 () -> true,
                 new BileDebugContributor(this),
                 new BukkitDebugDump.Presentation("/biletools debug dump", "/biletools debug",
-                        BileFancyMenu.theme(), localization.directorResolver())));
+                        BileFancyMenu.theme(),
+                        (key, arguments) -> ComponentText.literal(localization.directorResolver().resolve(key, arguments)))));
         configEditor = new BileConfigEditor(this);
         SplashScreen.print(this);
         getLogger().info("Runtime platform: " + ServerPlatform.summary());
@@ -2838,7 +2839,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length > 1 && args[0].equalsIgnoreCase("debug")) {
-            return sender.hasPermission("biletools.debug") ? runDirectorTab(sender, alias, args) : List.of();
+            return sender.hasPermission(ROOT_PERMISSION) || sender.hasPermission("biletools.debug")
+                ? runDirectorTab(sender, alias, args) : List.of();
         }
         if (command.getName().equalsIgnoreCase(ROOT_COMMAND) && args.length == 1
                 && "debug".startsWith(args[0].toLowerCase(Locale.ROOT))

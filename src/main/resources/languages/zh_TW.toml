@@ -46,6 +46,7 @@
 #   {version}  請求或列出的程式庫插件版本
 
 [command]
+version = "顯示已安裝的插件版本"
 root = "BileTools 指令群組"
 load = "從 plugins 目錄載入外掛 JAR 檔案"
 unload = "卸載已安裝的外掛"
