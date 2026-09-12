@@ -37,10 +37,10 @@
 #   {personal}  henkilökohtainen kielitunnus
 #   {plugin}  Liitännäisen nimi
 #   {reason}  virheen syy
+#   {section}  Kielieditorin osio
 #   {setting}  asetuksen nimi
 #   {target}  Liitännäisen nimi
 #   {type}  tyyppi
-#   {usage}  komennon käyttö
 #   {value}  nykyinen, oletus- tai raaka-arvo
 #   {variables}  sallitut paikkamerkit
 #   {version}  Kirjastolisäosan pyydetty tai näytetty versio
@@ -230,9 +230,6 @@ optional = "Tämä parametri on valinnainen."
 default = "Oletusarvo on \"{value}\", jos sitä ei määritetä."
 type = "Tämän parametrin tyyppi on {type}."
 
-[director.runtime]
-usage = "Käyttö: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Tätä komentoa ei voi suorittaa tästä lähteestä."
 unknown_parameter = "Tuntematon parametriavain: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: palvelinkieli on nyt {locale}."
 server-default-selected = "{plugin}: kielesi noudattaa nyt palvelimen oletuskieltä."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Ladataan kielen {locale} viestejä..."
 
 [language.editor.section]

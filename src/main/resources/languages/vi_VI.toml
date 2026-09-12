@@ -37,10 +37,10 @@
 #   {personal}  mã vùng cá nhân
 #   {plugin}  Tên phần bổ sung
 #   {reason}  lý do lỗi
+#   {section}  Mục trong trình chỉnh sửa ngôn ngữ
 #   {setting}  tên cài đặt
 #   {target}  Tên phần bổ sung
 #   {type}  kiểu
-#   {usage}  cách dùng lệnh
 #   {value}  giá trị hiện tại, mặc định hoặc thô
 #   {variables}  chỗ giữ chỗ hợp lệ
 #   {version}  Phiên bản plugin thư viện được yêu cầu hoặc liệt kê
@@ -230,9 +230,6 @@ optional = "Tham số này là tùy chọn."
 default = "Mặc định là \"{value}\" nếu không được chỉ định."
 type = "Tham số này có kiểu {type}."
 
-[director.runtime]
-usage = "Cách dùng: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Không thể chạy lệnh này từ nguồn này."
 unknown_parameter = "Khóa tham số không xác định: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: ngôn ngữ máy chủ hiện là {locale}."
 server-default-selected = "{plugin}: ngôn ngữ của bạn hiện theo ngôn ngữ mặc định của máy chủ."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Đang tải tin nhắn cho {locale}..."
 
 [language.editor.section]

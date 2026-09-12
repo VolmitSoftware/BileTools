@@ -37,10 +37,10 @@
 #   {personal}  個人設定のロケール
 #   {plugin}  プラグイン名
 #   {reason}  失敗理由
+#   {section}  言語エディターのセクション
 #   {setting}  設定名
 #   {target}  プラグイン名
 #   {type}  型
-#   {usage}  使用法
 #   {value}  現在値、既定値、または入力値
 #   {variables}  使用可能なプレースホルダー
 #   {version}  要求または表示されたライブラリプラグインのバージョン
@@ -230,9 +230,6 @@ optional = "このパラメータは任意です。"
 default = "未指定の場合は \"{value}\" になります。"
 type = "このパラメータの型は {type} です。"
 
-[director.runtime]
-usage = "使用法: {usage}"
-
 [director.runtime.error]
 invalid_origin = "この実行元からはコマンドを実行できません。"
 unknown_parameter = "不明なパラメーターキー: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: サーバー言語を{locale}に変更しました�
 server-default-selected = "{plugin}: 個人言語はサーバーの既定の言語に従うようになりました。"
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "{locale}のメッセージを読み込んでいます..."
 
 [language.editor.section]

@@ -37,10 +37,10 @@
 #   {personal}  persoonlijke landinstelling
 #   {plugin}  Pluginnaam
 #   {reason}  foutreden
+#   {section}  Onderdeel van de taaleditor
 #   {setting}  instellingsnaam
 #   {target}  Pluginnaam
 #   {type}  type
-#   {usage}  opdrachtgebruik
 #   {value}  huidige, standaard- of ruwe waarde
 #   {variables}  geldige tijdelijke aanduidingen
 #   {version}  Aangevraagde of getoonde versie van de bibliotheekplugin
@@ -230,9 +230,6 @@ optional = "Deze parameter is optioneel."
 default = "Standaard \"{value}\" indien niet opgegeven."
 type = "Deze parameter is van het type {type}."
 
-[director.runtime]
-usage = "Gebruik: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Deze opdracht kan niet vanuit deze bron worden uitgevoerd."
 unknown_parameter = "Onbekende parametersleutel: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: servertaal is nu {locale}."
 server-default-selected = "{plugin}: je taal volgt nu de standaardtaal van de server."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Berichten voor {locale} laden..."
 
 [language.editor.section]

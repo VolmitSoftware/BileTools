@@ -37,10 +37,10 @@
 #   {personal}  configuración regional personal
 #   {plugin}  Nombre de plugin
 #   {reason}  motivo del fallo
+#   {section}  Sección del editor de idiomas
 #   {setting}  ajuste
 #   {target}  Nombre de plugin
 #   {type}  tipo
-#   {usage}  uso del comando
 #   {value}  valor actual, predeterminado o sin procesar
 #   {variables}  marcadores válidos
 #   {version}  Versión solicitada o mostrada del plugin de la biblioteca
@@ -230,9 +230,6 @@ optional = "Este parámetro es opcional."
 default = "Valor predeterminado \"{value}\" si no se define."
 type = "Este parámetro es de tipo {type}."
 
-[director.runtime]
-usage = "Uso: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Este comando no se puede ejecutar desde este origen."
 unknown_parameter = "Clave de parámetro desconocida: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: el idioma del servidor ahora es {locale}."
 server-default-selected = "{plugin}: tu idioma ahora sigue el idioma predeterminado del servidor."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Cargando los mensajes de {locale}..."
 
 [language.editor.section]

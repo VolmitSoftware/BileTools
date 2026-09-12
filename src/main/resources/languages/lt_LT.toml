@@ -37,10 +37,10 @@
 #   {personal}  asmeninė lokalė
 #   {plugin}  Įskiepio pavadinimas
 #   {reason}  klaidos priežastis
+#   {section}  Kalbų redaktoriaus skiltis
 #   {setting}  nuostatos vardas
 #   {target}  Įskiepio pavadinimas
 #   {type}  tipas
-#   {usage}  komandos naudojimas
 #   {value}  dabartinė, numatytoji arba neapdorota reikšmė
 #   {variables}  galimi vietos žymekliai
 #   {version}  Prašoma arba rodoma bibliotekos papildinio versija
@@ -230,9 +230,6 @@ optional = "Šis parametras yra neprivalomas."
 default = "Jei nenurodyta, numatytoji reikšmė yra \"{value}\"."
 type = "Šio parametro tipas yra {type}."
 
-[director.runtime]
-usage = "Naudojimas: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Šios komandos negalima vykdyti iš šio šaltinio."
 unknown_parameter = "Nežinomas parametro raktas: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: serverio kalba yra dabar {locale}."
 server-default-selected = "{plugin}: jūsų kalba dabar atitinka numatytąją serverio kalbą."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Įkeliami kalbos {locale} pranešimai..."
 
 [language.editor.section]

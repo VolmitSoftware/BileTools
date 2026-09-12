@@ -37,10 +37,10 @@
 #   {personal}  persönliche Sprachkennung
 #   {plugin}  Plugin Name
 #   {reason}  Fehlergrund
+#   {section}  Abschnitt des Spracheneditors
 #   {setting}  Einstellungsname
 #   {target}  Plugin Name
 #   {type}  Parametertyp
-#   {usage}  Befehlsverwendung
 #   {value}  aktueller, Standard- oder Rohwert
 #   {variables}  gültige Platzhalter
 #   {version}  Angeforderte oder angezeigte Bibliotheks-Plugin-Version
@@ -230,9 +230,6 @@ optional = "Dieser Parameter ist optional."
 default = "Standardmäßig \"{value}\", wenn nicht angegeben."
 type = "Dieser Parameter hat den Typ {type}."
 
-[director.runtime]
-usage = "Verwendung: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Dieser Befehl kann von diesem Ursprung aus nicht ausgeführt werden."
 unknown_parameter = "Unbekannter Parameterschlüssel: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: Serversprache ist jetzt {locale}."
 server-default-selected = "{plugin}: Deine Sprache folgt jetzt dem Serverstandard."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Nachrichten für {locale} werden geladen..."
 
 [language.editor.section]

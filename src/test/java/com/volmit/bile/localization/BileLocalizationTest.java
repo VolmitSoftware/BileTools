@@ -3,6 +3,7 @@ package com.volmit.bile.localization;
 import art.arcane.volmlib.util.director.help.DirectorHelpMessages;
 import art.arcane.volmlib.util.io.FileWatcher;
 import art.arcane.volmlib.util.localization.TomlLanguageParser;
+import art.arcane.volmlib.util.localization.BukkitLanguageMessages;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.MessageArgs;
@@ -33,8 +34,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -250,6 +254,138 @@ public class BileLocalizationTest {
     }
 
     @Test
+    public void personalLocaleEditsRefreshTitlesAndMissingEntriesWithoutChangingTheDefault() throws Exception {
+        localization.close();
+        File folder = installedLocaleFolder("personal-hotload", "de_DE");
+        localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US",
+                SilentFileWatcher::new, BileLocalization::readLanguageContent);
+        UUID player = UUID.randomUUID();
+        localization.languageService().selectPlayer(player, "de_DE").get(5L, TimeUnit.SECONDS);
+        MessageArgs arguments = MessageArgs.builder().untrusted("plugin", "BileTools")
+                .untrusted("section", "Sprachen").build();
+        String english = localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain();
+        localization.update(0L);
+        Path translated = folder.toPath().resolve("languages/de_DE.toml");
+        String original = Files.readString(translated);
+        Files.writeString(translated, TomlLanguageEditor.upsert(original,
+                BukkitLanguageMessages.EDITOR_TITLE.id(), new TextValue("Live {plugin} › {section}")).content());
+        awaitPersonalTitle(player, arguments, "Live BileTools › Sprachen", TimeUnit.SECONDS.toNanos(3L));
+        assertEquals(english, localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain());
+        Files.writeString(translated, original.replace("title = \"{plugin} › {section}\"", ""));
+        awaitPersonalTitle(player, arguments, "BileTools › Sprachen", TimeUnit.SECONDS.toNanos(6L));
+        assertEquals("de_DE", localization.languageService().playerLocale(player).orElseThrow());
+        assertEquals("en_US", localization.activeLocale());
+    }
+
+    @Test
+    public void malformedPersonalLocaleRetainsItsLastMessagesUntilRepaired() throws Exception {
+        localization.close();
+        File folder = installedLocaleFolder("personal-invalid-hotload", "de_DE");
+        Path translated = folder.toPath().resolve("languages/de_DE.toml");
+        String original = TomlLanguageEditor.upsert(Files.readString(translated),
+                BukkitLanguageMessages.EDITOR_TITLE.id(), new TextValue("Saved {plugin} › {section}")).content();
+        Files.writeString(translated, original);
+        AtomicInteger translatedReads = new AtomicInteger();
+        AtomicInteger rejectedEdits = new AtomicInteger();
+        Logger logger = Logger.getAnonymousLogger();
+        logger.setUseParentHandlers(false);
+        logger.addHandler(new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getMessage().contains("retained the previous de_DE messages")) {
+                    rejectedEdits.incrementAndGet();
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        });
+        localization = new BileLocalization(folder, logger, "en_US",
+                SilentFileWatcher::new, file -> {
+                    if (file.getName().equals("de_DE.toml")) {
+                        translatedReads.incrementAndGet();
+                    }
+                    return BileLocalization.readLanguageContent(file);
+                });
+        UUID player = UUID.randomUUID();
+        localization.languageService().selectPlayer(player, "de_DE").get(5L, TimeUnit.SECONDS);
+        MessageArgs arguments = MessageArgs.builder().untrusted("plugin", "BileTools")
+                .untrusted("section", "Sprachen").build();
+        localization.update(0L);
+        Files.writeString(translated, "[unterminated");
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        while (rejectedEdits.get() == 0 && System.nanoTime() < deadline) {
+            localization.update(TimeUnit.SECONDS.toNanos(3L));
+            Thread.sleep(10L);
+        }
+        assertEquals(1, translatedReads.get());
+        assertEquals(1, rejectedEdits.get());
+        assertEquals("Saved BileTools › Sprachen", LanguageAudience.call(player,
+                () -> localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain()));
+        assertEquals("de_DE", localization.languageService().playerLocale(player).orElseThrow());
+        Files.writeString(translated, TomlLanguageEditor.upsert(original,
+                BukkitLanguageMessages.EDITOR_TITLE.id(), new TextValue("Repaired {plugin} › {section}")).content());
+        awaitPersonalTitle(player, arguments, "Repaired BileTools › Sprachen", TimeUnit.SECONDS.toNanos(6L));
+    }
+
+    @Test
+    public void openingTheEditorDoesNotDiscardAnAutomaticLocaleRefresh() throws Exception {
+        localization.close();
+        File folder = installedLocaleFolder("personal-editor-hotload", "de_DE");
+        CountDownLatch captured = new CountDownLatch(1);
+        localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US",
+                SilentFileWatcher::new, file -> {
+                    byte[] content = BileLocalization.readLanguageContent(file);
+                    if (file.getName().equals("de_DE.toml")) {
+                        captured.countDown();
+                    }
+                    return content;
+                });
+        UUID player = UUID.randomUUID();
+        localization.languageService().selectPlayer(player, "de_DE").get(5L, TimeUnit.SECONDS);
+        MessageArgs arguments = MessageArgs.builder().untrusted("plugin", "BileTools")
+                .untrusted("section", "Sprachen").build();
+        localization.update(0L);
+        Path translated = folder.toPath().resolve("languages/de_DE.toml");
+        Files.writeString(translated, TomlLanguageEditor.upsert(Files.readString(translated),
+                BukkitLanguageMessages.EDITOR_TITLE.id(), new TextValue("Live {plugin} › {section}")).content());
+        localization.update(TimeUnit.SECONDS.toNanos(3L));
+        assertTrue(captured.await(5L, TimeUnit.SECONDS));
+        localization.editorOptions().loader().load("de_DE");
+        awaitPersonalTitle(player, arguments, "Live BileTools › Sprachen", TimeUnit.SECONDS.toNanos(3L));
+    }
+
+    @Test
+    public void deletedPersonalLocaleUsesEnglishWithoutChangingTheSavedChoice() throws Exception {
+        localization.close();
+        File folder = installedLocaleFolder("personal-deleted-hotload", "de_DE");
+        Path translated = folder.toPath().resolve("languages/de_DE.toml");
+        Files.writeString(translated, TomlLanguageEditor.upsert(Files.readString(translated),
+                BukkitLanguageMessages.EDITOR_TITLE.id(), new TextValue("Saved {plugin} › {section}")).content());
+        localization = new BileLocalization(folder, Logger.getAnonymousLogger(), "en_US",
+                SilentFileWatcher::new, BileLocalization::readLanguageContent);
+        UUID player = UUID.randomUUID();
+        localization.languageService().selectPlayer(player, "de_DE").get(5L, TimeUnit.SECONDS);
+        MessageArgs arguments = MessageArgs.builder().untrusted("plugin", "BileTools")
+                .untrusted("section", "Sprachen").build();
+        assertEquals("Saved BileTools › Sprachen", LanguageAudience.call(player,
+                () -> localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain()));
+        localization.update(0L);
+        Files.delete(translated);
+        awaitPersonalTitle(player, arguments, "BileTools › Sprachen", TimeUnit.SECONDS.toNanos(3L));
+        assertEquals("de_DE", localization.languageService().playerLocale(player).orElseThrow());
+        assertEquals("en_US", localization.activeLocale());
+        assertFalse(Files.exists(translated));
+        assertTrue(Files.readString(folder.toPath().resolve("languages/language-preferences.properties"))
+                .contains(player + "=de_DE"));
+    }
+
+    @Test
     public void appliesDirectTomlEditWithNamedArguments() throws Exception {
         write(BileMessages.LOAD_SUCCESS, new TextValue("&b{file} -> {plugin} ({milliseconds})"));
         assertTrue(localization.reload());
@@ -346,6 +482,21 @@ public class BileLocalizationTest {
             Thread.sleep(10L);
         }
         assertEquals(expected, localization.text(BileMessages.COMMAND_LOAD).plain());
+    }
+
+    private void awaitPersonalTitle(UUID player, MessageArgs arguments, String expected, long nowNanos) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        while (System.nanoTime() < deadline) {
+            localization.update(nowNanos);
+            String actual = LanguageAudience.call(player,
+                    () -> localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain());
+            if (expected.equals(actual)) {
+                return;
+            }
+            Thread.sleep(10L);
+        }
+        assertEquals(expected, LanguageAudience.call(player,
+                () -> localization.text(BukkitLanguageMessages.EDITOR_TITLE, arguments).plain()));
     }
 
     private static final class SilentFileWatcher extends FileWatcher {

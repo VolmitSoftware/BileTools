@@ -37,10 +37,10 @@
 #   {personal}  codice locale personale
 #   {plugin}  Nome del plugin
 #   {reason}  motivo errore
+#   {section}  Sezione dell’editor delle lingue
 #   {setting}  nome impostazione
 #   {target}  Nome del plugin
 #   {type}  tipo
-#   {usage}  uso del comando
 #   {value}  valore corrente, predefinito o grezzo
 #   {variables}  segnaposto validi
 #   {version}  Versione richiesta o visualizzata del plugin della libreria
@@ -230,9 +230,6 @@ optional = "Questo parametro è facoltativo."
 default = "Il valore predefinito è \"{value}\" se non definito."
 type = "Questo parametro è di tipo {type}."
 
-[director.runtime]
-usage = "Utilizzo: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Questo comando non può essere eseguito da questa origine."
 unknown_parameter = "Chiave di parametro sconosciuta: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: la lingua del server ora è {locale}."
 server-default-selected = "{plugin}: la tua lingua segue ora la lingua predefinita del server."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Caricamento dei messaggi in {locale}..."
 
 [language.editor.section]

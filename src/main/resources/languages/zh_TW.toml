@@ -37,10 +37,10 @@
 #   {personal}  個人地區設定
 #   {plugin}  插件名稱
 #   {reason}  失敗原因
+#   {section}  語言編輯器區段
 #   {setting}  設定名稱
 #   {target}  插件名稱
 #   {type}  類型
-#   {usage}  指令用法
 #   {value}  目前值、預設值或原始值
 #   {variables}  可用佔位符
 #   {version}  請求或列出的程式庫插件版本
@@ -230,9 +230,6 @@ optional = "此參數為可選項。"
 default = "未指定時預設為 \"{value}\"。"
 type = "此參數的類型為 {type}。"
 
-[director.runtime]
-usage = "用法: {usage}"
-
 [director.runtime.error]
 invalid_origin = "無法從此來源執行該指令。"
 unknown_parameter = "未知參數鍵: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}：伺服器語言現在是 {locale}。"
 server-default-selected = "{plugin}：你的語言現在跟隨伺服器預設語言。"
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "正在載入 {locale} 的訊息..."
 
 [language.editor.section]

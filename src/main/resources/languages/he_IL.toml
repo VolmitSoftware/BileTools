@@ -37,10 +37,10 @@
 #   {personal}  אזור השפה האישי
 #   {plugin}  שם Plugin
 #   {reason}  סיבת כשל
+#   {section}  מקטע בעורך השפות
 #   {setting}  שם הגדרה
 #   {target}  שם Plugin
 #   {type}  סוג
-#   {usage}  אופן שימוש
 #   {value}  ערך נוכחי, ברירת מחדל או גולמי
 #   {variables}  מצייני מקום תקינים
 #   {version}  גרסת תוסף הספרייה המבוקשת או המוצגת
@@ -230,9 +230,6 @@ optional = "פרמטר זה הוא אופציונלי."
 default = "ברירת המחדל היא \"{value}\" אם לא הוגדר."
 type = "פרמטר זה הוא מסוג {type}."
 
-[director.runtime]
-usage = "שימוש: {usage}"
-
 [director.runtime.error]
 invalid_origin = "לא ניתן להריץ פקודה זו ממקור זה."
 unknown_parameter = "מפתח פרמטר לא ידוע: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: שפת השרת עכשיו {locale}."
 server-default-selected = "{plugin}: השפה שלך תואמת כעת לשפת ברירת המחדל של השרת."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "טוען הודעות עבור {locale}..."
 
 [language.editor.section]

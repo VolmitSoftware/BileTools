@@ -37,10 +37,10 @@
 #   {personal}  личная локаль
 #   {plugin}  Название плагина
 #   {reason}  причина ошибки
+#   {section}  Раздел редактора языков
 #   {setting}  название настройки
 #   {target}  Название плагина
 #   {type}  тип
-#   {usage}  использование команды
 #   {value}  текущее, стандартное или исходное значение
 #   {variables}  допустимые заполнители
 #   {version}  Запрошенная или указанная версия плагина из библиотеки
@@ -230,9 +230,6 @@ optional = "Этот параметр является необязательн�
 default = "Если не задан, используется значение \"{value}\"."
 type = "Этот параметр имеет тип {type}."
 
-[director.runtime]
-usage = "Использование: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Эту команду нельзя выполнить из данного источника."
 unknown_parameter = "Неизвестный ключ параметра: {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: Язык сервера теперь {locale}."
 server-default-selected = "{plugin}: теперь ваш язык соответствует языку сервера по умолчанию."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Загрузка сообщений для {locale}..."
 
 [language.editor.section]

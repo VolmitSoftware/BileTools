@@ -37,10 +37,10 @@
 #   {personal}  code régional personnel
 #   {plugin}  Nom du greffon
 #   {reason}  motif de l’échec
+#   {section}  Section de l’éditeur de langues
 #   {setting}  nom du réglage
 #   {target}  Nom du greffon
 #   {type}  type
-#   {usage}  syntaxe de commande
 #   {value}  valeur actuelle, par défaut ou brute
 #   {variables}  variables valides
 #   {version}  Version demandée ou affichée du plugin de la bibliothèque
@@ -230,9 +230,6 @@ optional = "Ce paramètre est facultatif."
 default = "Vaut \"{value}\" par défaut si non défini."
 type = "Ce paramètre est de type {type}."
 
-[director.runtime]
-usage = "Utilisation: {usage}"
-
 [director.runtime.error]
 invalid_origin = "Cette commande ne peut pas être exécutée depuis cette origine."
 unknown_parameter = "Clé de paramètre inconnue : {key}"
@@ -288,6 +285,7 @@ server-selected = "{plugin}: la langue du serveur est maintenant {locale}."
 server-default-selected = "{plugin} : votre langue suit désormais la langue par défaut du serveur."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Chargement des messages en {locale}..."
 
 [language.editor.section]
