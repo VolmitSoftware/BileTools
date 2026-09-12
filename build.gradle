@@ -132,6 +132,10 @@ dependencies {
     slimApi('net.kyori:adventure-text-minimessage:4.26.1')
     slimApi('net.kyori:adventure-text-serializer-legacy:4.26.1')
     slimApi('net.kyori:adventure-text-serializer-plain:4.26.1')
+    // VolmLib's ComponentMessenger Spigot path pins JSONOptions by data version; without this the
+    // shaded jar carries a dangling reference and the thin step refuses it.
+    slimApi('net.kyori:adventure-text-serializer-gson:4.26.1')
+    slimApi('net.kyori:adventure-text-serializer-json:4.26.1')
     implementation libs.bstats
     testImplementation libs.paper
     testImplementation 'junit:junit:4.13.2'
