@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -19,9 +20,10 @@ final class PluginArchivePreloader {
     private PluginArchivePreloader() {
     }
 
-    static PreloadReport preload(Path archive, ClassLoader classLoader) throws IOException {
+    static PreloadReport preload(Path archive, ClassLoader classLoader, Predicate<String> include) throws IOException {
         Objects.requireNonNull(classLoader, "classLoader");
-        List<String> discoveredClasses = discoverClassNames(archive);
+        Objects.requireNonNull(include, "include");
+        List<String> discoveredClasses = includedClassNames(discoverClassNames(archive), include);
         List<String> loadedClasses = new ArrayList<>(discoveredClasses.size());
         List<ClassLoadFailure> requiredFailures = new ArrayList<>();
         List<ClassLoadFailure> optionalFailures = new ArrayList<>();
@@ -65,6 +67,16 @@ final class PluginArchivePreloader {
         List<String> orderedClassNames = new ArrayList<>(classNames);
         Collections.sort(orderedClassNames);
         return List.copyOf(orderedClassNames);
+    }
+
+    private static List<String> includedClassNames(List<String> discoveredClasses, Predicate<String> include) {
+        List<String> includedClasses = new ArrayList<>(discoveredClasses.size());
+        for (String className : discoveredClasses) {
+            if (include.test(className)) {
+                includedClasses.add(className);
+            }
+        }
+        return List.copyOf(includedClasses);
     }
 
     private static boolean isRequiredClass(String className) {

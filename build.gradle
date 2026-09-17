@@ -49,6 +49,26 @@ registerCustomOutputTask('SwiftSwamp', 'C://VolmitSoftware/BUILDS', true)
 registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/consumers/plugin-consumers/dropins/plugins")
 // ==============================================================
 
+evaluationDependsOn(':velocity')
+def shadowJarTask = tasks.named('shadowJar', org.gradle.api.tasks.bundling.Jar)
+def velocityJarTask = project(':velocity').tasks.named('shadowJar', org.gradle.api.tasks.bundling.Jar)
+def universalJarTask = tasks.register('universalJar', Jar) {
+    group = 'build'
+    description = 'Packages the Bukkit and Velocity entry points in one BileTools plugin jar.'
+    archiveClassifier.set('')
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    dependsOn(shadowJarTask, velocityJarTask)
+    from(shadowJarTask.flatMap { it.archiveFile }.map { zipTree(it) }) {
+        exclude('META-INF/MANIFEST.MF')
+    }
+    from(velocityJarTask.flatMap { it.archiveFile }.map { zipTree(it) }) {
+        exclude('META-INF/MANIFEST.MF')
+    }
+}
+shadowJarTask.configure { finalizedBy(universalJarTask) }
+tasks.named('assemble') { dependsOn(universalJarTask) }
+tasks.named('jar') { enabled = false }
+
 tasks.processResources {
     dependsOn(languageSourceManifestTask)
     exclude('languages/*.toml')
@@ -106,8 +126,8 @@ tasks.register('runtimeArtifactTest', Test) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     include('com/volmit/bile/RuntimeLibraryBootstrapTest.class')
-    dependsOn tasks.named('shadowJar')
-    systemProperty('biletools.runtimeArtifact', tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath)
+    dependsOn universalJarTask
+    systemProperty('biletools.runtimeArtifact', universalJarTask.get().archiveFile.get().asFile.absolutePath)
 }
 
 configurations {
@@ -189,6 +209,8 @@ slimJar {
 }
 
 tasks.named('shadowJar') {
+    archiveClassifier.set('bukkit')
+    destinationDirectory.set(layout.buildDirectory.dir('platform'))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     // bStats internals are reflection/callable driven, keep the minimizer off them.
     minimize {
@@ -279,22 +301,58 @@ tasks.register('verifyCompatibilityArtifact') {
     }
 }
 
+tasks.register('verifyPlatformPackaging') {
+    group = 'verification'
+    description = 'Verifies the Velocity descriptor and bytecode inside the universal BileTools jar.'
+    dependsOn(universalJarTask)
+    inputs.file(universalJarTask.flatMap { it.archiveFile })
+    doLast {
+        File artifact = universalJarTask.get().archiveFile.get().asFile
+        new java.util.jar.JarFile(artifact).withCloseable { java.util.jar.JarFile archive ->
+            java.util.jar.JarEntry descriptorEntry = archive.getJarEntry('velocity-plugin.json')
+            if (descriptorEntry == null) {
+                throw new GradleException("${artifact.name} does not contain velocity-plugin.json")
+            }
+            Map descriptor = new groovy.json.JsonSlurper().parse(archive.getInputStream(descriptorEntry))
+            if (descriptor.main != 'com.volmit.bile.velocity.BileVelocity') {
+                throw new GradleException("Velocity descriptor main is ${descriptor.main}")
+            }
+            if (descriptor.version != project.version.toString()) {
+                throw new GradleException("Velocity descriptor version is ${descriptor.version}")
+            }
+            java.util.jar.JarEntry entryPoint = archive.getJarEntry('com/volmit/bile/velocity/BileVelocity.class')
+            if (entryPoint == null) {
+                throw new GradleException("${artifact.name} does not contain the Velocity entry point")
+            }
+            String bytecode = new String(archive.getInputStream(entryPoint).readAllBytes(),
+                    java.nio.charset.StandardCharsets.ISO_8859_1)
+            if (bytecode.contains('com/volmit/bile/libs/')) {
+                throw new GradleException('Velocity bytecode must not reference Bukkit-relocated libraries')
+            }
+        }
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('runtimeArtifactTest')
     dependsOn tasks.named('compileSpigotCompatibility')
     dependsOn tasks.named('compileCurrentPaperCompatibility')
     dependsOn tasks.named('compileCurrentSpigotCompatibility')
     dependsOn tasks.named('verifyCompatibilityArtifact')
+    dependsOn tasks.named('verifyPlatformPackaging')
+    dependsOn ':velocity:test'
 }
 
 tasks.named('build') {
     dependsOn tasks.named('shadowJar')
+    dependsOn universalJarTask
     dependsOn tasks.named('verifyCompatibilityArtifact')
+    dependsOn ':velocity:build'
 }
 
 tasks.register('biletools', Copy) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from tasks.named('shadowJar').flatMap { it.archiveFile }
+    from universalJarTask.flatMap { it.archiveFile }
     into layout.buildDirectory.dir('out')
     rename { "BileTools-${version}.jar" }
 }
@@ -340,17 +398,23 @@ void registerCustomOutputTaskUnix(String name, String path, boolean doRename) {
 }
 
 void createOutputTask(String name, String path, boolean doRename) {
+    File proxyDropins = new File(new File(path).parentFile, 'velocity')
     tasks.register("build${name}", Copy) {
         group = 'development'
         outputs.upToDateWhen { false }
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        from tasks.named('shadowJar').flatMap { it.archiveFile }
+        from tasks.named('universalJar').flatMap { it.archiveFile }
         into file(path)
         if (doRename) rename { 'BileTools.jar' }
         if (name == 'PsychoLT') {
             doLast {
                 project.copy {
-                    from(tasks.named('shadowJar').get().archiveFile.get().asFile)
+                    from(tasks.named('universalJar').get().archiveFile.get().asFile)
+                    into(proxyDropins)
+                    rename { String ignored -> 'BileTools.jar' }
+                }
+                project.copy {
+                    from(tasks.named('universalJar').get().archiveFile.get().asFile)
                     into(project.file('../PluginOuts'))
                     rename { String ignored -> "BileTools-${project.version}.jar" }
                 }
@@ -361,7 +425,7 @@ void createOutputTask(String name, String path, boolean doRename) {
 
 pluginPackaging {
     artifacts {
-        create('distribution') {
+        create('bukkit') {
             taskName = 'shadowJar'
             policyName = 'BileTools'
             prunePrefixes = ['art/arcane/volmlib/']
@@ -371,6 +435,18 @@ pluginPackaging {
                 'com.google.gson': 'com.volmit.bile.libs.gson',
                 'com.moandjiezana.toml': 'com.volmit.bile.libs.toml',
                 'net.kyori': 'com.volmit.bile.libs.kyori'
+            ]
+        }
+        create('distribution') {
+            taskName = 'universalJar'
+            policyName = 'BileTools'
+            shrink = false
+            releaseCompression = true
+            forbiddenPrefixes = forbiddenPrefixes + ['com/velocitypowered/', 'com/google/inject/']
+            requiredEntries = requiredEntries + [
+                'velocity-plugin.json',
+                'com/volmit/bile/velocity/BileVelocity.class',
+                'com/volmit/bile/velocity/watch/PluginJarDirectoryWatcher.class'
             ]
         }
     }

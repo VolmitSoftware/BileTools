@@ -8,14 +8,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PluginArchivePreloaderTest {
+    private static final Predicate<String> INCLUDE_EVERY_CLASS = className -> true;
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -32,7 +36,7 @@ public class PluginArchivePreloaderTest {
                 "languages/de_DE.toml"));
 
         PluginArchivePreloader.PreloadReport report = PluginArchivePreloader.preload(
-                archive, PluginArchivePreloaderTest.class.getClassLoader());
+                archive, PluginArchivePreloaderTest.class.getClassLoader(), INCLUDE_EVERY_CLASS);
 
         assertTrue(report.discoveredClasses().contains(nestedClass));
         assertTrue(report.loadedClasses().contains(nestedClass));
@@ -48,7 +52,7 @@ public class PluginArchivePreloaderTest {
         Path archive = createArchive(List.of(missingRequiredClass.replace('.', '/') + ".class"));
 
         PluginArchivePreloader.PreloadReport report = PluginArchivePreloader.preload(
-                archive, PluginArchivePreloaderTest.class.getClassLoader());
+                archive, PluginArchivePreloaderTest.class.getClassLoader(), INCLUDE_EVERY_CLASS);
 
         assertEquals(1, report.requiredFailures().size());
         assertEquals(missingRequiredClass, report.requiredFailures().get(0).className());
@@ -71,11 +75,30 @@ public class PluginArchivePreloaderTest {
         Path archive = createArchive(classEntries);
 
         PluginArchivePreloader.PreloadReport report = PluginArchivePreloader.preload(
-                archive, PluginArchivePreloaderTest.class.getClassLoader());
+                archive, PluginArchivePreloaderTest.class.getClassLoader(), INCLUDE_EVERY_CLASS);
 
         assertTrue(report.requiredFailures().toString(), report.requiredFailures().isEmpty());
         assertTrue(report.loadedClasses().contains("com.volmit.bile.watch.PluginJarDirectoryWatcher$Signal"));
         assertEquals(report.discoveredClasses().size(), report.loadedClasses().size());
+    }
+
+    @Test
+    public void skipsExcludedClassesWithoutReportingThemAsFailures() throws Exception {
+        String excludedClass = "com.volmit.bile.velocity.BileVelocity";
+        String includedClass = PluginArchivePreloaderTest.class.getName();
+        Path archive = createArchive(List.of(
+                excludedClass.replace('.', '/') + ".class",
+                includedClass.replace('.', '/') + ".class"));
+
+        PluginArchivePreloader.PreloadReport report = PluginArchivePreloader.preload(
+                archive, PluginArchivePreloaderTest.class.getClassLoader(),
+                className -> !className.startsWith("com.volmit.bile.velocity."));
+
+        assertFalse(report.discoveredClasses().contains(excludedClass));
+        assertFalse(report.loadedClasses().contains(excludedClass));
+        assertTrue(report.loadedClasses().contains(includedClass));
+        assertTrue(report.requiredFailures().isEmpty());
+        assertTrue(report.optionalFailures().isEmpty());
     }
 
     private Path createArchive(List<String> entries) throws Exception {

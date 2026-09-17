@@ -12,8 +12,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -22,14 +24,20 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public final class JarSnapshotStager {
+    public static final List<String> BUKKIT_DESCRIPTOR_ENTRIES = List.of("plugin.yml", "paper-plugin.yml");
+
     private static final int COPY_BUFFER_BYTES = 64 * 1024;
 
     private JarSnapshotStager() {
     }
 
-    public static StagedJar stage(Path source, Path stagingDirectory, long generation) throws IOException {
+    public static StagedJar stage(Path source,
+                                  Path stagingDirectory,
+                                  long generation,
+                                  Collection<String> requiredDescriptorEntries) throws IOException {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(stagingDirectory, "stagingDirectory");
+        Objects.requireNonNull(requiredDescriptorEntries, "requiredDescriptorEntries");
 
         FileStamp before = FileStamp.read(source);
         Files.createDirectories(stagingDirectory);
@@ -47,7 +55,7 @@ public final class JarSnapshotStager {
             }
 
             byte[] snapshotDigest = digest.digest();
-            validatePluginJar(partial);
+            validatePluginJar(partial, requiredDescriptorEntries);
             FileStamp verificationBefore = FileStamp.read(source);
             byte[] sourceDigest = digest(source);
             FileStamp verificationAfter = FileStamp.read(source);
@@ -114,14 +122,14 @@ public final class JarSnapshotStager {
         return digest.digest();
     }
 
-    private static void validatePluginJar(Path staged) throws IOException {
+    private static void validatePluginJar(Path staged, Collection<String> requiredDescriptorEntries) throws IOException {
         try (ZipFile archive = new ZipFile(staged.toFile())) {
-            boolean descriptorFound = false;
+            boolean descriptorFound = requiredDescriptorEntries.isEmpty();
             byte[] buffer = new byte[COPY_BUFFER_BYTES];
             Enumeration<? extends ZipEntry> entries = archive.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml")) {
+                if (requiredDescriptorEntries.contains(entry.getName())) {
                     descriptorFound = true;
                 }
                 if (entry.isDirectory()) {
@@ -144,7 +152,8 @@ public final class JarSnapshotStager {
                 }
             }
             if (!descriptorFound) {
-                throw new InvalidPluginJarException(staged, "plugin.yml and paper-plugin.yml are both missing");
+                throw new InvalidPluginJarException(staged,
+                        String.join(" and ", requiredDescriptorEntries) + " are missing");
             }
         }
     }

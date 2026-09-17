@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow'
+}
+
+version = rootProject.version
+
+repositories {
+    mavenCentral()
+    maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+}
+
+dependencies {
+    compileOnly('com.velocitypowered:velocity-api:3.4.0-SNAPSHOT')
+    annotationProcessor('com.velocitypowered:velocity-api:3.4.0-SNAPSHOT')
+    testImplementation('com.velocitypowered:velocity-api:3.4.0-SNAPSHOT')
+    testImplementation('org.junit.jupiter:junit-jupiter:5.10.2')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.10.2')
+    testImplementation('org.mockito:mockito-core:5.18.0')
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(17)
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-parameters')
+}
+
+test { useJUnitPlatform() }
+
+tasks.named('jar') { enabled = false }
+
+shadowJar {
+    archiveBaseName.set('BileTools')
+    archiveClassifier.set('velocity')
+    destinationDirectory.set(layout.buildDirectory.dir('platform'))
+    relocate('com.volmit.bile.watch', 'com.volmit.bile.velocity.watch')
+    filesMatching('velocity-plugin.json') {
+        filter { String line -> line.replace('@VERSION@', project.version.toString()) }
+    }
+}
+
+tasks.named('build') { dependsOn tasks.named('shadowJar') }
+
+sourceSets.main.java {
+    srcDir '../src/main/java'
+    include 'com/volmit/bile/velocity/**'
+    include 'com/volmit/bile/watch/AutomaticReloadQueue.java'
+    include 'com/volmit/bile/watch/DeletionGraceQueue.java'
+    include 'com/volmit/bile/watch/JarSnapshotStager.java'
+    include 'com/volmit/bile/watch/PluginDependencyOrder.java'
+    include 'com/volmit/bile/watch/PluginJarDirectoryWatcher.java'
+}

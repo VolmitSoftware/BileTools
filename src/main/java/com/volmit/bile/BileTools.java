@@ -79,6 +79,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,6 +100,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final int BSTATS_PLUGIN_ID = 33192;
     private static final Logger FALLBACK_LOGGER = Logger.getLogger("BileTools");
     private static final String LOG_DISCRIMINATOR = ComponentLog.discriminator("BileTools", "&a");
+    private static final String PROXY_CLASS_PREFIX = "com.volmit.bile.velocity.";
+    private static final Predicate<String> SELF_HOSTED_CLASSES =
+            className -> !className.startsWith(PROXY_CLASS_PREFIX);
 
     private volatile SlaveBileServer srv;
     private volatile Metrics metrics;
@@ -401,7 +405,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private void preloadSelfHostedArchive() {
         PluginArchivePreloader.PreloadReport report;
         try {
-            report = PluginArchivePreloader.preload(getFile().toPath(), getClass().getClassLoader());
+            report = PluginArchivePreloader.preload(getFile().toPath(), getClass().getClassLoader(),
+                    SELF_HOSTED_CLASSES);
         } catch (IOException | SecurityException exception) {
             throw new IllegalStateException(
                     "Cannot preload the BileTools startup archive before enabling file watching", exception);
@@ -960,7 +965,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 JarSnapshotStager.StagedJar stagedJar = null;
                 Throwable failure = null;
                 try {
-                    stagedJar = JarSnapshotStager.stage(path, stagingDirectory, observation.generation());
+                    stagedJar = JarSnapshotStager.stage(path, stagingDirectory, observation.generation(),
+                            JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES);
                 } catch (Throwable throwable) {
                     failure = throwable;
                 }

@@ -20,8 +20,9 @@ Canonical English is defined in the typed Java catalog at `src/main/java/com/vol
 | **Folia 1.20.1+** | Supported | `folia-supported: true`; GlobalRegionScheduler only; hot-reload is best-effort |
 | **Canvas** | Supported | Folia fork; same regionized scheduling rules as Folia |
 | **Spigot 1.20.1+** | Best-effort | `paper-plugin.yml`-only jars are rejected; dual-descriptor jars load through `plugin.yml` |
+| **Velocity 3.4+ / 4.x** | Supported | Same jar on the proxy; hot reload of proxy plugins, but BileTools cannot reload itself there |
 
-* One jar supports Minecraft `1.20.1` through current `26.x` servers
+* One jar supports Minecraft `1.20.1` through current `26.x` servers, and Velocity `3.4+` / `4.x` proxies
 * `plugin.yml` `api-version`: `1.20`
 * Production compile floor: Paper and Spigot API `1.20.1` with current `26.x` compatibility compile gates
 * Runtime JVM: Java 17 on `1.20.1`; newer servers still require the JVM version mandated by that server (Java 25 on `26.x`)

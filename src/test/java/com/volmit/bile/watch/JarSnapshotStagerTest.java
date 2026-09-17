@@ -17,6 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
@@ -32,7 +33,7 @@ public class JarSnapshotStagerTest {
         Path stagingDirectory = temporaryFolder.newFolder("stage").toPath();
         writePluginJar(source, "1.0.0");
 
-        JarSnapshotStager.StagedJar stagedJar = JarSnapshotStager.stage(source, stagingDirectory, 17L);
+        JarSnapshotStager.StagedJar stagedJar = JarSnapshotStager.stage(source, stagingDirectory, 17L, JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES);
         writePluginJar(source, "2.0.0");
 
         assertEquals(17L, stagedJar.generation());
@@ -59,10 +60,32 @@ public class JarSnapshotStagerTest {
         }
 
         assertThrows(JarSnapshotStager.InvalidPluginJarException.class,
-                () -> JarSnapshotStager.stage(source, stagingDirectory, 1L));
+                () -> JarSnapshotStager.stage(source, stagingDirectory, 1L, JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES));
         try (Stream<Path> paths = Files.list(stagingDirectory)) {
             assertEquals(0L, paths.count());
         }
+    }
+
+    @Test
+    public void stagesAJarWithNoDescriptorWhenNoneIsRequired() throws Exception {
+        Path source = temporaryFolder.newFile("Proxy.jar").toPath();
+        Path stagingDirectory = temporaryFolder.newFolder("proxy-stage").toPath();
+        writeProxyJar(source);
+
+        JarSnapshotStager.StagedJar stagedJar = JarSnapshotStager.stage(source, stagingDirectory, 5L, List.of());
+
+        assertEquals(5L, stagedJar.generation());
+        assertArrayEquals(Files.readAllBytes(source), Files.readAllBytes(stagedJar.staged()));
+    }
+
+    @Test
+    public void rejectsAJarWithNoBukkitDescriptorWhenTheBukkitEntriesAreRequired() throws Exception {
+        Path source = temporaryFolder.newFile("ProxyOnly.jar").toPath();
+        Path stagingDirectory = temporaryFolder.newFolder("proxy-only-stage").toPath();
+        writeProxyJar(source);
+
+        assertThrows(JarSnapshotStager.InvalidPluginJarException.class,
+                () -> JarSnapshotStager.stage(source, stagingDirectory, 6L, JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES));
     }
 
     @Test
@@ -93,7 +116,7 @@ public class JarSnapshotStagerTest {
         Files.write(source, archive);
 
         assertThrows(JarSnapshotStager.InvalidPluginJarException.class,
-                () -> JarSnapshotStager.stage(source, stagingDirectory, 2L));
+                () -> JarSnapshotStager.stage(source, stagingDirectory, 2L, JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES));
     }
 
     @Test
@@ -109,6 +132,14 @@ public class JarSnapshotStagerTest {
         String second = JarSnapshotStager.fingerprint(source);
 
         assertFalse(first.equals(second));
+    }
+
+    private void writeProxyJar(Path target) throws IOException {
+        try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(target))) {
+            output.putNextEntry(new ZipEntry("velocity-plugin.json"));
+            output.write("{\"id\":\"demo\",\"main\":\"example.Demo\"}".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
     }
 
     private void writePluginJar(Path target, String version) throws IOException {
