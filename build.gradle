@@ -451,3 +451,35 @@ pluginPackaging {
         }
     }
 }
+
+configurations {
+    paper263Compatibility {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE,
+                    objects.named(org.gradle.api.attributes.Usage, org.gradle.api.attributes.Usage.JAVA_API))
+            attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+        }
+    }
+}
+
+dependencies {
+    paper263Compatibility('io.papermc.paper:paper-api:26.3.build.25-alpha')
+}
+
+tasks.register('compilePaper263Compatibility', JavaCompile) {
+    source = sourceSets.main.java
+    classpath = configurations.paper263Compatibility + files(sourceSets.main.compileClasspath.filter { File dependency ->
+        !dependency.name.startsWith('paper-api-') && !dependency.name.startsWith('spigot-api-')
+    })
+    destinationDirectory.set(layout.buildDirectory.dir('classes/java/paper263Compatibility'))
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
+tasks.named('check').configure {
+    dependsOn(tasks.named('compilePaper263Compatibility'))
+}
