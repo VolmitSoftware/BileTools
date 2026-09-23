@@ -49,12 +49,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class BileUtils {
+    private static final AtomicBoolean COMMAND_REFRESH_QUEUED = new AtomicBoolean();
     private static final int ZIP_READ_RETRY_LIMIT = 2;
     private static final int UUID_TEXT_LENGTH = 36;
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
@@ -1988,6 +1991,32 @@ public class BileUtils {
      * and pushes updated trees to online players.
      */
     public static void rebuildServerCommandGraph() {
+        Plugin host = BileTools.bile;
+        if (host == null || !host.isEnabled()) {
+            return;
+        }
+        queueCommandGraphRefresh(task -> PlatformTasks.runGlobal(host, task, 1L),
+                BileUtils::refreshServerCommandGraph);
+    }
+
+    static void queueCommandGraphRefresh(Predicate<Runnable> scheduler, Runnable refresh) {
+        if (!COMMAND_REFRESH_QUEUED.compareAndSet(false, true)) {
+            return;
+        }
+        boolean scheduled = false;
+        try {
+            scheduled = scheduler.test(() -> {
+                COMMAND_REFRESH_QUEUED.set(false);
+                refresh.run();
+            });
+        } finally {
+            if (!scheduled) {
+                COMMAND_REFRESH_QUEUED.set(false);
+            }
+        }
+    }
+
+    private static void refreshServerCommandGraph() {
         try {
             Object server = Bukkit.getServer();
             Method syncCommands = findPublicMethod(server.getClass(), "syncCommands");
@@ -1997,6 +2026,7 @@ public class BileUtils {
             if (syncCommands != null) {
                 syncCommands.setAccessible(true);
                 syncCommands.invoke(server);
+                return;
             }
         } catch (Throwable ignored) {
         }

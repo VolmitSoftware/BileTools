@@ -19,6 +19,8 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,6 +42,23 @@ import static org.junit.Assert.assertTrue;
 public class BileUtilsTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Test
+    public void commandRefreshWaitsUntilTheLifecycleBatchFinishes() {
+        List<Runnable> scheduled = new ArrayList<>();
+        AtomicInteger refreshes = new AtomicInteger();
+        BileUtils.queueCommandGraphRefresh(scheduled::add, refreshes::incrementAndGet);
+        BileUtils.queueCommandGraphRefresh(scheduled::add, refreshes::incrementAndGet);
+        assertEquals(0, refreshes.get());
+        assertEquals(1, scheduled.size());
+        scheduled.remove(0).run();
+        assertEquals(1, refreshes.get());
+        BileUtils.queueCommandGraphRefresh(task -> false, refreshes::incrementAndGet);
+        BileUtils.queueCommandGraphRefresh(scheduled::add, refreshes::incrementAndGet);
+        assertEquals(1, scheduled.size());
+        scheduled.remove(0).run();
+        assertEquals(2, refreshes.get());
+    }
 
     @Test
     public void validateRuntimeCompatibility_limitsPaperRuntimeLoadsToDualDescriptorReloads() throws InvalidPluginException {
