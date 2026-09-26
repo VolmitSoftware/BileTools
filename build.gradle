@@ -22,7 +22,7 @@ apply plugin: 'art.arcane.volmit-packaging'
 
 tasks.named('slimJar').get()
 
-version = '3.0.3-26.2'
+version = '3.0.4-26.2'
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
@@ -351,8 +351,9 @@ tasks.named('build') {
 }
 
 tasks.register('biletools', Copy) {
+    dependsOn('packedJar')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from universalJarTask.flatMap { it.archiveFile }
+    from({ tasks.named('packedJar').get().outputJar })
     into layout.buildDirectory.dir('out')
     rename { "BileTools-${version}.jar" }
 }
@@ -402,19 +403,20 @@ void createOutputTask(String name, String path, boolean doRename) {
     tasks.register("build${name}", Copy) {
         group = 'development'
         outputs.upToDateWhen { false }
+        dependsOn('packedJar')
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        from tasks.named('universalJar').flatMap { it.archiveFile }
+        from({ tasks.named('packedJar').get().outputJar })
         into file(path)
-        if (doRename) rename { 'BileTools.jar' }
+        rename { String fileName -> doRename ? 'BileTools.jar' : fileName.replaceFirst(/-packed\.jar$/, '.jar') }
         if (name == 'PsychoLT') {
             doLast {
                 project.copy {
-                    from(tasks.named('universalJar').get().archiveFile.get().asFile)
+                    from(tasks.named('packedJar').get().outputJar.get().asFile)
                     into(proxyDropins)
                     rename { String ignored -> 'BileTools.jar' }
                 }
                 project.copy {
-                    from(tasks.named('universalJar').get().archiveFile.get().asFile)
+                    from(tasks.named('packedJar').get().outputJar.get().asFile)
                     into(project.file('../PluginOuts'))
                     rename { String ignored -> "BileTools-${project.version}.jar" }
                 }
@@ -438,6 +440,8 @@ pluginPackaging {
             ]
         }
         create('distribution') {
+            packed = true
+            packedJarAccessors = ['com/volmit/bile/BileTools#runtimeArchive']
             taskName = 'universalJar'
             policyName = 'BileTools'
             shrink = false
