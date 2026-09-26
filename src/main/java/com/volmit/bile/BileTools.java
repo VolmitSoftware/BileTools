@@ -402,10 +402,14 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         applyRestoredAutomaticBatchDelay();
     }
 
+    private File runtimeArchive() {
+        return getFile();
+    }
+
     private void preloadSelfHostedArchive() {
         PluginArchivePreloader.PreloadReport report;
         try {
-            report = PluginArchivePreloader.preload(getFile().toPath(), getClass().getClassLoader(),
+            report = PluginArchivePreloader.preload(runtimeArchive().toPath(), getClass().getClassLoader(),
                     SELF_HOSTED_CLASSES);
         } catch (IOException | SecurityException exception) {
             throw new IllegalStateException(
