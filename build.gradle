@@ -1,3 +1,4 @@
+import art.arcane.volmit.packaging.PackagingMode
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.WriteProperties
 
@@ -22,7 +23,7 @@ apply plugin: 'art.arcane.volmit-packaging'
 
 tasks.named('slimJar').get()
 
-version = '3.0.4-26.2'
+version = '3.1.0-26.2'
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
@@ -440,12 +441,21 @@ pluginPackaging {
             ]
         }
         create('distribution') {
+            stripDirectories = true
+            stripLocalVariables = true
+            releaseCompression = providers.gradleProperty('compactRelease').map { it.toBoolean() }
+                    .getOrElse(!PackagingMode.resolve(providers).development())
             packed = true
             packedJarAccessors = ['com/volmit/bile/BileTools#runtimeArchive']
             taskName = 'universalJar'
             policyName = 'BileTools'
-            shrink = false
-            releaseCompression = true
+            shrinkRules = [file('packaging/shrink.pro')]
+            shrinkLibraries.from(project(':velocity').configurations.compileClasspath)
+            shrinkRelocations = [
+                'com.google.gson': 'com.volmit.bile.libs.gson',
+                'com.moandjiezana.toml': 'com.volmit.bile.libs.toml',
+                'net.kyori': 'com.volmit.bile.libs.kyori'
+            ]
             forbiddenPrefixes = forbiddenPrefixes + ['com/velocitypowered/', 'com/google/inject/']
             requiredEntries = requiredEntries + [
                 'velocity-plugin.json',
