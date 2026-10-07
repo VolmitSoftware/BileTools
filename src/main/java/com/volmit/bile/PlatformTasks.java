@@ -7,6 +7,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -126,24 +129,65 @@ public final class PlatformTasks {
         return runForEntity(plugin, player, runnable);
     }
 
+    public static void validatePluginTaskCancellation(Plugin plugin) {
+        if (ServerPlatform.isPaperRuntime()) {
+            for (String accessor : List.of("getGlobalRegionScheduler", "getAsyncScheduler")) {
+                Object scheduler = pluginScheduler(plugin, accessor);
+                cancellationMethod(scheduler);
+            }
+        }
+        if (!ServerPlatform.isRegionizedThreading() && plugin.getServer().getScheduler() == null) {
+            throw new IllegalStateException("The Bukkit task scheduler is unavailable");
+        }
+    }
+
     public static void cancelPluginTasks(Plugin plugin) {
-        if (plugin == null) {
-            return;
+        List<Throwable> failures = new ArrayList<>();
+        if (ServerPlatform.isPaperRuntime()) {
+            for (String accessor : List.of("getGlobalRegionScheduler", "getAsyncScheduler")) {
+                try {
+                    Object scheduler = pluginScheduler(plugin, accessor);
+                    cancellationMethod(scheduler).invoke(scheduler, plugin);
+                } catch (ReflectiveOperationException | RuntimeException failure) {
+                    failures.add(failure);
+                }
+            }
         }
+        if (!ServerPlatform.isRegionizedThreading()) {
+            try {
+                plugin.getServer().getScheduler().cancelTasks(plugin);
+            } catch (RuntimeException failure) {
+                failures.add(failure);
+            }
+        }
+        if (!failures.isEmpty()) {
+            IllegalStateException failure = new IllegalStateException("Task cancellation failed for " + plugin.getName());
+            failures.forEach(failure::addSuppressed);
+            throw failure;
+        }
+    }
 
+    private static Object pluginScheduler(Plugin plugin, String accessor) {
         try {
-            FoliaScheduler.cancelTasks(plugin);
-        } catch (Throwable ignored) {
+            Method method = plugin.getServer().getClass().getMethod(accessor);
+            method.setAccessible(true);
+            Object scheduler = method.invoke(plugin.getServer());
+            if (scheduler == null) {
+                throw new IllegalStateException(accessor + " returned no scheduler");
+            }
+            return scheduler;
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Task scheduler unavailable: " + accessor, failure);
         }
+    }
 
-        if (ServerPlatform.isFoliaFamily()) {
-            return;
-        }
-
+    private static Method cancellationMethod(Object scheduler) {
         try {
-            plugin.getServer().getScheduler().cancelTasks(plugin);
-        } catch (UnsupportedOperationException | IllegalPluginAccessException ignored) {
-        } catch (Throwable ignored) {
+            Method method = scheduler.getClass().getMethod("cancelTasks", Plugin.class);
+            method.setAccessible(true);
+            return method;
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Task cancellation unavailable for " + scheduler.getClass().getName(), failure);
         }
     }
 

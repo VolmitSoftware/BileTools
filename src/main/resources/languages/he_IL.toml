@@ -45,7 +45,14 @@
 #   {variables}  מצייני מקום תקינים
 #   {version}  גרסת תוסף הספרייה המבוקשת או המוצגת
 
+#   {enabled}  פעיל
+#   {recovery}  שחזור
+#   {cooperative}  שיתופי
+#   {dependents}  תלויים
+#   {capability}  פריקה
+
 [command]
+inspect = "בדיקת מוכנות תוסף לטעינה מחדש"
 version = "הצגת גרסת התוסף המותקן"
 root = "קבוצת הפקודות של BileTools"
 load = "טעינת קובץ JAR של תוסף מתיקיית התוספים"
@@ -345,3 +352,6 @@ line = "שורה {line}"
 [language.editor.value]
 none = "אין"
 empty = "(ריק)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: פעיל={enabled}, שחזור={recovery}, שיתופי={cooperative}, תלויים={dependents}, פריקה={capability}"

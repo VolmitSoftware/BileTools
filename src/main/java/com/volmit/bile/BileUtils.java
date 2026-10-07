@@ -1,6 +1,10 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.integration.ReloadAware;
+import com.volmit.bile.watch.JarSnapshotStager;
+import com.volmit.bile.paper.NativePaperSupport;
+import java.io.Closeable;
+import java.lang.management.ManagementFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
@@ -9,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -30,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.security.MessageDigest;
@@ -49,26 +55,489 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BileUtils {
     private static final AtomicBoolean COMMAND_REFRESH_QUEUED = new AtomicBoolean();
     private static final int ZIP_READ_RETRY_LIMIT = 2;
-    private static final int UUID_TEXT_LENGTH = 36;
+    private static final Pattern RUNTIME_ARCHIVE_NAME = Pattern.compile(
+            "^([A-Za-z0-9_-]+)-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:-[0-9]+)?\\.jar$");
     private static final Map<String, File> SOURCE_FILE_OVERRIDES = new ConcurrentHashMap<>();
+    private static final Map<String, WeakReference<Plugin>> RECOVERY_CAPTURED_INSTANCES = new ConcurrentHashMap<>();
+    private static final Map<String, RunningPluginMetadata> RUNNING_PLUGIN_METADATA = new ConcurrentHashMap<>();
     private static final Map<String, File> RUNTIME_PLUGIN_FILES = new ConcurrentHashMap<>();
     private static final Map<String, CachedJarMeta> JAR_META_CACHE = new ConcurrentHashMap<>();
     private static final ThreadLocal<Set<String>> LOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<Set<String>> UNLOAD_VISITING = ThreadLocal.withInitial(HashSet::new);
+    private static final ThreadLocal<Map<String, RecoveryEntry>> RECOVERY_SOURCES = new ThreadLocal<>();
+    private static PluginRecoveryStore recoveryStore;
     private static final Method PLUGINS_FOLDER_API = findPublicMethod(Bukkit.class, "getPluginsFolder");
 
     private static String key(String pluginName) {
         return pluginName.toLowerCase(Locale.ROOT);
+    }
+
+    public static void initializeRecoveryStore() {
+        String session = ProcessHandle.current().pid() + "-" + ManagementFactory.getRuntimeMXBean().getStartTime();
+        recoveryStore = new PluginRecoveryStore(BileTools.bile.getDataFolder().toPath()
+                .resolve("recovery").resolve(session));
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            if (plugin.isEnabled()) {
+                rememberRunningPlugin(plugin);
+            }
+        }
+    }
+
+    public static void rememberRunningPlugin(Plugin plugin) {
+        if (recoveryStore == null) {
+            return;
+        }
+        String pluginKey = key(plugin.getName());
+        WeakReference<Plugin> captured = RECOVERY_CAPTURED_INSTANCES.get(pluginKey);
+        if (captured != null && captured.get() == plugin && recoveryStore.contains(plugin.getName())) {
+            return;
+        }
+        try {
+            recoveryStore.forget(plugin.getName());
+            RECOVERY_CAPTURED_INSTANCES.remove(pluginKey);
+            File loadedFile = loadedPluginFile(plugin);
+            if (loadedFile == null || !loadedFile.isFile()) {
+                throw new IOException("Cannot locate loaded jar for " + plugin.getName());
+            }
+            File sourceFile = loadedFile;
+            File parent = loadedFile.getParentFile();
+            File retainedSource = SOURCE_FILE_OVERRIDES.get(pluginKey);
+            String runtimeSourceName = runtimeSourceBaseName(loadedFile);
+            if (retainedSource != null
+                    && (runtimeSourceName != null || runningMetadata(plugin) != null)) {
+                sourceFile = retainedSource;
+            } else if (runtimeSourceName != null) {
+                sourceFile = new File(getPluginsFolder(), runtimeSourceName);
+            } else if (parent != null && parent.getName().equals(".paper-remapped")) {
+                sourceFile = new File(parent.getParentFile(), loadedFile.getName());
+            }
+            registerLoadedFileOverride(plugin.getName(), sourceFile);
+            PluginJarMetadata metadata = readRuntimePluginMetadata(loadedFile);
+            PluginDescriptionFile description = metadata.description();
+            if (!plugin.getName().equals(description.getName())
+                    || !plugin.getDescription().getMain().equals(description.getMain())
+                    || !plugin.getDescription().getVersion().equals(description.getVersion())) {
+                throw new IOException("Loaded jar identity changed before recovery capture for " + plugin.getName());
+            }
+            if (runningMetadata(plugin) == null) {
+                rememberRunningMetadata(plugin, metadata);
+            }
+            recoveryStore.remember(plugin.getName(), loadedFile.toPath());
+            RECOVERY_CAPTURED_INSTANCES.put(pluginKey, new WeakReference<>(plugin));
+        } catch (IOException | InvalidDescriptionException exception) {
+            BileTools.warn("Could not retain the running version of " + plugin.getName(), exception);
+        }
+    }
+
+    private static void rememberRunningMetadata(Plugin plugin, PluginJarMetadata metadata) {
+        RUNNING_PLUGIN_METADATA.put(key(plugin.getName()),
+                new RunningPluginMetadata(new WeakReference<>(plugin), metadata));
+    }
+
+    private static PluginJarMetadata runningMetadata(Plugin plugin) {
+        RunningPluginMetadata captured = RUNNING_PLUGIN_METADATA.get(key(plugin.getName()));
+        return captured != null && captured.plugin().get() == plugin ? captured.metadata() : null;
+    }
+
+    private record RunningPluginMetadata(WeakReference<Plugin> plugin, PluginJarMetadata metadata) {
+    }
+
+    private static File loadedPluginFile(Plugin plugin) {
+        try {
+            Field field = findFieldInHierarchy(plugin.getClass(), "file");
+            if (field != null && field.get(plugin) instanceof File file) {
+                return file;
+            }
+        } catch (ReflectiveOperationException exception) {
+            BileTools.warn("Could not inspect the loaded jar of " + plugin.getName(), exception);
+        }
+        return getPluginFile(plugin);
+    }
+
+    public static List<Plugin> unloadOrder(Plugin root) throws IOException, InvalidDescriptionException {
+        List<Plugin> ordered = new ArrayList<>();
+        collectUnloadOrder(root, ordered, new HashSet<>());
+        return List.copyOf(ordered);
+    }
+
+    public static ReloadInspection inspect(Plugin plugin) throws IOException, InvalidDescriptionException {
+        List<String> dependents = new ArrayList<>();
+        for (Plugin affected : unloadOrder(plugin)) {
+            if (affected != plugin) {
+                dependents.add(affected.getName());
+            }
+        }
+        String capability = "available";
+        try {
+            validateUnload(plugin);
+        } catch (InvalidPluginException exception) {
+            capability = exception.getMessage();
+        }
+        return new ReloadInspection(plugin.getName(), plugin.isEnabled(),
+                recoveryStore != null && recoveryStore.contains(plugin.getName()),
+                BukkitLifecycle.isParticipant(plugin), List.copyOf(dependents), capability);
+    }
+
+    public record ReloadInspection(String plugin, boolean enabled, boolean recovery, boolean cooperative,
+                                   List<String> dependents, String capability) {
+    }
+
+    public static CompletionStage<Void> reloadAsync(Plugin plugin) {
+        return reloadFromSnapshotAsync(plugin, null, getPluginFile(plugin), Map.of(), Set.of())
+                .thenApply(ignored -> null);
+    }
+
+    public static CompletionStage<Set<String>> reloadFromSnapshotAsync(Plugin plugin, File snapshot, File source) {
+        return reloadFromSnapshotAsync(plugin, snapshot, source, Map.of(), Set.of());
+    }
+
+    public static CompletionStage<Set<String>> reloadFromSnapshotAsync(Plugin plugin, File snapshot, File source,
+            Map<String, SnapshotLoadSource> snapshots, Set<String> protectedPlugins) {
+        return BukkitLifecycle.execute(() -> createReloadPlan(plugin, snapshot, source, snapshots, protectedPlugins, false));
+    }
+
+    public static CompletionStage<Set<String>> replaceProvidedIdentityFromSnapshotAsync(Plugin plugin, File snapshot,
+            File source, Map<String, SnapshotLoadSource> snapshots, Set<String> protectedPlugins) {
+        return BukkitLifecycle.execute(() -> createReloadPlan(plugin, snapshot, source, snapshots, protectedPlugins, true));
+    }
+
+    public static CompletionStage<Void> unloadAsync(Plugin plugin) {
+        return BukkitLifecycle.execute(() -> createLifecyclePlan(plugin, ReloadAware.PreUnloadReason.HOT_UNLOAD,
+                () -> {
+                    unload(plugin);
+                    return null;
+                }));
+    }
+
+    public static CompletionStage<Void> deleteAsync(File source) {
+        return BukkitLifecycle.execute(() -> createLifecyclePlan(getPlugin(source),
+                ReloadAware.PreUnloadReason.HOT_UNLOAD, () -> {
+                    delete(source);
+                    return null;
+                }));
+    }
+
+    public static CompletionStage<Void> loadAsync(File source) {
+        return loadFromSnapshotAsync(source, source);
+    }
+
+    public static CompletionStage<Void> loadFromSnapshotAsync(File snapshot, File source) {
+        return BukkitLifecycle.execute(() -> {
+            if (snapshot == null || source == null) {
+                throw new InvalidPluginException("Cannot load without a staged jar and authoritative source path");
+            }
+            PluginDescriptionFile description = getPluginDescription(snapshot);
+            Plugin existing = resolveLoadedIdentity(description.getName(), Bukkit.getPluginManager());
+            if (existing != null) {
+                BukkitLifecycle.Plan<Set<String>> replacement = createReloadPlan(existing, snapshot, source,
+                        Map.of(), Set.of(), false);
+                return new BukkitLifecycle.Plan<>(replacement.plugins(), replacement.reason(), () -> {
+                    replacement.mutation().call();
+                    return null;
+                }, replacement.recovery(), replacement.close());
+            }
+            return createLoadPlan(snapshot, source);
+        });
+    }
+
+    static Plugin resolveLoadedIdentity(String name, PluginManager manager) throws InvalidPluginException {
+        for (Plugin plugin : manager.getPlugins()) {
+            if (plugin.getName().equalsIgnoreCase(name)) {
+                return plugin;
+            }
+        }
+        Plugin owner = manager.getPlugin(name);
+        if (owner != null) {
+            throw new InvalidPluginException("Plugin identity " + name + " is already provided by " + owner.getName()
+                    + "; use an explicit provided-identity replacement");
+        }
+        return null;
+    }
+
+    private static BukkitLifecycle.Plan<Void> createLoadPlan(File snapshot, File source) throws Exception {
+        List<JarSnapshotStager.StagedJar> staged = new ArrayList<>();
+        Map<String, RuntimeLoadArtifact> artifacts = new LinkedHashMap<>();
+        try {
+            File pinned = stageReplacement(snapshot, staged).staged().toFile();
+            RuntimeLoadArtifact artifact = prepareSnapshotRuntimeLoadArtifact(pinned, source, false);
+            artifacts.put(cacheKey(pinned), artifact);
+            prepareMissingDependencyArtifacts(pinned, artifacts, new HashSet<>());
+            validatePreparedDependencies(List.of(), artifacts);
+            return new BukkitLifecycle.Plan<>(List.of(), ReloadAware.PreUnloadReason.HOT_RELOAD, () -> {
+                load(pinned, false, artifact, artifacts, source);
+                return null;
+            }, failure -> {}, () -> {
+                discardArtifacts(artifacts);
+                staged.forEach(JarSnapshotStager.StagedJar::delete);
+            });
+        } catch (Exception | Error failure) {
+            discardArtifacts(artifacts);
+            staged.forEach(JarSnapshotStager.StagedJar::delete);
+            throw failure;
+        }
+    }
+
+    private static BukkitLifecycle.Plan<Set<String>> createReloadPlan(Plugin plugin, File snapshot, File source,
+            Map<String, SnapshotLoadSource> snapshots, Set<String> protectedPlugins, boolean replaceIdentity) throws Exception {
+        File incoming = snapshot == null ? getPluginFile(plugin) : snapshot;
+        if (incoming == null || source == null) {
+            throw new InvalidPluginException("Cannot resolve replacement jar for " + plugin.getName());
+        }
+        String replacementName = validateReloadIdentity(plugin.getDescription(), getPluginDescription(incoming), replaceIdentity);
+        boolean changedIdentity = !plugin.getName().equalsIgnoreCase(replacementName);
+        Plugin identityOwner = Bukkit.getPluginManager().getPlugin(replacementName);
+        if (changedIdentity && identityOwner != null && identityOwner != plugin) {
+            throw new InvalidPluginException("Replacement identity " + replacementName + " is already loaded");
+        }
+        List<JarSnapshotStager.StagedJar> staged = new ArrayList<>();
+        Map<String, RuntimeLoadArtifact> artifacts = new LinkedHashMap<>();
+        RecoveryGroup recovery = null;
+        try {
+            JarSnapshotStager.StagedJar root = stageReplacement(incoming, staged);
+            Map<String, SnapshotLoadSource> pinned = new LinkedHashMap<>(normalizeSnapshotSources(snapshots));
+            Set<String> protectedNames = normalizePluginNames(protectedPlugins);
+            List<Plugin> plugins = unloadOrder(plugin);
+            for (Plugin affected : plugins) {
+                validateUnload(affected);
+                if (affected == plugin || pinned.containsKey(key(affected.getName()))) {
+                    continue;
+                }
+                if (protectedNames.contains(key(affected.getName()))) {
+                    throw new SnapshotUnavailableException("The staged snapshot for dependent " + affected.getName() + " was superseded");
+                }
+                File affectedSource = getPluginFile(affected);
+                if (affectedSource == null) {
+                    throw new IOException("Cannot locate dependent " + affected.getName());
+                }
+                JarSnapshotStager.StagedJar copy = stageReplacement(affectedSource, staged);
+                pinned.put(key(affected.getName()), new SnapshotLoadSource(affected.getName(), copy.staged().toFile(), affectedSource));
+            }
+            File rootFile = root.staged().toFile();
+            RuntimeLoadArtifact artifact = prepareSnapshotRuntimeLoadArtifact(rootFile, source, true);
+            artifacts.put(cacheKey(rootFile), artifact);
+            prepareMissingDependencyArtifacts(rootFile, artifacts, new HashSet<>());
+            prepareDependentReloadArtifacts(plugin, artifacts, new HashSet<>(), pinned, protectedNames);
+            validatePreparedDependencies(plugins, artifacts);
+            recovery = retainRecoveryGroup(plugin);
+            RecoveryGroup retained = recovery;
+            return new BukkitLifecycle.Plan<>(plugins, ReloadAware.PreUnloadReason.HOT_RELOAD,
+                    () -> reload(plugin, rootFile, source, pinned, replaceIdentity, artifacts), failure -> {
+                        if (changedIdentity) {
+                            Plugin replacement = getPluginByExactName(replacementName);
+                            if (replacement != null) {
+                                try {
+                                    unload(replacement, ReloadAware.PreUnloadReason.HOT_RELOAD);
+                                } catch (Throwable cleanupFailure) {
+                                    failure.addSuppressed(cleanupFailure);
+                                    BileTools.warn("Could not remove failed replacement " + replacementName, cleanupFailure);
+                                }
+                            }
+                        }
+                        retained.restore(failure);
+                    },
+                    () -> {
+                        retained.close();
+                        discardArtifacts(artifacts);
+                        staged.forEach(JarSnapshotStager.StagedJar::delete);
+                    });
+        } catch (Exception | Error failure) {
+            if (recovery != null) {
+                recovery.close();
+            }
+            discardArtifacts(artifacts);
+            staged.forEach(JarSnapshotStager.StagedJar::delete);
+            throw failure;
+        }
+    }
+
+    private static JarSnapshotStager.StagedJar stageReplacement(File source, List<JarSnapshotStager.StagedJar> staged)
+            throws IOException {
+        JarSnapshotStager.StagedJar copy = JarSnapshotStager.stage(source.toPath(),
+                BileTools.bile.getDataFolder().toPath().resolve("replacement-stage"), 0L,
+                JarSnapshotStager.BUKKIT_DESCRIPTOR_ENTRIES);
+        staged.add(copy);
+        return copy;
+    }
+
+    private static <T> BukkitLifecycle.Plan<T> createLifecyclePlan(Plugin plugin,
+            ReloadAware.PreUnloadReason reason, Callable<T> operation) throws Exception {
+        List<Plugin> plugins = plugin == null ? List.of() : unloadOrder(plugin);
+        for (Plugin affected : plugins) {
+            validateUnload(affected);
+        }
+        RecoveryGroup recovery = plugin == null ? null : retainRecoveryGroup(plugin);
+        return new BukkitLifecycle.Plan<>(plugins, reason, operation,
+                failure -> {
+                    if (recovery != null) {
+                        recovery.restore(failure);
+                    }
+                }, () -> {
+                    if (recovery != null) {
+                        recovery.close();
+                    }
+                });
+    }
+
+    private static void discardArtifacts(Map<String, RuntimeLoadArtifact> artifacts) {
+        for (RuntimeLoadArtifact artifact : artifacts.values()) {
+            artifact.discard();
+        }
+    }
+
+    private static void validatePreparedDependencies(List<Plugin> unloading,
+            Map<String, RuntimeLoadArtifact> artifacts) throws InvalidPluginException {
+        Set<String> surviving = new HashSet<>();
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            if (!unloading.contains(plugin)) {
+                surviving.add(plugin.getName());
+                surviving.addAll(plugin.getDescription().getProvides());
+            }
+        }
+        List<PluginDependencyPlan.Identity> replacements = new ArrayList<>();
+        for (RuntimeLoadArtifact artifact : new LinkedHashSet<>(artifacts.values())) {
+            PluginJarMetadata metadata = artifact.metadata;
+            replacements.add(new PluginDependencyPlan.Identity(metadata.description().getName(),
+                    metadata.description().getProvides(), metadata.requiredDependencies()));
+        }
+        PluginDependencyPlan.validate(replacements, surviving);
+    }
+
+    private static void validateUnload(Plugin plugin) throws InvalidPluginException {
+        NativePaperSupport.validateLoaded(plugin);
+        try {
+            if (!ServerPlatform.isPaperRuntime()) {
+                SpigotPluginLoaderCleanup.validate(plugin);
+            }
+            PlatformTasks.validatePluginTaskCancellation(plugin);
+            if (ServerPlatform.isPaperRuntime()) {
+                paperClassloaderRegistration(plugin);
+                PaperPluginTracking tracking = paperPluginTracking();
+                findCompatibleMethod(tracking.dependencyTree().getClass(), "remove",
+                        Plugin.class.getMethod("getPluginMeta").invoke(plugin));
+                paperProviders("PLUGIN");
+                paperProviders("BOOTSTRAPPER");
+            }
+            PluginManager manager = Bukkit.getPluginManager();
+            if (readPluginList(manager) == null || readLookupNames(manager) == null || readCommandMap(manager) == null
+                    || !(requiredFieldValue(readCommandMap(manager), "knownCommands") instanceof Map<?, ?>)) {
+                throw new InvalidPluginException("Required plugin or command registries are unavailable; cannot unload " + plugin.getName());
+            }
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            throw new InvalidPluginException("Cannot inspect plugin registries before unloading " + plugin.getName(), exception);
+        }
+    }
+
+    private static void collectUnloadOrder(Plugin root, List<Plugin> ordered, Set<String> visited)
+            throws IOException, InvalidDescriptionException {
+        if (!visited.add(key(root.getName()))) {
+            return;
+        }
+        for (Plugin candidate : Bukkit.getPluginManager().getPlugins()) {
+            if (candidate != root && dependsOn(candidate, root)) {
+                collectUnloadOrder(candidate, ordered, visited);
+            }
+        }
+        ordered.add(root);
+    }
+
+    private static RecoveryGroup retainRecoveryGroup(Plugin root) throws IOException, InvalidDescriptionException {
+        if (recoveryStore == null) {
+            throw new IOException("The running-version recovery store is unavailable");
+        }
+        List<RecoveryEntry> entries = new ArrayList<>();
+        try {
+            for (Plugin plugin : unloadOrder(root)) {
+                File source = getPluginFile(plugin);
+                if (source == null) {
+                    throw new IOException("Cannot resolve the source of " + plugin.getName());
+                }
+                PluginJarMetadata metadata = runningMetadata(plugin);
+                if (metadata == null) {
+                    throw new IOException("Running dependency metadata is unavailable for " + plugin.getName());
+                }
+                entries.add(new RecoveryEntry(plugin.getName(), source, recoveryStore.retain(plugin.getName()), metadata));
+            }
+            return new RecoveryGroup(entries);
+        } catch (IOException | InvalidDescriptionException exception) {
+            for (RecoveryEntry entry : entries) {
+                entry.snapshot().delete();
+            }
+            throw exception;
+        }
+    }
+
+    private record RecoveryEntry(String name, File source, JarSnapshotStager.StagedJar snapshot, PluginJarMetadata metadata) {
+    }
+
+    private record RecoveryGroup(List<RecoveryEntry> entries) implements AutoCloseable {
+        private void restore(Throwable failure) {
+            Map<String, RecoveryEntry> sources = new LinkedHashMap<>();
+            for (RecoveryEntry entry : entries) {
+                sources.put(key(entry.name()), entry);
+                for (String provided : entry.metadata().description().getProvides()) {
+                    sources.putIfAbsent(key(provided), entry);
+                }
+                try {
+                    recoveryStore.remember(entry.name(), entry.snapshot().staged());
+                } catch (IOException restoreFailure) {
+                    failure.addSuppressed(restoreFailure);
+                    BileTools.warn("Could not preserve the recovery copy of " + entry.name(), restoreFailure);
+                }
+            }
+            RECOVERY_SOURCES.set(sources);
+            try {
+                for (RecoveryEntry entry : entries) {
+                    Plugin current = getPluginByExactName(entry.name());
+                    if (current != null) {
+                        try {
+                            unload(current, ReloadAware.PreUnloadReason.HOT_RELOAD);
+                        } catch (Throwable cleanupFailure) {
+                            failure.addSuppressed(cleanupFailure);
+                            BileTools.warn("Recovery teardown failed for " + entry.name(), cleanupFailure);
+                        }
+                    }
+                }
+                for (int index = entries.size() - 1; index >= 0; index--) {
+                    RecoveryEntry entry = entries.get(index);
+                    if (getPluginByExactName(entry.name()) != null) {
+                        continue;
+                    }
+                    try {
+                        File snapshot = entry.snapshot().staged().toFile();
+                        RuntimeLoadArtifact artifact = prepareSnapshotRuntimeLoadArtifact(snapshot, entry.source(), true);
+                        artifact.metadata = entry.metadata();
+                        load(snapshot, true, artifact, Map.of(), entry.source());
+                        BileTools.info("Restored running version of " + entry.name() + " after failed replacement.");
+                    } catch (Throwable restoreFailure) {
+                        failure.addSuppressed(restoreFailure);
+                        BileTools.severe("Could not restore " + entry.name() + "; a server restart is required.", restoreFailure);
+                    }
+                }
+            } finally {
+                RECOVERY_SOURCES.remove();
+            }
+        }
+
+        @Override
+        public void close() {
+            for (RecoveryEntry entry : entries) {
+                entry.snapshot().delete();
+            }
+        }
     }
 
     private record CachedJarMeta(long length, long lastModified, String pluginName, String pluginVersion) {
@@ -86,11 +555,36 @@ public class BileUtils {
     private static final class RuntimeLoadArtifact {
         private final File sourceFile;
         private final File runtimeFile;
+        private final RuntimeArtifactLease lease;
+        private File authoritativeFile;
+        private PluginJarMetadata metadata;
         private boolean retained;
 
-        private RuntimeLoadArtifact(File sourceFile, File runtimeFile) {
+        private RuntimeLoadArtifact(File sourceFile, File runtimeFile) throws IOException, InvalidDescriptionException {
             this.sourceFile = sourceFile;
             this.runtimeFile = runtimeFile;
+            this.authoritativeFile = sourceFile;
+            try {
+                lease = RuntimeArtifactLease.acquire(runtimeFile.toPath());
+            } catch (IOException | RuntimeException exception) {
+                if (!sameFile(sourceFile, runtimeFile)) {
+                    deleteRuntimePluginFile(runtimeFile);
+                }
+                throw exception;
+            }
+            try {
+                metadata = readRuntimePluginMetadata(sourceFile);
+            } catch (IOException | InvalidDescriptionException exception) {
+                try {
+                    lease.close();
+                } catch (IOException closeFailure) {
+                    exception.addSuppressed(closeFailure);
+                }
+                if (!sameFile(sourceFile, runtimeFile)) {
+                    deleteRuntimePluginFile(runtimeFile);
+                }
+                throw exception;
+            }
         }
 
         private File runtimeFile() {
@@ -103,20 +597,31 @@ public class BileUtils {
 
         private void retain(String pluginName) {
             if (!temporary()) {
+                releaseLease();
                 return;
             }
 
             File previous = RUNTIME_PLUGIN_FILES.put(key(pluginName), runtimeFile);
             retained = true;
             runtimeFile.deleteOnExit();
+            releaseLease();
             if (previous != null && !sameFile(previous, runtimeFile)) {
                 deleteRuntimePluginFile(previous);
             }
         }
 
         private void discard() {
+            releaseLease();
             if (!retained && temporary()) {
                 deleteRuntimePluginFile(runtimeFile);
+            }
+        }
+
+        private void releaseLease() {
+            try {
+                lease.close();
+            } catch (IOException exception) {
+                throw new IllegalStateException("Could not release runtime artifact lease for " + runtimeFile, exception);
             }
         }
     }
@@ -197,17 +702,19 @@ public class BileUtils {
                     continue;
                 }
 
-                File runtimeFile = (File) pluginFile;
-                if (!sameFile(runtimeFile.getParentFile(), runtimeDirectory)) {
+                File loadedFile = (File) pluginFile;
+                File runtimeFile = managedRuntimeArchive(loadedFile, runtimeDirectory);
+                if (runtimeFile == null) {
                     continue;
                 }
 
+                activeRuntimeFiles.add(cacheKey(loadedFile));
                 activeRuntimeFiles.add(cacheKey(runtimeFile));
                 runtimeFile.deleteOnExit();
                 RUNTIME_PLUGIN_FILES.put(key(plugin.getName()), runtimeFile);
                 clearLoadedFileOverride(plugin.getName());
                 File sourceFile = findRuntimeSourceFile(plugin.getName(), runtimeFile);
-                if (sourceFile != null && sourceFile.isFile()) {
+                if (sourceFile != null) {
                     registerLoadedFileOverride(plugin.getName(), sourceFile);
                 } else {
                     BileTools.bile.getLogger().warning("Could not recover the source jar for active runtime plugin " + plugin.getName());
@@ -223,7 +730,19 @@ public class BileUtils {
 
         int removed = 0;
         for (File runtimeFile : runtimeFiles) {
+            if (runtimeFile.isDirectory()) {
+                continue;
+            }
             if (activeRuntimeFiles.contains(cacheKey(runtimeFile))) {
+                continue;
+            }
+            try {
+                if (RuntimeArtifactLease.isActive(runtimeFile.toPath())) {
+                    continue;
+                }
+            } catch (IOException | RuntimeException exception) {
+                BileTools.bile.getLogger().log(Level.WARNING,
+                        "Could not inspect runtime artifact lease for " + runtimeFile.getName(), exception);
                 continue;
             }
             deleteRuntimePluginFile(runtimeFile);
@@ -237,16 +756,16 @@ public class BileUtils {
         }
     }
 
-    public static void delete(Plugin p) throws IOException {
+    private static void delete(Plugin p) throws IOException {
         File f = getPluginFile(p);
         if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
             backup(p);
         }
         unload(p);
-        f.delete();
+        Files.deleteIfExists(f.toPath());
     }
 
-    public static void delete(File f) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
+    private static void delete(File f) throws IOException, InvalidConfigurationException, InvalidDescriptionException {
         if (getPlugin(f) != null) {
             delete(getPlugin(f));
             return;
@@ -256,60 +775,15 @@ public class BileUtils {
             PluginDescriptionFile fx = getPluginDescription(f);
             copy(f, new File(getBackupLocation(fx.getName()), fx.getVersion() + ".jar"));
         }
-        f.delete();
-    }
-
-    public static void reload(Plugin p) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
-        reload(p, null, null, Map.of(), Set.of(), false);
-    }
-
-    public static void reloadFromSnapshot(Plugin plugin,
-                                          File snapshotFile,
-                                          File authoritativeFile) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
-        if (snapshotFile == null || !snapshotFile.isFile()) {
-            throw new InvalidPluginException("Cannot reload from a missing staged plugin jar");
-        }
-        if (authoritativeFile == null) {
-            throw new InvalidPluginException("Cannot reload without an authoritative plugin jar path");
-        }
-        reload(plugin, snapshotFile, authoritativeFile, Map.of(), Set.of(), false);
-    }
-
-    public static Set<String> reloadFromSnapshot(Plugin plugin,
-                                                 File snapshotFile,
-                                                 File authoritativeFile,
-                                                 Map<String, SnapshotLoadSource> availableSnapshots,
-                                                 Set<String> protectedSnapshotPlugins) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
-        if (snapshotFile == null || !snapshotFile.isFile()) {
-            throw new InvalidPluginException("Cannot reload from a missing staged plugin jar");
-        }
-        if (authoritativeFile == null) {
-            throw new InvalidPluginException("Cannot reload without an authoritative plugin jar path");
-        }
-        return reload(plugin, snapshotFile, authoritativeFile, availableSnapshots, protectedSnapshotPlugins, false);
-    }
-
-    public static Set<String> replaceProvidedIdentityFromSnapshot(
-            Plugin plugin,
-            File snapshotFile,
-            File authoritativeFile,
-            Map<String, SnapshotLoadSource> availableSnapshots,
-            Set<String> protectedSnapshotPlugins) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
-        if (snapshotFile == null || !snapshotFile.isFile()) {
-            throw new InvalidPluginException("Cannot replace from a missing staged plugin jar");
-        }
-        if (authoritativeFile == null) {
-            throw new InvalidPluginException("Cannot replace without an authoritative plugin jar path");
-        }
-        return reload(plugin, snapshotFile, authoritativeFile, availableSnapshots, protectedSnapshotPlugins, true);
+        Files.deleteIfExists(f.toPath());
     }
 
     private static Set<String> reload(Plugin p,
                                       File snapshotFile,
                                       File authoritativeFile,
                                       Map<String, SnapshotLoadSource> availableSnapshots,
-                                      Set<String> protectedSnapshotPlugins,
-                                      boolean allowProvidedIdentityReplacement) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
+                                      boolean allowProvidedIdentityReplacement,
+                                      Map<String, RuntimeLoadArtifact> runtimeArtifacts) throws IOException, UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, InvalidConfigurationException {
         if (p == null) {
             throw new InvalidPluginException("Cannot reload null plugin");
         }
@@ -325,23 +799,12 @@ public class BileUtils {
         PluginDescriptionFile loadDescription = getPluginDescription(loadSource);
         String loadedPluginName = validateReloadIdentity(
                 p.getDescription(), loadDescription, allowProvidedIdentityReplacement);
-        Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
         Map<String, SnapshotLoadSource> snapshots = normalizeSnapshotSources(availableSnapshots);
-        Set<String> protectedSnapshots = normalizePluginNames(protectedSnapshotPlugins);
         Set<String> loadedSnapshots = new LinkedHashSet<>();
         Plugin reloaded = null;
-        boolean reloadComplete = false;
 
         try {
-            RuntimeLoadArtifact runtimeArtifact;
-            if (snapshotFile == null) {
-                runtimeArtifact = prepareReloadArtifact(p, runtimeArtifacts);
-            } else {
-                runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(loadSource, retainedSource, true);
-                runtimeArtifacts.put(cacheKey(loadSource), runtimeArtifact);
-            }
-            prepareDependentReloadArtifacts(
-                    p, runtimeArtifacts, new HashSet<>(), snapshots, protectedSnapshots);
+            RuntimeLoadArtifact runtimeArtifact = runtimeArtifacts.get(cacheKey(loadSource));
 
             if (BileTools.cfg == null || BileTools.cfg.isArchivePlugins()) {
                 if (snapshotFile == null) {
@@ -394,15 +857,11 @@ public class BileUtils {
                     "dependents=" + dependentsMs + "ms",
                     "load=" + loadMs + "ms",
                     "health=ok");
-            reloadComplete = true;
             if (snapshotFile != null) {
                 loadedSnapshots.add(loadedPluginName);
             }
             return Set.copyOf(loadedSnapshots);
         } finally {
-            if (!reloadComplete && reloaded != null) {
-                cleanupFailedPluginLoad(reloaded);
-            }
             for (RuntimeLoadArtifact runtimeArtifact : runtimeArtifacts.values()) {
                 runtimeArtifact.discard();
             }
@@ -546,32 +1005,6 @@ public class BileUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static void load(File file) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
-        load(file, false, null, null);
-    }
-
-    public static void loadFromSnapshot(File snapshotFile,
-                                        File authoritativeFile) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
-        if (snapshotFile == null || !snapshotFile.isFile()) {
-            throw new InvalidPluginException("Cannot load from a missing staged plugin jar");
-        }
-        if (authoritativeFile == null) {
-            throw new InvalidPluginException("Cannot load without an authoritative plugin jar path");
-        }
-
-        Map<String, RuntimeLoadArtifact> runtimeArtifacts = new LinkedHashMap<>();
-        RuntimeLoadArtifact runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(snapshotFile, authoritativeFile, false);
-        runtimeArtifacts.put(cacheKey(snapshotFile), runtimeArtifact);
-        try {
-            load(snapshotFile, false, runtimeArtifact, runtimeArtifacts, authoritativeFile);
-        } finally {
-            for (RuntimeLoadArtifact artifact : runtimeArtifacts.values()) {
-                artifact.discard();
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     private static void load(File file,
                              boolean reloadContext,
                              RuntimeLoadArtifact preparedArtifact,
@@ -580,11 +1013,12 @@ public class BileUtils {
     }
 
     @SuppressWarnings("unchecked")
-    private static void load(File file,
+    private static void load(File sourceFile,
                              boolean reloadContext,
                              RuntimeLoadArtifact preparedArtifact,
                              Map<String, RuntimeLoadArtifact> preparedArtifacts,
                              File retainedSourceFile) throws UnknownDependencyException, InvalidPluginException, InvalidDescriptionException, IOException, InvalidConfigurationException {
+        File file = preparedArtifact == null ? sourceFile : preparedArtifact.runtimeFile();
         if (getPlugin(file) != null) {
             BileTools.debug(() -> "Skipping " + file.getName() + " because it is already loaded.");
             if (preparedArtifact != null) {
@@ -594,7 +1028,8 @@ public class BileUtils {
         }
 
         long startNs = System.nanoTime();
-        PluginJarMetadata metadata = readRuntimePluginMetadata(file);
+        PluginJarMetadata metadata = preparedArtifact == null
+                ? readRuntimePluginMetadata(file) : preparedArtifact.metadata;
         PluginDescriptionFile f = metadata.description();
         String cycleKey = key(f.getName());
         Set<String> visiting = LOAD_VISITING.get();
@@ -604,72 +1039,59 @@ public class BileUtils {
         }
 
         RuntimeLoadArtifact runtimeArtifact = preparedArtifact;
-        Map<String, RuntimeLoadArtifact> dependentArtifacts = new LinkedHashMap<>();
         Plugin target = null;
         boolean loadComplete = false;
         try {
             invalidateJarMeta(file);
-            BileTools.info("Loading " + f.getName() + " " + f.getVersion() + " from " + file.getName() + ".");
-            List<File> deferredDependents = new ArrayList<>();
+            File displayFile = retainedSourceFile == null ? sourceFile : retainedSourceFile;
+            BileTools.info("Loading " + f.getName() + " " + f.getVersion() + " from " + displayFile.getName() + ".");
 
-            String baseName = file.getName().toLowerCase(Locale.ROOT).replace(".jar", "");
+            String baseName = displayFile.getName().toLowerCase(Locale.ROOT).replace(".jar", "");
             String declaredName = f.getName() == null ? "" : f.getName().toLowerCase(Locale.ROOT);
             if (!declaredName.isEmpty() && !baseName.contains(declaredName)) {
-                BileTools.warn(file.getName() + " declares plugin name " + f.getName()
+                BileTools.warn(displayFile.getName() + " declares plugin name " + f.getName()
                         + "; its filename does not match the plugin id.");
             }
 
-            Plugin existing = Bukkit.getPluginManager().getPlugin(f.getName());
-            boolean replacingLoadedPlugin = existing != null;
-            if (runtimeArtifact == null) {
-                runtimeArtifact = prepareRuntimeLoadArtifact(file, reloadContext || replacingLoadedPlugin);
-            }
+            Plugin existing = resolveLoadedIdentity(f.getName(), Bukkit.getPluginManager());
             if (existing != null) {
-                File existingFile = getPluginFile(existing);
-
-                if (sameFile(existingFile, file)) {
-                    BileTools.debug(() -> "Skipping " + file.getName() + " because plugin "
-                            + existing.getName() + " is already loaded from this jar.");
-                    return;
-                }
-
-                String existingName = existingFile == null ? "unknown source" : existingFile.getName();
-                BileTools.info("Replacing " + existing.getName() + " from " + existingName
-                        + " with " + file.getName() + ".");
-
-                prepareMissingDependencyArtifacts(file, dependentArtifacts, new HashSet<>());
-                prepareDependentReloadArtifacts(existing, dependentArtifacts, new HashSet<>());
-                Set<File> dependents = unload(existing, ReloadAware.PreUnloadReason.HOT_RELOAD);
-                for (File dep : dependents) {
-                    if (dep != null && !sameFile(dep, file)) {
-                        deferredDependents.add(dep);
-                    }
-                }
+                throw new InvalidPluginException("Plugin " + existing.getName()
+                        + " is still loaded; replacement requires a prepared lifecycle operation");
+            }
+            if (runtimeArtifact == null) {
+                runtimeArtifact = prepareRuntimeLoadArtifact(file, reloadContext);
             }
 
             Map<String, RuntimeLoadArtifact> operationArtifacts = new LinkedHashMap<>();
             if (preparedArtifacts != null) {
                 operationArtifacts.putAll(preparedArtifacts);
             }
-            operationArtifacts.putAll(dependentArtifacts);
 
             for (String i : metadata.requiredDependencies()) {
                 if (Bukkit.getPluginManager().getPlugin(i) == null) {
                     BileTools.debug(() -> f.getName() + " requires unloaded dependency " + i + ".");
-                    File fx = getPluginFile(i);
-
-                    if (fx != null) {
-                        RuntimeLoadArtifact dependencyArtifact = preparedArtifactFor(fx, operationArtifacts);
-                        load(fx, dependencyArtifact != null, dependencyArtifact, operationArtifacts);
-                    } else {
-                        throw new UnknownDependencyException(
-                                "Missing dependency " + i + " for " + f.getName());
+                    Map<String, RecoveryEntry> recoverySources = RECOVERY_SOURCES.get();
+                    RecoveryEntry recovery = recoverySources == null ? null : recoverySources.get(key(i));
+                    if (recovery != null) {
+                        File snapshot = recovery.snapshot().staged().toFile();
+                        RuntimeLoadArtifact recoveryArtifact = prepareSnapshotRuntimeLoadArtifact(snapshot, recovery.source(), true);
+                        recoveryArtifact.metadata = recovery.metadata();
+                        load(snapshot, true, recoveryArtifact, operationArtifacts, recovery.source());
+                        continue;
                     }
+                    RuntimeLoadArtifact dependencyArtifact = preparedDependencyArtifact(i, operationArtifacts);
+                    File dependencySource = dependencyArtifact == null ? getPluginFile(i) : dependencyArtifact.sourceFile;
+                    if (dependencySource == null) {
+                        throw new UnknownDependencyException("Missing dependency " + i + " for " + f.getName());
+                    }
+                    load(dependencySource, dependencyArtifact != null, dependencyArtifact, operationArtifacts,
+                            dependencyArtifact == null ? dependencySource : dependencyArtifact.authoritativeFile);
                 }
             }
 
             File runtimeFile = runtimeArtifact.runtimeFile();
-            if (runtimeArtifact.temporary()) {
+            boolean nativePaper = ServerPlatform.isPaperRuntime() && NativePaperSupport.isRequested(runtimeFile);
+            if (runtimeArtifact.temporary() && !nativePaper && hasPaperDescriptor(file)) {
                 BileTools.info("Paper startup entrypoints are not rerun; reloading " + file.getName()
                         + " through its authored plugin.yml.");
                 BileTools.debug(() -> "Calling loadPlugin for " + file.getName()
@@ -679,7 +1101,21 @@ public class BileUtils {
             }
 
             try {
-                target = Bukkit.getPluginManager().loadPlugin(runtimeFile);
+                if (nativePaper) {
+                    target = NativePaperSupport.load(runtimeFile);
+                } else if (ServerPlatform.isPaperRuntime()) {
+                    try (PaperLoadFailureMonitor monitor = PaperLoadFailureMonitor.observe()) {
+                        target = Bukkit.getPluginManager().loadPlugin(runtimeFile);
+                        monitor.throwIfFailed(target);
+                    }
+                } else {
+                    target = Bukkit.getPluginManager().loadPlugin(runtimeFile);
+                }
+            } catch (InvalidPluginException | RuntimeException | Error failure) {
+                if (target == null) {
+                    target = Bukkit.getPluginManager().getPlugin(f.getName());
+                }
+                throw failure;
             } finally {
                 if (target == null && ServerPlatform.isPaperRuntime()) {
                     removePaperRuntimeProvider(f.getName(), runtimeFile);
@@ -692,7 +1128,8 @@ public class BileUtils {
             }
 
             registerLoadedFileOverride(target.getName(), retainedSourceFile == null ? file : retainedSourceFile);
-            boolean explicitOnLoad = shouldCallExplicitOnLoad();
+            rememberRunningMetadata(target, metadata);
+            boolean explicitOnLoad = !nativePaper && shouldCallExplicitOnLoad();
 
             if (explicitOnLoad) {
                 Plugin loadedTarget = target;
@@ -706,7 +1143,16 @@ public class BileUtils {
 
             Plugin loadedTarget = target;
             BileTools.debug(() -> "Enabling " + loadedTarget.getName() + ".");
-            Bukkit.getPluginManager().enablePlugin(target);
+            try (LifecycleFailureMonitor monitor = LifecycleFailureMonitor.observe(new LifecycleFailureMonitor.Options(
+                    target.getDescription().getFullName(), LifecycleFailureMonitor.Phase.ENABLE,
+                    List.of(Bukkit.getLogger(), target.getLogger())))) {
+                if (nativePaper) {
+                    NativePaperSupport.enable(target);
+                } else {
+                    Bukkit.getPluginManager().enablePlugin(target);
+                }
+                monitor.throwIfFailed();
+            }
 
             Plugin registered = Bukkit.getPluginManager().getPlugin(target.getName());
             if (registered == null || !Bukkit.getPluginManager().isPluginEnabled(registered)) {
@@ -718,16 +1164,6 @@ public class BileUtils {
             invalidateJarMeta(file);
             BileTools.info("Enabled " + target.getName() + " successfully.");
 
-            if (!deferredDependents.isEmpty()) {
-                BileTools.info("Reloading " + deferredDependents.size()
-                        + " dependent plugin(s) after replacement of " + target.getName() + ".");
-                for (File dependent : deferredDependents) {
-                    if (dependent != null && dependent.exists()) {
-                        load(dependent, true, dependentArtifacts.get(cacheKey(dependent)), dependentArtifacts);
-                    }
-                }
-            }
-
             HealthCheckResult health = verifyPluginHealth(target, runtimeFile);
             if (!health.ok()) {
                 throw new InvalidPluginException("Post-load health check failed for " + target.getName() + ": " + health.summary());
@@ -735,6 +1171,9 @@ public class BileUtils {
 
             rebuildServerCommandGraph();
             logTiming("load " + target.getName(), nanosToMillis(System.nanoTime() - startNs), "health=ok");
+            if (recoveryStore != null) {
+                recoveryStore.remember(target.getName(), runtimeFile.toPath());
+            }
             runtimeArtifact.retain(target.getName());
             loadComplete = true;
         } finally {
@@ -743,9 +1182,6 @@ public class BileUtils {
             }
             if (runtimeArtifact != null) {
                 runtimeArtifact.discard();
-            }
-            for (RuntimeLoadArtifact dependentArtifact : dependentArtifacts.values()) {
-                dependentArtifact.discard();
             }
             visiting.remove(cycleKey);
             if (visiting.isEmpty()) {
@@ -789,20 +1225,21 @@ public class BileUtils {
 
     private static RuntimeLoadArtifact prepareRuntimeLoadArtifact(File sourceFile,
                                                                   boolean reloadContext) throws IOException, InvalidPluginException, InvalidDescriptionException {
-        return prepareRuntimeLoadArtifact(sourceFile, reloadContext, sourceFile == null ? null : sourceFile.getName(), false);
+        return prepareRuntimeLoadArtifact(sourceFile, reloadContext, sourceFile == null ? null : sourceFile.getName());
     }
 
     private static RuntimeLoadArtifact prepareSnapshotRuntimeLoadArtifact(File snapshotFile,
                                                                           File authoritativeFile,
                                                                           boolean reloadContext) throws IOException, InvalidPluginException, InvalidDescriptionException {
         String sourceName = authoritativeFile == null ? snapshotFile.getName() : authoritativeFile.getName();
-        return prepareRuntimeLoadArtifact(snapshotFile, reloadContext, sourceName, true);
+        RuntimeLoadArtifact artifact = prepareRuntimeLoadArtifact(snapshotFile, reloadContext, sourceName);
+        artifact.authoritativeFile = authoritativeFile;
+        return artifact;
     }
 
     private static RuntimeLoadArtifact prepareRuntimeLoadArtifact(File sourceFile,
                                                                   boolean reloadContext,
-                                                                  String runtimeSourceName,
-                                                                  boolean forceRuntimeCopy) throws IOException, InvalidPluginException, InvalidDescriptionException {
+                                                                  String runtimeSourceName) throws IOException, InvalidPluginException, InvalidDescriptionException {
         if (sourceFile == null || !sourceFile.isFile()) {
             throw new InvalidPluginException("Cannot resolve plugin jar for runtime load");
         }
@@ -815,14 +1252,23 @@ public class BileUtils {
         }
 
         boolean paperRuntime = ServerPlatform.isPaperRuntime();
+        if (paperRuntime && paperDescriptor && NativePaperSupport.isRequested(sourceFile)) {
+            NativePaperSupport.validate(sourceFile);
+            return new RuntimeLoadArtifact(sourceFile,
+                    createRuntimePluginCopy(sourceFile, runtimePluginDirectory(), runtimeSourceName));
+        }
         validateRuntimeCompatibility(paperDescriptor, pluginDescriptor, paperRuntime, reloadContext, sourceFile.getName());
+        if (paperRuntime) {
+            PaperLoadFailureMonitor.validate();
+        }
         if (!paperRuntime || !paperDescriptor) {
-            if (forceRuntimeCopy) {
-                File runtimeDirectory = runtimePluginDirectory();
-                return new RuntimeLoadArtifact(sourceFile,
-                        createRuntimePluginCopy(sourceFile, runtimeDirectory, runtimeSourceName));
+            File runtimeDirectory = runtimePluginDirectory();
+            if (!paperRuntime) {
+                String pluginName = getPluginDescription(sourceFile).getName();
+                RuntimeDataDirectory.prepare(runtimeDirectory.toPath(), getPluginsFolder().toPath(), pluginName);
             }
-            return new RuntimeLoadArtifact(sourceFile, sourceFile);
+            return new RuntimeLoadArtifact(sourceFile,
+                    createRuntimePluginCopy(sourceFile, runtimeDirectory, runtimeSourceName));
         }
 
         PluginDescriptionFile sourceDescription = readPluginMetadata(sourceFile).description();
@@ -855,6 +1301,12 @@ public class BileUtils {
 
     static File createRuntimePluginView(File sourceFile, File runtimeDirectory) throws IOException {
         return createRuntimePluginView(sourceFile, runtimeDirectory, sourceFile.getName());
+    }
+
+    private static boolean hasPaperDescriptor(File source) throws IOException {
+        try (ZipFile archive = new ZipFile(source)) {
+            return archive.getEntry("paper-plugin.yml") != null;
+        }
     }
 
     private static File createRuntimePluginView(File sourceFile,
@@ -1028,15 +1480,22 @@ public class BileUtils {
             return existingArtifact;
         }
 
-        RuntimeLoadArtifact runtimeArtifact = prepareRuntimeLoadArtifact(sourceFile, false);
-        artifacts.put(artifactKey, runtimeArtifact);
-        return runtimeArtifact;
+        List<JarSnapshotStager.StagedJar> staged = new ArrayList<>(1);
+        try {
+            File pinned = stageReplacement(sourceFile, staged).staged().toFile();
+            RuntimeLoadArtifact runtimeArtifact = prepareSnapshotRuntimeLoadArtifact(pinned, sourceFile, false);
+            artifacts.put(artifactKey, runtimeArtifact);
+            return runtimeArtifact;
+        } finally {
+            staged.forEach(JarSnapshotStager.StagedJar::delete);
+        }
     }
 
     private static void prepareMissingDependencyArtifacts(File sourceFile,
                                                           Map<String, RuntimeLoadArtifact> artifacts,
                                                           Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
-        PluginJarMetadata metadata = readRuntimePluginMetadata(sourceFile);
+        RuntimeLoadArtifact prepared = artifacts.get(cacheKey(sourceFile));
+        PluginJarMetadata metadata = prepared == null ? readRuntimePluginMetadata(sourceFile) : prepared.metadata;
         if (!visited.add(key(metadata.description().getName()))) {
             return;
         }
@@ -1058,6 +1517,9 @@ public class BileUtils {
 
     private static File findRuntimeSourceFile(String pluginName, File runtimeFile) {
         String sourceName = runtimeSourceBaseName(runtimeFile);
+        if (sourceName != null && sourceName.equals(new File(sourceName).getName())) {
+            return new File(getPluginsFolder(), sourceName);
+        }
         List<File> candidates = new ArrayList<>();
         for (File candidate : listPluginFiles()) {
             if (!isPluginJar(candidate)) {
@@ -1077,23 +1539,36 @@ public class BileUtils {
         return candidates.size() == 1 ? candidates.get(0) : null;
     }
 
+    static File managedRuntimeArchive(File loadedFile, File runtimeDirectory) {
+        if (sameFile(loadedFile.getParentFile(), runtimeDirectory)) {
+            return loadedFile;
+        }
+        File parent = loadedFile.getParentFile();
+        if (parent == null || !parent.getName().equals(".paper-remapped")
+                || !sameFile(parent.getParentFile(), runtimeDirectory)) {
+            return null;
+        }
+        Matcher matcher = RUNTIME_ARCHIVE_NAME.matcher(loadedFile.getName());
+        if (!matcher.matches() || runtimeSourceBaseName(loadedFile) == null) {
+            return null;
+        }
+        File original = new File(runtimeDirectory, matcher.group(1) + "-" + matcher.group(2) + ".jar");
+        return original.isFile() ? original : loadedFile;
+    }
+
     static String runtimeSourceBaseName(File runtimeFile) {
         if (runtimeFile == null) {
             return null;
         }
-
-        String runtimeName = runtimeFile.getName();
-        int extensionStart = runtimeName.length() - ".jar".length();
-        int uuidStart = extensionStart - UUID_TEXT_LENGTH;
-        if (uuidStart <= 0 || extensionStart <= uuidStart || runtimeName.charAt(uuidStart - 1) != '-') {
+        Matcher matcher = RUNTIME_ARCHIVE_NAME.matcher(runtimeFile.getName());
+        if (!matcher.matches()) {
             return null;
         }
-
         try {
-            UUID.fromString(runtimeName.substring(uuidStart, extensionStart));
-            String encodedSourceName = runtimeName.substring(0, uuidStart - 1);
+            String encodedSourceName = matcher.group(1);
             String sourceName = new String(Base64.getUrlDecoder().decode(encodedSourceName), StandardCharsets.UTF_8);
-            return encodedSourceName.equals(encodeRuntimeSourceName(sourceName)) ? sourceName : null;
+            return encodedSourceName.equals(encodeRuntimeSourceName(sourceName))
+                    && sourceName.equals(new File(sourceName).getName()) ? sourceName : null;
         } catch (IllegalArgumentException ignored) {
             return null;
         }
@@ -1101,12 +1576,6 @@ public class BileUtils {
 
     private static String encodeRuntimeSourceName(String sourceName) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(sourceName.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void prepareDependentReloadArtifacts(Plugin root,
-                                                        Map<String, RuntimeLoadArtifact> artifacts,
-                                                        Set<String> visited) throws IOException, InvalidPluginException, InvalidDescriptionException {
-        prepareDependentReloadArtifacts(root, artifacts, visited, Map.of(), Set.of());
     }
 
     private static void prepareDependentReloadArtifacts(
@@ -1178,27 +1647,40 @@ public class BileUtils {
         return null;
     }
 
-    private static RuntimeLoadArtifact preparedArtifactFor(File file,
-                                                           Map<String, RuntimeLoadArtifact> artifacts) {
-        if (file == null || artifacts == null) {
-            return null;
+    private static RuntimeLoadArtifact preparedDependencyArtifact(String name,
+            Map<String, RuntimeLoadArtifact> artifacts) throws IOException, InvalidDescriptionException {
+        for (RuntimeLoadArtifact artifact : artifacts.values()) {
+            PluginDescriptionFile description = artifact.metadata.description();
+            if (name.equalsIgnoreCase(description.getName()) || containsPluginName(description.getProvides(), name)) {
+                return artifact;
+            }
         }
-        return artifacts.get(cacheKey(file));
+        return null;
     }
 
     private static boolean dependsOn(Plugin candidate,
                                      Plugin dependency) throws IOException, InvalidDescriptionException {
         String dependencyName = dependency.getName();
-        File sourceFile = getPluginFile(candidate);
-        if (declaresDependency(candidate.getDescription(), sourceFile, dependencyName)) {
+        PluginJarMetadata metadata = runningMetadata(candidate);
+        if (declaresDependency(candidate.getDescription(), metadata, dependencyName)) {
             return true;
         }
         for (String providedName : dependency.getDescription().getProvides()) {
-            if (declaresDependency(candidate.getDescription(), sourceFile, providedName)) {
+            if (declaresDependency(candidate.getDescription(), metadata, providedName)) {
                 return true;
             }
         }
         return dependencyName.equals("WorldEdit") && candidate.getName().equals("FastAsyncWorldEdit");
+    }
+
+    private static boolean declaresDependency(PluginDescriptionFile runtimeDescription,
+                                               PluginJarMetadata metadata,
+                                               String dependencyName) {
+        return (metadata != null
+                && (containsPluginName(metadata.requiredDependencies(), dependencyName)
+                || containsPluginName(metadata.optionalDependencies(), dependencyName)))
+                || containsPluginName(runtimeDescription.getDepend(), dependencyName)
+                || containsPluginName(runtimeDescription.getSoftDepend(), dependencyName);
     }
 
     static boolean declaresDependency(PluginDescriptionFile runtimeDescription,
@@ -1360,181 +1842,159 @@ public class BileUtils {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     private static void removePaperPluginTracking(Plugin plugin) {
-        try {
-            PluginManager pluginManager = Bukkit.getPluginManager();
-            if (pluginManager == null) {
-                return;
-            }
-
-            Field paperPluginManagerField = findFieldInHierarchy(pluginManager.getClass(), "paperPluginManager");
-            if (paperPluginManagerField == null) {
-                return;
-            }
-
-            Object paperPluginManager = paperPluginManagerField.get(pluginManager);
-
-            if (paperPluginManager == null) {
-                return;
-            }
-
-            Field instanceManagerField = findFieldInHierarchy(paperPluginManager.getClass(), "instanceManager");
-            if (instanceManagerField == null) {
-                return;
-            }
-
-            Object instanceManager = instanceManagerField.get(paperPluginManager);
-            if (instanceManager == null) {
-                return;
-            }
-
-            Field pluginsField = findFieldInHierarchy(instanceManager.getClass(), "plugins");
-            Object pluginsObj = pluginsField == null ? null : pluginsField.get(instanceManager);
-            if (pluginsObj instanceof List) {
-                ((List<Plugin>) pluginsObj).remove(plugin);
-            }
-
-            Field lookupNamesField = findFieldInHierarchy(instanceManager.getClass(), "lookupNames");
-            Object lookupObj = lookupNamesField == null ? null : lookupNamesField.get(instanceManager);
-            if (lookupObj instanceof Map) {
-                Map<String, Plugin> lookupNames = (Map<String, Plugin>) lookupObj;
-                lookupNames.entrySet().removeIf(e -> e.getValue() == plugin);
-                lookupNames.remove(plugin.getName().toLowerCase(Locale.ROOT));
-
-                try {
-                    for (String provided : plugin.getDescription().getProvides()) {
-                        lookupNames.remove(provided.toLowerCase(Locale.ROOT));
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-
-            try {
-                Field dependencyTreeField = findFieldInHierarchy(instanceManager.getClass(), "dependencyTree");
-                Object dependencyTree = dependencyTreeField == null ? null : dependencyTreeField.get(instanceManager);
-
-                Method getPluginMeta = plugin.getClass().getMethod("getPluginMeta");
-                Object pluginMeta = getPluginMeta.invoke(plugin);
-                if (dependencyTree != null && pluginMeta != null) {
-                    invokeCompatibleMethod(dependencyTree, "remove", pluginMeta);
-                }
-            } catch (Throwable ignored) {
-            }
-        } catch (Throwable ignored) {
+        if (!ServerPlatform.isPaperRuntime()) {
+            return;
         }
+        try {
+            PaperPluginTracking tracking = paperPluginTracking();
+            tracking.plugins().remove(plugin);
+            tracking.lookupNames().entrySet().removeIf(entry -> entry.getValue() == plugin);
+            Object metadata = Plugin.class.getMethod("getPluginMeta").invoke(plugin);
+            invokeCompatibleMethod(tracking.dependencyTree(), "remove", metadata);
+        } catch (Exception failure) {
+            throw new IllegalStateException("Could not remove Paper plugin tracking for " + plugin.getName(), failure);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static PaperPluginTracking paperPluginTracking() throws ReflectiveOperationException {
+        Object manager = requiredFieldValue(Bukkit.getPluginManager(), "paperPluginManager");
+        Object instances = requiredFieldValue(manager, "instanceManager");
+        Object plugins = requiredFieldValue(instances, "plugins");
+        Object lookup = requiredFieldValue(instances, "lookupNames");
+        Object dependencies = requiredFieldValue(instances, "dependencyTree");
+        if (!(plugins instanceof List<?>) || !(lookup instanceof Map<?, ?>)) {
+            throw new IllegalStateException("Paper plugin tracking registries have unsupported types");
+        }
+        return new PaperPluginTracking((List<Plugin>) plugins, (Map<String, Plugin>) lookup, dependencies);
+    }
+
+    private static Object requiredFieldValue(Object target, String name) throws ReflectiveOperationException {
+        if (target == null) {
+            throw new IllegalStateException("Missing registry containing " + name);
+        }
+        Field field = findFieldInHierarchy(target.getClass(), name);
+        if (field == null) {
+            throw new NoSuchFieldException(target.getClass().getName() + "." + name);
+        }
+        Object value = field.get(target);
+        if (value == null) {
+            throw new IllegalStateException("Missing registry " + name);
+        }
+        return value;
+    }
+
+    private record PaperPluginTracking(List<Plugin> plugins, Map<String, Plugin> lookupNames, Object dependencyTree) {
+    }
+
+    private static PaperClassloaderRegistration paperClassloaderRegistration(Plugin plugin) throws ReflectiveOperationException {
+        ClassLoader serverLoader = Plugin.class.getClassLoader();
+        Class<?> storageType = Class.forName("io.papermc.paper.plugin.provider.classloader.PaperClassLoaderStorage", false, serverLoader);
+        Class<?> loaderType = Class.forName("io.papermc.paper.plugin.provider.classloader.ConfiguredPluginClassLoader", false, serverLoader);
+        ClassLoader pluginLoader = plugin.getClass().getClassLoader();
+        if (!loaderType.isInstance(pluginLoader)) {
+            throw new IllegalStateException("Unsupported Paper classloader for " + plugin.getName());
+        }
+        Object storage = storageType.getMethod("instance").invoke(null);
+        return new PaperClassloaderRegistration(storage, storageType.getMethod("unregisterClassloader", loaderType), pluginLoader);
+    }
+
+    private static void removePaperClassloader(Plugin plugin) {
+        try {
+            PaperClassloaderRegistration registration = paperClassloaderRegistration(plugin);
+            registration.unregister().invoke(registration.storage(), registration.loader());
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Could not detach Paper classloader for " + plugin.getName(), failure);
+        }
+    }
+
+    private record PaperClassloaderRegistration(Object storage, Method unregister, ClassLoader loader) {
     }
 
     private static void removePaperRuntimeProvider(String pluginName, File runtimeFile) {
         removePaperLaunchProviders(pluginName, runtimeFile, true, false);
     }
 
-    @SuppressWarnings("unchecked")
     private static void removePaperLaunchProviders(String pluginName,
                                                    File runtimeFile,
                                                    boolean closeProviderFile,
                                                    boolean includeBootstrapper) {
-        try {
-            Class<?> handlerClass = Class.forName("io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler");
-            Field instanceField = handlerClass.getField("INSTANCE");
-            Object handler = instanceField.get(null);
-            Class<?> entrypointClass = Class.forName("io.papermc.paper.plugin.entrypoint.Entrypoint");
-            Method getMethod = handlerClass.getMethod("get", entrypointClass);
-            List<String> entrypointNames = includeBootstrapper
-                    ? List.of("PLUGIN", "BOOTSTRAPPER")
-                    : List.of("PLUGIN");
-            for (String entrypointName : entrypointNames) {
-                Field entrypointField = entrypointClass.getField(entrypointName);
-                Object entrypoint = entrypointField.get(null);
-                Object storage = getMethod.invoke(handler, entrypoint);
-                Field providersField = findFieldInHierarchy(storage.getClass(), "providers");
-                Object providersObject = providersField == null ? null : providersField.get(storage);
-                if (!(providersObject instanceof List)) {
-                    continue;
-                }
-
-                List<Object> providers = (List<Object>) providersObject;
-                Iterator<Object> iterator = providers.iterator();
+        if (!ServerPlatform.isPaperRuntime()) {
+            return;
+        }
+        List<Throwable> failures = new ArrayList<>();
+        for (String entrypoint : includeBootstrapper ? List.of("PLUGIN", "BOOTSTRAPPER") : List.of("PLUGIN")) {
+            try {
+                Iterator<Object> iterator = paperProviders(entrypoint).iterator();
                 while (iterator.hasNext()) {
                     Object provider = iterator.next();
                     if (!paperProviderMatches(provider, pluginName, runtimeFile)) {
                         continue;
                     }
-
                     iterator.remove();
                     if (closeProviderFile) {
-                        removePaperProviderDependency(provider);
-                        closePaperProviderFile(provider);
+                        try {
+                            removePaperProviderDependency(provider);
+                        } catch (Exception failure) {
+                            failures.add(failure);
+                        }
+                        try {
+                            closePaperProviderFile(provider);
+                        } catch (Exception failure) {
+                            failures.add(failure);
+                        }
                     }
                 }
+            } catch (Exception failure) {
+                failures.add(failure);
             }
-        } catch (ClassNotFoundException ignored) {
-        } catch (Throwable e) {
-            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
-                BileTools.bile.getLogger().log(Level.WARNING, "Could not remove Paper runtime provider tracking", e);
-            }
+        }
+        if (!failures.isEmpty()) {
+            IllegalStateException failure = new IllegalStateException("Could not remove Paper provider tracking for " + pluginName);
+            failures.forEach(failure::addSuppressed);
+            throw failure;
         }
     }
 
-    private static void closePaperProviderFile(Object provider) {
-        try {
-            Object providerFile = invokeCompatibleMethod(provider, "file");
-            if (providerFile instanceof AutoCloseable) {
-                ((AutoCloseable) providerFile).close();
-            }
-        } catch (Throwable e) {
-            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
-                BileTools.bile.getLogger().log(Level.WARNING, "Could not close Paper runtime provider file", e);
-            }
+    @SuppressWarnings("unchecked")
+    private static List<Object> paperProviders(String entrypointName) throws ReflectiveOperationException {
+        Class<?> handlerClass = Class.forName("io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler");
+        Object handler = handlerClass.getField("INSTANCE").get(null);
+        Class<?> entrypointClass = Class.forName("io.papermc.paper.plugin.entrypoint.Entrypoint");
+        Object entrypoint = entrypointClass.getField(entrypointName).get(null);
+        Object storage = handlerClass.getMethod("get", entrypointClass).invoke(handler, entrypoint);
+        Object providers = requiredFieldValue(storage, "providers");
+        if (!(providers instanceof List<?>)) {
+            throw new IllegalStateException("Paper " + entrypointName + " providers are unavailable");
         }
+        return (List<Object>) providers;
     }
 
-    private static void removePaperProviderDependency(Object provider) {
-        try {
-            PluginManager pluginManager = Bukkit.getPluginManager();
-            if (pluginManager == null) {
-                return;
-            }
-            Field paperPluginManagerField = findFieldInHierarchy(pluginManager.getClass(), "paperPluginManager");
-            Object paperPluginManager = paperPluginManagerField == null ? null : paperPluginManagerField.get(pluginManager);
-            Field instanceManagerField = paperPluginManager == null
-                    ? null
-                    : findFieldInHierarchy(paperPluginManager.getClass(), "instanceManager");
-            Object instanceManager = instanceManagerField == null ? null : instanceManagerField.get(paperPluginManager);
-            Field dependencyTreeField = instanceManager == null
-                    ? null
-                    : findFieldInHierarchy(instanceManager.getClass(), "dependencyTree");
-            Object dependencyTree = dependencyTreeField == null ? null : dependencyTreeField.get(instanceManager);
-            if (dependencyTree != null) {
-                invokeCompatibleMethod(dependencyTree, "remove", provider);
-            }
-        } catch (Throwable e) {
-            if (ServerPlatform.isPaperRuntime() && BileTools.bile != null) {
-                BileTools.bile.getLogger().log(Level.WARNING, "Could not remove Paper runtime dependency metadata", e);
-            }
+    private static void closePaperProviderFile(Object provider) throws Exception {
+        Object file = invokeCompatibleMethod(provider, "file");
+        if (!(file instanceof AutoCloseable closeable)) {
+            throw new IllegalStateException("Paper provider file cannot be closed for " + provider.getClass().getName());
         }
+        closeable.close();
     }
 
-    private static boolean paperProviderMatches(Object provider, String pluginName, File runtimeFile) {
-        if (runtimeFile != null) {
-            try {
-                Object source = invokeCompatibleMethod(provider, "getSource");
-                if (source != null && sameFile(new File(source.toString()), runtimeFile)) {
-                    return true;
-                }
-            } catch (Throwable ignored) {
-            }
-        }
+    private static void removePaperProviderDependency(Object provider) throws Exception {
+        invokeCompatibleMethod(paperPluginTracking().dependencyTree(), "remove", provider);
+    }
 
+    private static boolean paperProviderMatches(Object provider, String pluginName, File runtimeFile) throws Exception {
         if (pluginName != null) {
-            try {
-                Object metadata = invokeCompatibleMethod(provider, "getMeta");
-                Object name = invokeCompatibleMethod(metadata, "getName");
-                return name != null && pluginName.equalsIgnoreCase(name.toString());
-            } catch (Throwable ignored) {
+            Object metadata = invokeCompatibleMethod(provider, "getMeta");
+            Object name = invokeCompatibleMethod(metadata, "getName");
+            if (name != null && pluginName.equalsIgnoreCase(name.toString())) {
+                return true;
             }
         }
-
+        if (runtimeFile != null) {
+            Object source = invokeCompatibleMethod(provider, "getSource");
+            return source != null && sameFile(new File(source.toString()), runtimeFile);
+        }
         return false;
     }
 
@@ -1617,12 +2077,12 @@ public class BileUtils {
         return root.getMessage() == null ? root.toString() : root.getMessage();
     }
 
-    public static Set<File> unload(Plugin plugin) {
+    private static Set<File> unload(Plugin plugin) {
         return unload(plugin, ReloadAware.PreUnloadReason.HOT_UNLOAD);
     }
 
     @SuppressWarnings("unchecked")
-    public static Set<File> unload(Plugin plugin, ReloadAware.PreUnloadReason reason) {
+    private static Set<File> unload(Plugin plugin, ReloadAware.PreUnloadReason reason) {
         Set<File> deps = new LinkedHashSet<>();
         if (plugin == null) {
             return deps;
@@ -1639,6 +2099,7 @@ public class BileUtils {
             long startNs = System.nanoTime();
             File file = getPluginFile(plugin);
             File runtimeFile = RUNTIME_PLUGIN_FILES.get(key(plugin.getName()));
+            List<Throwable> teardownFailures = new ArrayList<>();
             BileTools.info("Unloading " + plugin.getName() + ".");
 
             if (file == null) {
@@ -1683,18 +2144,8 @@ public class BileUtils {
                 }
             }
 
-            if (plugin instanceof ReloadAware aware) {
-                BileTools.debug(() -> "Invoking pre-unload hook on " + plugin.getName()
-                        + " (" + reason + ").");
-                try {
-                    aware.onPreUnload(reason);
-                } catch (Throwable t) {
-                    BileTools.warn("Pre-unload hook failed for " + plugin.getName() + ".", t);
-                }
-            }
-
-            PlatformTasks.cancelPluginTasks(plugin);
-            HandlerList.unregisterAll(plugin);
+            teardownStep(plugin, "task cancellation", () -> PlatformTasks.cancelPluginTasks(plugin), teardownFailures);
+            teardownStep(plugin, "event cleanup", () -> HandlerList.unregisterAll(plugin), teardownFailures);
             String name = plugin.getName();
             PluginManager pluginManager = Bukkit.getPluginManager();
             SimpleCommandMap commandMap = null;
@@ -1705,11 +2156,14 @@ public class BileUtils {
             boolean reloadlisteners = true;
 
             if (pluginManager != null) {
-                try {
-                    pluginManager.disablePlugin(plugin);
+                try (LifecycleFailureMonitor monitor = LifecycleFailureMonitor.observe(new LifecycleFailureMonitor.Options(
+                        plugin.getDescription().getFullName(), LifecycleFailureMonitor.Phase.DISABLE,
+                        List.of(Bukkit.getLogger(), plugin.getLogger())))) {
+                    monitor.run(() -> pluginManager.disablePlugin(plugin));
                 } catch (Throwable t) {
                     BileTools.warn("disablePlugin failed for " + name
                             + "; continuing teardown so it is still fully unregistered.", t);
+                    teardownFailures.add(t);
                 }
 
                 try {
@@ -1742,17 +2196,23 @@ public class BileUtils {
                     }
                 } catch (Throwable e) {
                     BileTools.severe("Could not inspect server plugin registries while unloading " + name + ".", e);
-                    return new HashSet<>();
+                    throw new IllegalStateException("Could not inspect registries for " + name, e);
                 }
             }
 
+            scrubBrigadierNodes(plugin);
+            SimpleCommandMap cleanupCommandMap = commandMap;
+            Map<String, Command> cleanupCommands = commands;
+            teardownStep(plugin, "command cleanup",
+                    () -> scrubPluginCommands(plugin, cleanupCommandMap, cleanupCommands), teardownFailures);
             try {
-                if (pluginManager != null) {
-                    pluginManager.disablePlugin(plugin);
-                }
-            } catch (Throwable t) {
-                BileTools.warn("The second disablePlugin pass failed for " + name
-                        + "; continuing unregister.", t);
+                PluginHelpCleanup.remove(Bukkit.getHelpMap().getHelpTopics(), plugin);
+            } catch (ReflectiveOperationException | RuntimeException exception) {
+                teardownFailures.add(exception);
+                BileTools.warn("Help topic cleanup failed for " + name, exception);
+            }
+            if (!ServerPlatform.isRegionizedThreading() && BileTools.bile != null && BileTools.bile.isEnabled()) {
+                Bukkit.getScheduler().runTask(BileTools.bile, BileUtils::schedulerQueueAdvanced);
             }
 
             if (plugins != null) {
@@ -1760,12 +2220,12 @@ public class BileUtils {
             }
 
             if (names != null) {
-                names.remove(name);
-                names.remove(name.toLowerCase(Locale.ROOT));
+                names.remove(name, plugin);
+                names.remove(name.toLowerCase(Locale.ROOT), plugin);
                 try {
                     for (String provided : plugin.getDescription().getProvides()) {
-                        names.remove(provided);
-                        names.remove(provided.toLowerCase(Locale.ROOT));
+                        names.remove(provided, plugin);
+                        names.remove(provided.toLowerCase(Locale.ROOT), plugin);
                     }
                 } catch (Throwable ignored) {
                 }
@@ -1777,23 +2237,39 @@ public class BileUtils {
                 }
             }
 
-            scrubBrigadierNodes(plugin);
-            scrubPluginCommands(plugin, commandMap, commands);
-            scrubPluginServices(plugin);
-            scrubPluginMessenger(plugin);
-            removePaperPluginTracking(plugin);
+            teardownStep(plugin, "service cleanup", () -> Bukkit.getServicesManager().unregisterAll(plugin), teardownFailures);
+            teardownStep(plugin, "incoming channel cleanup",
+                    () -> Bukkit.getMessenger().unregisterIncomingPluginChannel(plugin), teardownFailures);
+            teardownStep(plugin, "outgoing channel cleanup",
+                    () -> Bukkit.getMessenger().unregisterOutgoingPluginChannel(plugin), teardownFailures);
+            try {
+                NativePaperSupport.cleanup(plugin);
+            } catch (InvalidPluginException exception) {
+                teardownFailures.add(exception);
+                BileTools.warn("Native Paper cleanup failed for " + name, exception);
+            }
+            teardownStep(plugin, "Paper registry cleanup", () -> removePaperPluginTracking(plugin), teardownFailures);
 
+            if (ServerPlatform.isPaperRuntime() && !NativePaperSupport.isNative(plugin)) {
+                teardownStep(plugin, "Paper classloader cleanup", () -> removePaperClassloader(plugin), teardownFailures);
+            }
+            if (!ServerPlatform.isPaperRuntime()) {
+                teardownStep(plugin, "Spigot classloader cleanup",
+                        () -> SpigotPluginLoaderCleanup.cleanup(plugin), teardownFailures);
+            }
             ClassLoader cl = plugin.getClass().getClassLoader();
 
-            if (cl instanceof java.io.Closeable) {
+            if (cl instanceof Closeable closeable) {
                 try {
-                    ((java.io.Closeable) cl).close();
+                    closeable.close();
                 } catch (IOException ex) {
                     BileTools.warn("Could not close the classloader for " + name + ".", ex);
+                    teardownFailures.add(ex);
                 }
             }
 
-            removePaperLaunchProviders(plugin.getName(), runtimeFile, true, true);
+            teardownStep(plugin, "Paper provider cleanup",
+                    () -> removePaperLaunchProviders(plugin.getName(), runtimeFile, true, true), teardownFailures);
             releaseRuntimePluginFile(plugin.getName());
             if (file != null && (runtimeFile == null || sameFile(file, runtimeFile))) {
                 refreshPluginJarHandle(file);
@@ -1804,6 +2280,15 @@ public class BileUtils {
                 invalidateJarMeta(file);
             }
             rebuildServerCommandGraph();
+            if (plugin.isEnabled() || Bukkit.getPluginManager().getPlugin(name) == plugin
+                    || Arrays.asList(Bukkit.getPluginManager().getPlugins()).contains(plugin)) {
+                teardownFailures.add(new IllegalStateException("Plugin " + name + " remains registered or enabled after teardown"));
+            }
+            if (!teardownFailures.isEmpty()) {
+                IllegalStateException failure = new IllegalStateException("Incomplete teardown for " + name);
+                teardownFailures.forEach(failure::addSuppressed);
+                throw failure;
+            }
             logTiming("unload " + name, nanosToMillis(System.nanoTime() - startNs));
             return deps;
         } finally {
@@ -1814,36 +2299,16 @@ public class BileUtils {
         }
     }
 
-    private static void scrubPluginServices(Plugin plugin) {
-        if (plugin == null) {
-            return;
-        }
-
+    private static void teardownStep(Plugin plugin, String operation, Runnable action, List<Throwable> failures) {
         try {
-            Bukkit.getServicesManager().unregisterAll(plugin);
-        } catch (Throwable t) {
-            BileTools.warn("Service unregister failed for " + plugin.getName() + ".", t);
+            action.run();
+        } catch (Throwable failure) {
+            failures.add(failure);
+            BileTools.warn("Failed " + operation + " for " + plugin.getName(), failure);
         }
     }
 
-    private static void scrubPluginMessenger(Plugin plugin) {
-        if (plugin == null) {
-            return;
-        }
-
-        try {
-            org.bukkit.plugin.messaging.Messenger messenger = Bukkit.getMessenger();
-            try {
-                messenger.unregisterIncomingPluginChannel(plugin);
-            } catch (Throwable ignored) {
-            }
-            try {
-                messenger.unregisterOutgoingPluginChannel(plugin);
-            } catch (Throwable ignored) {
-            }
-        } catch (Throwable t) {
-            BileTools.warn("Messenger channel cleanup failed for " + plugin.getName() + ".", t);
-        }
+    private static void schedulerQueueAdvanced() {
     }
 
     /**
@@ -2058,8 +2523,9 @@ public class BileUtils {
 
     static void scrubPluginCommands(Plugin plugin, SimpleCommandMap commandMap, Map<String, Command> commands) {
         if (plugin == null || commandMap == null || commands == null) {
-            return;
+            throw new IllegalStateException("Required command registries are unavailable");
         }
+        List<Throwable> failures = new ArrayList<>();
 
         List<String> toRemove = new ArrayList<>();
         String pluginKey = plugin.getName().toLowerCase(Locale.ROOT);
@@ -2070,15 +2536,11 @@ public class BileUtils {
             // abort the unload - the declared-name removal below still covers the plugin.
             for (Map.Entry<String, Command> entry : commands.entrySet()) {
                 Command command = entry.getValue();
-                if (command instanceof PluginCommand pluginCommand) {
-                    if (pluginCommand.getPlugin() == plugin) {
-                        try {
-                            pluginCommand.unregister(commandMap);
-                        } catch (Throwable ignored) {
-                        }
+                if (command instanceof PluginIdentifiableCommand identifiableCommand) {
+                    if (identifiableCommand.getPlugin() == plugin) {
                         toRemove.add(entry.getKey());
-                        continue;
                     }
+                    continue;
                 }
 
                 String mapKey = entry.getKey();
@@ -2090,32 +2552,68 @@ public class BileUtils {
                 }
             }
         } catch (Throwable t) {
+            failures.add(t);
             BileTools.warn("Command map walk for " + plugin.getName()
                     + " failed; falling back to declared command names.", t);
         }
 
         try {
-            for (String commandName : plugin.getDescription().getCommands().keySet()) {
+            for (Map.Entry<String, Map<String, Object>> declaration : plugin.getDescription().getCommands().entrySet()) {
+                String commandName = declaration.getKey();
                 toRemove.add(commandName);
                 toRemove.add(commandName.toLowerCase(Locale.ROOT));
                 toRemove.add(pluginKey + ":" + commandName.toLowerCase(Locale.ROOT));
+                Object aliases = declaration.getValue().get("aliases");
+                if (aliases instanceof List<?> declaredAliases) {
+                    for (Object alias : declaredAliases) {
+                        if (alias instanceof String aliasName) {
+                            toRemove.add(aliasName);
+                            toRemove.add(aliasName.toLowerCase(Locale.ROOT));
+                            toRemove.add(pluginKey + ":" + aliasName.toLowerCase(Locale.ROOT));
+                        }
+                    }
+                }
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable failure) {
+            failures.add(failure);
         }
 
         for (String key : toRemove) {
-            Command removed;
+            Command command;
             try {
-                removed = commands.remove(key);
-            } catch (Throwable ignored) {
+                command = commands.get(key);
+                if (command == null) {
+                    continue;
+                }
+                if (command instanceof PluginIdentifiableCommand identifiableCommand) {
+                    if (identifiableCommand.getPlugin() != plugin) {
+                        continue;
+                    }
+                } else if (!key.toLowerCase(Locale.ROOT).startsWith(pluginKey + ":")) {
+                    continue;
+                }
+                if (!commands.remove(key, command)) {
+                    if (commands.get(key) == command) {
+                        throw new IllegalStateException("Command remains registered: " + key);
+                    }
+                    continue;
+                }
+            } catch (Throwable failure) {
+                failures.add(failure);
                 continue;
             }
-            if (removed instanceof PluginCommand pluginCommand && pluginCommand.getPlugin() == plugin) {
-                try {
-                    pluginCommand.unregister(commandMap);
-                } catch (Throwable ignored) {
+            try {
+                if (!command.unregister(commandMap)) {
+                    throw new IllegalStateException("Command refused unregistration: " + key);
                 }
+            } catch (Throwable failure) {
+                failures.add(failure);
             }
+        }
+        if (!failures.isEmpty()) {
+            IllegalStateException failure = new IllegalStateException("Command cleanup failed for " + plugin.getName());
+            failures.forEach(failure::addSuppressed);
+            throw failure;
         }
     }
 
@@ -2372,7 +2870,7 @@ public class BileUtils {
         }
 
         File override = SOURCE_FILE_OVERRIDES.get(key(plugin.getName()));
-        if (override != null && override.exists()) {
+        if (override != null) {
             return override;
         }
 
@@ -2394,6 +2892,11 @@ public class BileUtils {
     public static File getPluginFile(String name) {
         if (name == null) {
             return null;
+        }
+
+        Map<String, RecoveryEntry> recoverySources = RECOVERY_SOURCES.get();
+        if (recoverySources != null && recoverySources.containsKey(key(name))) {
+            return recoverySources.get(key(name)).snapshot().staged().toFile();
         }
 
         File override = SOURCE_FILE_OVERRIDES.get(key(name));

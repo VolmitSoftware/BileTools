@@ -45,7 +45,14 @@
 #   {variables}  variables valides
 #   {version}  Version demandée ou affichée du plugin de la bibliothèque
 
+#   {enabled}  actif
+#   {recovery}  restauration
+#   {cooperative}  coopératif
+#   {dependents}  dépendants
+#   {capability}  déchargement
+
 [command]
+inspect = "Inspecter la capacité de rechargement d’un plugin"
 version = "Afficher la version du plugin installé"
 root = "Groupe de commandes BileTools"
 load = "Charger un fichier JAR de plugin depuis le dossier des plugins"
@@ -345,3 +352,6 @@ line = "Ligne {line}"
 [language.editor.value]
 none = "Aucune"
 empty = "(vide)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: actif={enabled}, restauration={recovery}, coopératif={cooperative}, dépendants={dependents}, déchargement={capability}"

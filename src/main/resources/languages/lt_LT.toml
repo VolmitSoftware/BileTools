@@ -45,7 +45,14 @@
 #   {variables}  galimi vietos žymekliai
 #   {version}  Prašoma arba rodoma bibliotekos papildinio versija
 
+#   {enabled}  įjungtas
+#   {recovery}  atkūrimas
+#   {cooperative}  bendradarbiavimas
+#   {dependents}  priklausomi
+#   {capability}  iškėlimas
+
 [command]
+inspect = "Patikrinti papildinio pasirengimą įkelti iš naujo"
 version = "Rodyti įdiegto papildinio versiją"
 root = "BileTools komandų grupė"
 load = "Įkelti įskiepio JAR failą iš plugins katalogo"
@@ -345,3 +352,6 @@ line = "Eilutė {line}"
 [language.editor.value]
 none = "Nėra"
 empty = "(tuščia)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: įjungtas={enabled}, atkūrimas={recovery}, bendradarbiavimas={cooperative}, priklausomi={dependents}, iškėlimas={capability}"

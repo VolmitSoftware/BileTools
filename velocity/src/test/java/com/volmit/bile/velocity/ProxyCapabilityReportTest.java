@@ -86,7 +86,7 @@ class ProxyCapabilityReportTest {
         for (String key : List.of("plugin-manager.maps", "plugin-loader.candidate", "plugin-loader.create",
                 "plugin-loader.module", "classloader.close", "classloader.registry",
                 "event-manager.register-internally", "event-manager.scoped-fire", "container.executor",
-                "command-manager.unregister")) {
+                "command-manager.unregister", "packet-registry.cleanup", "event-manager.cache-cleanup")) {
             capabilities.put(key, value);
         }
         return capabilities;

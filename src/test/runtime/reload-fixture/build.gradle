@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+version = providers.gradleProperty('fixtureVersion').getOrElse('1')
+String fixtureName = providers.gradleProperty('fixtureName').getOrElse('ReloadFixture')
+String fixtureMode = providers.gradleProperty('fixtureMode').getOrElse('good')
+String fixtureDependencies = providers.gradleProperty('fixtureDependencies').getOrElse('BileTools')
+
+repositories {
+    mavenCentral()
+    maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
+    compileOnly files('../../../../build/classes/java/main', '../../../../../VolmLib/shared/build/classes/java/main')
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(17)
+    options.compilerArgs.add('-parameters')
+}
+
+tasks.named('processResources') {
+    inputs.properties(fixtureName: fixtureName, fixtureVersion: project.version,
+            fixtureMode: fixtureMode, fixtureDependencies: fixtureDependencies)
+    filesMatching(['plugin.yml', 'fixture.properties']) {
+        expand(fixtureName: fixtureName, fixtureVersion: project.version,
+                fixtureMode: fixtureMode, fixtureDependencies: fixtureDependencies)
+    }
+}
+
+tasks.named('jar') {
+    archiveBaseName.set(fixtureName)
+}

@@ -45,7 +45,14 @@
 #   {variables}  可用占位符
 #   {version}  请求或列出的库插件版本
 
+#   {enabled}  启用
+#   {recovery}  恢复
+#   {cooperative}  协作
+#   {dependents}  依赖插件
+#   {capability}  卸载
+
 [command]
+inspect = "检查插件重新加载就绪状态"
 version = "显示已安装的插件版本"
 root = "BileTools 命令组"
 load = "从 plugins 目录加载插件 JAR 文件"
@@ -345,3 +352,6 @@ line = "第 {line} 行"
 [language.editor.value]
 none = "无"
 empty = "(空)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: 启用={enabled}, 恢复={recovery}, 协作={cooperative}, 依赖插件={dependents}, 卸载={capability}"

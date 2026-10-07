@@ -1,0 +1,10 @@
+name: NativePaperFixture
+version: '${fixtureVersion}'
+main: com.volmit.bile.fixture.NativeFixture
+bootstrapper: com.volmit.bile.fixture.NativeBootstrap
+loader: com.volmit.bile.fixture.NativeClasspath
+api-version: '26.3'
+biletools:
+  runtime-load: true
+  runtime-bootstrap: true
+  runtime-classpath: true

@@ -1,2 +1,3 @@
 -keep class art.arcane.volmlib.integration.** { *; }
 -keep class * implements art.arcane.volmlib.integration.IntegrationServiceContract { *; }
+-keep class com.volmit.bile.velocity.api.** { *; }

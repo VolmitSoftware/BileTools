@@ -44,7 +44,10 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -61,14 +64,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -372,6 +379,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
 
         BileUtils.recoverRuntimePluginFiles();
+        BileUtils.initializeRecoveryStore();
         folder = BileUtils.getPluginsFolder();
         stagingDirectory = new File(getDataFolder(), "watcher-stage").toPath();
         watcherHandoffFile = new File(getDataFolder(), "watcher-handoff.bin").toPath();
@@ -713,9 +721,15 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     @Override
-    public void onPreUnload(ReloadAware.PreUnloadReason reason) {
+    public CompletionStage<Void> commitReload(ReloadAware.PreUnloadReason reason) {
         getLogger().info("BileTools pre-unload hook fired (" + reason + "). Freezing watcher + slave before unload.");
         freezeForUnload();
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @EventHandler
+    public void onPluginEnable(PluginEnableEvent event) {
+        BileUtils.rememberRunningPlugin(event.getPlugin());
     }
 
     private void freezeForUnload() {
@@ -1710,10 +1724,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         AtomicBoolean superseded = new AtomicBoolean(false);
         long startNanos = System.nanoTime();
         try {
-            executePluginLifecycle(pluginName, "unload " + pluginName, () -> {
+            executePluginLifecycle(pluginName, "unload " + pluginName, LifecycleOrigin.AUTOMATIC, () -> {
                 if (!isAutomaticCandidateCurrent(candidate)) {
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 long nowNanos = System.nanoTime();
                 FileStampProbe probe = probeFileStamp(candidate.source());
@@ -1721,24 +1735,27 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                     deletionTombstones.schedule(
                             candidate.source(), candidate.pluginName(), candidate.generation(), nowNanos);
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 if (probe.stamp() != null) {
                     handleJarSignal(candidate.source(), nowNanos);
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 Plugin targetPlugin = BileUtils.getPluginByExactName(pluginName);
                 if (targetPlugin != null && pluginUsesDifferentSource(targetPlugin, candidate.source())) {
                     clearTrackedSource(candidate);
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 if (targetPlugin != null) {
-                    BileUtils.unload(targetPlugin);
-                    unloaded.set(true);
+                    return BileUtils.unloadAsync(targetPlugin).thenRun(() -> {
+                        unloaded.set(true);
+                        clearTrackedSource(candidate);
+                    });
                 }
                 clearTrackedSource(candidate);
+                return CompletableFuture.completedFuture(null);
             });
             if (superseded.get()) {
                 return;
@@ -1796,32 +1813,32 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         AtomicBoolean superseded = new AtomicBoolean(false);
         AtomicBoolean unchanged = new AtomicBoolean(false);
         try {
-            executePluginLifecycle(pluginName, "automatic update " + pluginName, () -> {
+            executePluginLifecycle(pluginName, "automatic update " + pluginName, LifecycleOrigin.AUTOMATIC, () -> {
                 if (!isAutomaticCandidateCurrent(candidate)) {
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 FileStampProbe probe = probeFileStamp(candidate.source());
                 if (probe.failure() != null) {
                     pendingObservations.put(candidate.source(), new PendingObservation(
                             stagedJar.sourceStamp(), candidate.generation(), 0, STAGING_RETRY_LIMIT));
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 JarSnapshotStager.FileStamp currentStamp = probe.stamp();
                 if (currentStamp == null) {
                     markJarMissing(candidate.source(), System.nanoTime());
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 if (!currentStamp.equals(stagedJar.sourceStamp())) {
                     handleJarSignal(candidate.source(), System.nanoTime());
                     superseded.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 if (stagedJar.sha256().equals(appliedFingerprints.get(candidate.source()))) {
                     unchanged.set(true);
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
                 Map<String, Path> replacements = identityReplacements(candidate.source());
                 Plugin targetPlugin = BileUtils.getPluginByExactName(pluginName);
@@ -1839,7 +1856,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                         getLogger().warning("Skipping automatic identity replacement for dirty plugin "
                                 + replacedPluginName);
                         superseded.set(true);
-                        return;
+                        return CompletableFuture.completedFuture(null);
                     }
                     if (!isAutoLifecycleAllowed(replacedPluginName)) {
                         throw new BileUtils.RestartRequiredException(
@@ -1861,13 +1878,13 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                         if (replacedSourceProbe.failure() != null) {
                             unresolvedJarSignals.add(replacedSource);
                             superseded.set(true);
-                            return;
+                            return CompletableFuture.completedFuture(null);
                         }
                         if (replacedSourceProbe.stamp() != null) {
                             getLogger().info("Waiting to hot-replace " + replacedPluginName
                                     + " until its prior source is removed: " + replacedSource.getFileName());
                             superseded.set(true);
-                            return;
+                            return CompletableFuture.completedFuture(null);
                         }
                     }
                     if (hasCompetingIdentityReplacement(candidate.source(), replacedPluginName)) {
@@ -1876,39 +1893,47 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                                         + " from multiple plugin jars; a full server restart is required");
                     }
                     Plugin replacedPlugin = BileUtils.getPluginByExactName(replacedPluginName);
+                    CompletionStage<Void> replacementStage;
                     if (replacedPlugin == null) {
-                        BileUtils.loadFromSnapshot(stagedJar.staged().toFile(), candidate.source().toFile());
-                        appliedFingerprints.put(candidate.source(), stagedJar.sha256());
+                        replacementStage = BileUtils.loadFromSnapshotAsync(stagedJar.staged().toFile(), candidate.source().toFile())
+                                .thenRun(() -> appliedFingerprints.put(candidate.source(), stagedJar.sha256()));
                     } else {
-                        Set<String> appliedSnapshots = BileUtils.replaceProvidedIdentityFromSnapshot(
+                        replacementStage = BileUtils.replaceProvidedIdentityFromSnapshotAsync(
                                 replacedPlugin,
                                 stagedJar.staged().toFile(),
                                 candidate.source().toFile(),
                                 currentAutomaticSnapshotSources(snapshotCandidates),
-                                protectedAutomaticSnapshotPlugins(snapshotCandidates));
-                        recordAppliedSnapshots(appliedSnapshots, snapshotCandidates);
+                                protectedAutomaticSnapshotPlugins(snapshotCandidates))
+                                .thenAccept(appliedSnapshots -> recordAppliedSnapshots(appliedSnapshots, snapshotCandidates));
                     }
-                    clearPluginDirty(replacedPluginName);
-                    completeIdentityReplacement(candidate.source(), replacements);
-                } else if (targetPlugin == null) {
-                    BileUtils.loadFromSnapshot(stagedJar.staged().toFile(), candidate.source().toFile());
-                    appliedFingerprints.put(candidate.source(), stagedJar.sha256());
-                } else {
-                    try {
-                        Set<String> appliedSnapshots = BileUtils.reloadFromSnapshot(
-                                targetPlugin,
-                                stagedJar.staged().toFile(),
-                                candidate.source().toFile(),
-                                currentAutomaticSnapshotSources(snapshotCandidates),
-                                protectedAutomaticSnapshotPlugins(snapshotCandidates));
-                        recordAppliedSnapshots(appliedSnapshots, snapshotCandidates);
-                        removeIdentityReplacement(candidate.source(), pluginName);
-                    } catch (BileUtils.SnapshotUnavailableException exception) {
-                        pendingObservations.put(candidate.source(), new PendingObservation(
-                                stagedJar.sourceStamp(), candidate.generation(), 0, STAGING_RETRY_LIMIT));
-                        superseded.set(true);
-                    }
+                    return replacementStage.thenRun(() -> {
+                        clearPluginDirty(replacedPluginName);
+                        completeIdentityReplacement(candidate.source(), replacements);
+                    });
                 }
+                if (targetPlugin == null) {
+                    return BileUtils.loadFromSnapshotAsync(stagedJar.staged().toFile(), candidate.source().toFile())
+                            .thenRun(() -> appliedFingerprints.put(candidate.source(), stagedJar.sha256()));
+                }
+                return BileUtils.reloadFromSnapshotAsync(
+                        targetPlugin,
+                        stagedJar.staged().toFile(),
+                        candidate.source().toFile(),
+                        currentAutomaticSnapshotSources(snapshotCandidates),
+                        protectedAutomaticSnapshotPlugins(snapshotCandidates))
+                        .handle((appliedSnapshots, failure) -> {
+                            if (failure == null) {
+                                recordAppliedSnapshots(appliedSnapshots, snapshotCandidates);
+                                removeIdentityReplacement(candidate.source(), pluginName);
+                            } else if (unwrapCompletion(failure) instanceof BileUtils.SnapshotUnavailableException) {
+                                pendingObservations.put(candidate.source(), new PendingObservation(
+                                        stagedJar.sourceStamp(), candidate.generation(), 0, STAGING_RETRY_LIMIT));
+                                superseded.set(true);
+                            } else {
+                                throw new CompletionException(unwrapCompletion(failure));
+                            }
+                            return null;
+                        });
             });
             if (superseded.get()) {
                 return;
@@ -2372,7 +2397,17 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
 
-        String previousFingerprint = appliedFingerprints.put(candidate.source(), stagedJar.sha256());
+        Map<Path, String> previousFingerprints;
+        try {
+            previousFingerprints = invalidateSelfReloadFingerprints();
+        } catch (IOException | InvalidDescriptionException failure) {
+            selfReloadQueued.set(false);
+            submitAutomaticCandidate(candidate);
+            getLogger().log(Level.SEVERE, "Could not preserve self-reload dependency state", failure);
+            return;
+        }
+        String previousFingerprint = previousFingerprints.get(candidate.source());
+        appliedFingerprints.put(candidate.source(), stagedJar.sha256());
         AutomaticReloadCompletionHandoff completionHandoff = null;
         try {
             completionHandoff = AutomaticReloadCompletionHandoff.begin(automaticReloadCompletionFile);
@@ -2380,6 +2415,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         } catch (IOException | SecurityException exception) {
             closeAutomaticReloadCompletionHandoff(completionHandoff);
             restoreAppliedFingerprint(candidate.source(), previousFingerprint);
+            appliedFingerprints.putAll(previousFingerprints);
             selfReloadQueued.set(false);
             submitAutomaticCandidate(candidate);
             getLogger().log(Level.SEVERE,
@@ -2387,36 +2423,33 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             return;
         }
 
-        boolean requeued = false;
-        Throwable reloadFailure = null;
-        try {
-            try {
-                BileUtils.reloadFromSnapshot(
-                        this, stagedJar.staged().toFile(), candidate.source().toFile());
-            } catch (Throwable throwable) {
-                reloadFailure = throwable;
-            } finally {
-                closeAutomaticReloadCompletionHandoff(completionHandoff);
-            }
-            if (reloadFailure != null) {
-                selfReloadQueued.set(false);
-                if (BileTools.bile == this && tickerActive) {
-                    restoreAppliedFingerprint(candidate.source(), previousFingerprint);
-                    requeued = submitAutomaticCandidate(candidate);
-                    deleteWatcherHandoffAfterFailedReload();
-                }
-                getLogger().log(Level.SEVERE,
-                        "Failed automatic self-reload for " + candidate.pluginName(), reloadFailure);
-                notifyBileUsers(localization.text(
-                        BileMessages.RELOAD_FAILED,
-                        MessageArgs.builder().untrusted("plugin", candidate.pluginName()).build()
-                ), false);
-            }
-        } finally {
-            if (!requeued) {
-                stagedJar.delete();
-            }
-        }
+        AutomaticReloadCompletionHandoff handoff = completionHandoff;
+        BileUtils.reloadFromSnapshotAsync(this, stagedJar.staged().toFile(), candidate.source().toFile())
+                .whenComplete((ignored, failure) -> completeSelfReloadOnGlobal(() -> {
+                    boolean requeued = false;
+                    try {
+                        closeAutomaticReloadCompletionHandoff(handoff);
+                        if (failure != null) {
+                            selfReloadQueued.set(false);
+                            if (BileTools.bile == this && tickerActive) {
+                                restoreAppliedFingerprint(candidate.source(), previousFingerprint);
+                                appliedFingerprints.putAll(previousFingerprints);
+                                requeued = submitAutomaticCandidate(candidate);
+                                deleteWatcherHandoffAfterFailedReload();
+                            }
+                            getLogger().log(Level.SEVERE,
+                                    "Failed automatic self-reload for " + candidate.pluginName(), unwrapCompletion(failure));
+                            notifyBileUsers(localization.text(
+                                    BileMessages.RELOAD_FAILED,
+                                    MessageArgs.builder().untrusted("plugin", candidate.pluginName()).build()
+                            ), false);
+                        }
+                    } finally {
+                        if (!requeued) {
+                            stagedJar.delete();
+                        }
+                    }
+                }));
     }
 
     private void performSelfReload(String pluginName, String context) {
@@ -2429,17 +2462,46 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
             return;
         }
+        Map<Path, String> previousFingerprints;
+        try {
+            previousFingerprints = invalidateSelfReloadFingerprints();
+        } catch (IOException | InvalidDescriptionException failure) {
+            reportSelfReloadFailure(pluginName, context, failure);
+            return;
+        }
         try {
             persistWatcherHandoff();
-            BileUtils.reload(this);
-        } catch (Throwable e) {
-            selfReloadQueued.set(false);
-            deleteWatcherHandoffAfterFailedReload();
-            getLogger().log(Level.SEVERE, "Failed to self-reload " + pluginName + " (" + context + ")", e);
-            notifyBileUsers(localization.text(
-                    BileMessages.RELOAD_FAILED,
-                    MessageArgs.builder().untrusted("plugin", pluginName).build()
-            ), false);
+        } catch (Throwable failure) {
+            appliedFingerprints.putAll(previousFingerprints);
+            reportSelfReloadFailure(pluginName, context, failure);
+            return;
+        }
+        BileUtils.reloadAsync(this).whenComplete((ignored, failure) -> {
+            if (failure != null) {
+                completeSelfReloadOnGlobal(() -> {
+                    if (BileTools.bile == this && tickerActive) {
+                        appliedFingerprints.putAll(previousFingerprints);
+                    }
+                    reportSelfReloadFailure(pluginName, context, unwrapCompletion(failure));
+                });
+            }
+        });
+    }
+
+    private void reportSelfReloadFailure(String pluginName, String context, Throwable failure) {
+        selfReloadQueued.set(false);
+        deleteWatcherHandoffAfterFailedReload();
+        getLogger().log(Level.SEVERE, "Failed to self-reload " + pluginName + " (" + context + ")", failure);
+        notifyBileUsers(localization.text(
+                BileMessages.RELOAD_FAILED,
+                MessageArgs.builder().untrusted("plugin", pluginName).build()
+        ), false);
+    }
+
+    private void completeSelfReloadOnGlobal(Runnable completion) {
+        Plugin host = Bukkit.getPluginManager().getPlugin(getName());
+        if (!PlatformTasks.runGlobal(host, completion)) {
+            completion.run();
         }
     }
 
@@ -2576,47 +2638,117 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         }
     }
 
-    private void executePluginLifecycle(String pluginName, String operationName, ThrowingRunnable operation) throws Throwable {
-        if (operation == null) {
-            throw new IllegalArgumentException("Plugin lifecycle operation must not be null");
+    private static Map<Plugin, Path> snapshotPluginSources() {
+        Map<Plugin, Path> sources = new IdentityHashMap<>();
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            File file = BileUtils.getPluginFile(plugin);
+            if (file != null) {
+                sources.put(plugin, file.toPath().toAbsolutePath().normalize());
+            }
         }
+        return sources;
+    }
 
+    static Set<Path> changedPluginSources(Map<Plugin, Path> before, Map<Plugin, Path> after) {
+        Set<Path> sources = new LinkedHashSet<>();
+        for (Map.Entry<Plugin, Path> entry : before.entrySet()) {
+            if (!after.containsKey(entry.getKey())) {
+                sources.add(entry.getValue());
+            }
+        }
+        for (Map.Entry<Plugin, Path> entry : after.entrySet()) {
+            if (!before.containsKey(entry.getKey())) {
+                sources.add(entry.getValue());
+            }
+        }
+        return sources;
+    }
+
+    private Map<Path, String> invalidateSelfReloadFingerprints() throws IOException, InvalidDescriptionException {
+        Map<Path, String> previous = new HashMap<>();
+        for (Plugin plugin : BileUtils.unloadOrder(this)) {
+            File file = BileUtils.getPluginFile(plugin);
+            if (file != null) {
+                Path path = file.toPath().toAbsolutePath().normalize();
+                String fingerprint = appliedFingerprints.remove(path);
+                if (fingerprint != null) {
+                    previous.put(path, fingerprint);
+                }
+            }
+        }
+        return previous;
+    }
+
+    private enum LifecycleOrigin {
+        MANUAL,
+        AUTOMATIC
+    }
+
+    private void executePluginLifecycle(String pluginName, String operationName, LifecycleOrigin origin,
+                                        ThrowingStage operation) throws Throwable {
+        Objects.requireNonNull(operation, "Plugin lifecycle operation");
         CompletableFuture<Void> completion = new CompletableFuture<>();
-        boolean scheduled = runGlobal(() -> {
-            try {
-                operation.run();
-                completion.complete(null);
-            } catch (Throwable t) {
-                completion.completeExceptionally(t);
+        CompletableFuture<Void> dispatch = new CompletableFuture<>();
+        dispatch.orTimeout(PLUGIN_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS).whenComplete((ignored, failure) -> {
+            if (failure != null) {
+                completion.completeExceptionally(failure);
             }
         });
-
+        boolean scheduled = runGlobal(() -> {
+            if (!dispatch.complete(null)) {
+                return;
+            }
+            try {
+                Map<Plugin, Path> previousSources = origin == LifecycleOrigin.MANUAL ? snapshotPluginSources() : Map.of();
+                Objects.requireNonNull(operation.run(), "Plugin lifecycle stage").whenComplete((ignored, failure) -> {
+                    if (failure != null) {
+                        completion.completeExceptionally(failure);
+                        return;
+                    }
+                    try {
+                        if (origin == LifecycleOrigin.MANUAL) {
+                            for (Path source : changedPluginSources(previousSources, snapshotPluginSources())) {
+                                appliedFingerprints.remove(source);
+                            }
+                        }
+                        completion.complete(null);
+                    } catch (Throwable bookkeepingFailure) {
+                        completion.completeExceptionally(bookkeepingFailure);
+                    }
+                });
+            } catch (Throwable failure) {
+                completion.completeExceptionally(failure);
+            }
+        });
         if (!scheduled) {
+            dispatch.complete(null);
             throw new IllegalStateException("Unable to schedule plugin operation on the authoritative server thread: "
                     + operationName);
         }
-
         try {
-            completion.get(PLUGIN_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
+            completion.get();
+        } catch (InterruptedException exception) {
+            dispatch.cancel(false);
             Thread.currentThread().interrupt();
             if (pluginName != null) {
                 markPluginDirty(pluginName, "interrupted: " + operationName);
             }
-            throw new IllegalStateException("Interrupted while waiting for plugin operation: " + operationName, e);
-        } catch (TimeoutException e) {
-            if (pluginName != null) {
+            throw new IllegalStateException("Interrupted while waiting for plugin operation: " + operationName, exception);
+        } catch (ExecutionException exception) {
+            Throwable cause = unwrapCompletion(exception.getCause());
+            if (cause instanceof TimeoutException && pluginName != null) {
                 markPluginDirty(pluginName, "timeout: " + operationName);
             }
-            throw new IllegalStateException("Timed out while waiting for plugin operation: " + operationName, e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause != null) {
-                throw cause;
-            }
-
-            throw e;
+            throw cause;
         }
+    }
+
+    private static Throwable unwrapCompletion(Throwable failure) {
+        while ((failure instanceof CompletionException || failure instanceof ExecutionException)
+                && failure.getCause() != null) {
+            failure = failure.getCause();
+        }
+        return failure;
     }
 
     private void scheduleTicker(long delayTicks) {
@@ -2895,7 +3027,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 long startNs = System.nanoTime();
-                executePluginLifecycle(pluginName, "load " + pluginName, () -> BileUtils.load(pluginFile));
+                executePluginLifecycle(pluginName, "load " + pluginName, LifecycleOrigin.MANUAL, () -> BileUtils.loadAsync(pluginFile));
                 Plugin loaded = BileUtils.getPluginByName(pluginName);
                 String resolvedName = loaded == null ? pluginName : loaded.getName();
                 clearPluginDirty(resolvedName);
@@ -2924,6 +3056,28 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         });
     }
 
+    public void inspectPlugin(CommandSender sender, String pluginName) {
+        Plugin target = BileUtils.getPluginByName(pluginName);
+        if (target == null) {
+            sendCommandMessage(sender, localization.text(sender, BileMessages.PLUGIN_NOT_FOUND,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()));
+            return;
+        }
+        try {
+            BileUtils.ReloadInspection inspection = BileUtils.inspect(target);
+            sendCommandMessage(sender, localization.text(sender, BileMessages.INSPECT_RESULT,
+                    MessageArgs.builder().untrusted("plugin", inspection.plugin())
+                            .untrusted("enabled", inspection.enabled()).untrusted("recovery", inspection.recovery())
+                            .untrusted("cooperative", inspection.cooperative())
+                            .untrusted("dependents", String.join(", ", inspection.dependents()))
+                            .untrusted("capability", inspection.capability()).build()));
+        } catch (IOException | InvalidDescriptionException exception) {
+            getLogger().log(Level.SEVERE, "Could not inspect " + pluginName, exception);
+            sendCommandMessage(sender, localization.text(sender, BileMessages.RESTART_REQUIRED,
+                    MessageArgs.builder().untrusted("plugin", pluginName).build()));
+        }
+    }
+
     public void unloadPlugin(CommandSender sender, String pluginName) {
         sendCommandMessage(sender, localization.text(sender,
                 BileMessages.UNLOAD_QUEUED,
@@ -2942,7 +3096,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 String name = plugin.getName();
                 File sourceFile = BileUtils.getPluginFile(plugin);
-                executePluginLifecycle(name, "unload " + pluginName, () -> BileUtils.unload(plugin));
+                executePluginLifecycle(name, "unload " + pluginName, LifecycleOrigin.MANUAL, () -> BileUtils.unloadAsync(plugin));
                 clearPluginDirty(name);
                 String fileName = sourceFile == null ? (pluginName + ".jar") : sourceFile.getName();
                 sendCommandMessage(sender, localization.text(sender,
@@ -2986,7 +3140,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
                 File sourceFile = BileUtils.getPluginFile(plugin);
                 long startNs = System.nanoTime();
-                executePluginLifecycle(name, "reload " + pluginName, () -> BileUtils.reload(plugin));
+                executePluginLifecycle(name, "reload " + pluginName, LifecycleOrigin.MANUAL, () -> BileUtils.reloadAsync(plugin));
                 clearPluginDirty(name);
                 long totalMs = Math.max(0L, (System.nanoTime() - startNs) / 1_000_000L);
                 recordReloadSuccess(totalMs);
@@ -3033,7 +3187,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 }
 
                 String name = BileUtils.getPluginName(pluginFile);
-                executePluginLifecycle(name, "uninstall " + pluginName, () -> BileUtils.delete(pluginFile));
+                executePluginLifecycle(name, "uninstall " + pluginName, LifecycleOrigin.MANUAL, () -> BileUtils.deleteAsync(pluginFile));
                 clearPluginDirty(name);
 
                 sendCommandMessage(sender, localization.text(sender,
@@ -3107,7 +3261,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             try {
                 File out = new File(BileUtils.getPluginsFolder(), libraryPlugin.getName() + "-" + selectedVersion.getName());
                 BileUtils.copy(selectedVersion, out);
-                executePluginLifecycle(pluginName, "install " + pluginName, () -> BileUtils.load(out));
+                executePluginLifecycle(pluginName, "install " + pluginName, LifecycleOrigin.MANUAL, () -> BileUtils.loadAsync(out));
                 clearPluginDirty(pluginName);
                 sendCommandMessage(sender, localization.text(sender,
                         BileMessages.LIBRARY_INSTALL_SUCCESS,
@@ -3273,8 +3427,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     }
 
     @FunctionalInterface
-    private interface ThrowingRunnable {
-        void run() throws Throwable;
+    private interface ThrowingStage {
+        CompletionStage<?> run() throws Throwable;
     }
 
     private record PendingObservation(JarSnapshotStager.FileStamp stamp,

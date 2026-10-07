@@ -18,11 +18,12 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 public final class BileVelocityCommand implements SimpleCommand {
-    private static final List<String> SUBCOMMANDS = List.of("help", "list", "load", "reload", "unload", "version");
+    private static final List<String> SUBCOMMANDS = List.of("help", "inspect", "list", "load", "reload", "unload", "version");
     private static final List<String> USAGE = List.of(
             "/bile load <jar-name-or-id>",
             "/bile unload <id>",
             "/bile reload <id>",
+            "/bile inspect <id>",
             "/bile list",
             "/bile version");
 
@@ -59,6 +60,7 @@ public final class BileVelocityCommand implements SimpleCommand {
         }
 
         switch (arguments[0].toLowerCase(Locale.ROOT)) {
+            case "inspect" -> dispatch(source, arguments, "inspect <id>", orchestrator::manualInspect);
             case "load" -> dispatch(source, arguments, "load <jar-name-or-id>", orchestrator::manualLoad);
             case "unload" -> dispatch(source, arguments, "unload <id>", orchestrator::manualUnload);
             case "reload" -> dispatch(source, arguments, "reload <id>", orchestrator::manualReload);
@@ -83,7 +85,7 @@ public final class BileVelocityCommand implements SimpleCommand {
         }
         return switch (arguments[0].toLowerCase(Locale.ROOT)) {
             case "load" -> filter(jarNames(), arguments[1]);
-            case "unload", "reload" -> filter(loadedIds(), arguments[1]);
+            case "unload", "reload", "inspect" -> filter(loadedIds(), arguments[1]);
             default -> List.of();
         };
     }

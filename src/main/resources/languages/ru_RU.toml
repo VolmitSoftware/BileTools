@@ -45,7 +45,14 @@
 #   {variables}  допустимые заполнители
 #   {version}  Запрошенная или указанная версия плагина из библиотеки
 
+#   {enabled}  включён
+#   {recovery}  восстановление
+#   {cooperative}  совместная подготовка
+#   {dependents}  зависимые
+#   {capability}  выгрузка
+
 [command]
+inspect = "Проверить готовность плагина к перезагрузке"
 version = "Показать установленную версию плагина"
 root = "Группа команд BileTools"
 load = "Загрузить JAR-файл плагина из каталога plugins"
@@ -345,3 +352,6 @@ line = "Строка {line}"
 [language.editor.value]
 none = "Нет"
 empty = "(пусто)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: включён={enabled}, восстановление={recovery}, совместная подготовка={cooperative}, зависимые={dependents}, выгрузка={capability}"

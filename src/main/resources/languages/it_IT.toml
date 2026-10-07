@@ -45,7 +45,14 @@
 #   {variables}  segnaposto validi
 #   {version}  Versione richiesta o visualizzata del plugin della libreria
 
+#   {enabled}  attivo
+#   {recovery}  ripristino
+#   {cooperative}  cooperativo
+#   {dependents}  dipendenti
+#   {capability}  scaricamento
+
 [command]
+inspect = "Verifica se un plugin può essere ricaricato"
 version = "Mostra la versione del plugin installato"
 root = "Gruppo di comandi BileTools"
 load = "Carica un file JAR di plugin dalla cartella dei plugin"
@@ -345,3 +352,6 @@ line = "Riga {line}"
 [language.editor.value]
 none = "Nessuno"
 empty = "(vuoto)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: attivo={enabled}, ripristino={recovery}, cooperativo={cooperative}, dipendenti={dependents}, scaricamento={capability}"

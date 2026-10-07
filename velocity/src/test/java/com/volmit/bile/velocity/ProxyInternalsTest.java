@@ -18,6 +18,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -212,13 +214,14 @@ class ProxyInternalsTest {
     }
 
     @Test
-    void dispatchTimesOutWhenAContinuationNeverResumes() {
+    void timedOutContinuationSettlesBeforeCleanupCanProceed() {
         ProxyInternals internals = internals();
 
         HotloadException failure = assertThrows(HotloadException.class, () -> internals.dispatchHandlers(
                 container("demo"), new ProxyInitializeEvent(),
-                List.of(taskHandler("stuck", continuation -> {
-                })), Duration.ofMillis(50L)));
+                List.of(taskHandler("late", continuation -> {
+                    CompletableFuture.delayedExecutor(100L, TimeUnit.MILLISECONDS).execute(continuation::resume);
+                })), Duration.ofMillis(10L)));
 
         assertEquals(HotloadException.Kind.TIMEOUT, failure.kind());
     }

@@ -18,7 +18,9 @@ public record ProxyCapabilityReport(Map<String, Boolean> capabilities, List<Stri
             "classloader.close",
             "event-manager.scoped-fire",
             "container.executor",
-            "command-manager.unregister");
+            "command-manager.unregister",
+            "packet-registry.cleanup",
+            "event-manager.cache-cleanup");
 
     public ProxyCapabilityReport {
         capabilities = Map.copyOf(Objects.requireNonNull(capabilities, "capabilities"));

@@ -1,5 +1,7 @@
 package com.volmit.bile.velocity;
 
+import com.volmit.bile.velocity.api.ReloadParticipant;
+import com.volmit.bile.velocity.api.ReloadPreparation;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -34,6 +36,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 public final class VelocityPluginHotloader {
     private static final String VELOCITY_ID = "velocity";
@@ -41,17 +46,16 @@ public final class VelocityPluginHotloader {
     private static final String ARCHIVE_DIRECTORY = "archive";
     private static final DateTimeFormatter ARCHIVE_STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final Duration ROLLBACK_EVENT_TIMEOUT = Duration.ofSeconds(10L);
-    private static final List<String> LOAD_CAPABILITIES = List.of(ProxyInternals.CAP_LOADER_CANDIDATE,
-            ProxyInternals.CAP_LOADER_CREATE, ProxyInternals.CAP_LOADER_MODULE, ProxyInternals.CAP_PLUGIN_MAPS,
-            ProxyInternals.CAP_REGISTER_INTERNALLY);
-    private static final List<String> UNLOAD_CAPABILITIES = List.of(ProxyInternals.CAP_PLUGIN_MAPS,
-            ProxyInternals.CAP_CLASSLOADER_CLOSE, ProxyInternals.CAP_CONTAINER_EXECUTOR,
-            ProxyInternals.CAP_COMMAND_UNREGISTER);
+    private static final List<String> LOAD_CAPABILITIES = ProxyCapabilityReport.LOAD_KEYS;
+    private static final List<String> UNLOAD_CAPABILITIES = ProxyCapabilityReport.UNLOAD_KEYS;
 
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path runtimeDirectory;
     private final Path archiveDirectory;
+    private final Path recoveryDirectory;
+    private final Map<String, Path> recoveryCopies = new ConcurrentHashMap<>();
+    private final VelocityOwnedResources ownedResources;
     private final Object selfInstance;
     private final ProxyInternals internals;
     private final HotloadOptions options;
@@ -71,8 +75,15 @@ public final class VelocityPluginHotloader {
         Path data = Objects.requireNonNull(dataDirectory, "dataDirectory");
         this.runtimeDirectory = data.resolve(RUNTIME_DIRECTORY);
         this.archiveDirectory = data.resolve(ARCHIVE_DIRECTORY);
+        this.recoveryDirectory = data.resolve("recovery-plugins");
+        this.ownedResources = new VelocityOwnedResources(proxy);
         internals.pluginsDirectory(data.getParent());
         refreshSnapshot();
+        captureStartupCopies();
+    }
+
+    public VelocityOwnedResources ownedResources() {
+        return ownedResources;
     }
 
     public ProxyInternals internals() {
@@ -138,6 +149,12 @@ public final class VelocityPluginHotloader {
             PluginContainer container = createRegisterAndStart(id, runtimeCopy);
             trackedSources.put(id, originJar);
             runtimeCopies.put(id, runtimeCopy);
+            try {
+                retainRecoveryCopy(id, runtimeCopy);
+            } catch (HotloadException failure) {
+                unloadSingle(container, UnloadReason.HOT_RELOAD);
+                throw failure;
+            }
             logTiming("load " + id + " took " + elapsedMillis(started) + "ms");
             return container;
         } finally {
@@ -146,32 +163,30 @@ public final class VelocityPluginHotloader {
     }
 
     public Set<Path> unload(String id, UnloadReason reason) throws HotloadException {
-        Objects.requireNonNull(id, "id");
         Objects.requireNonNull(reason, "reason");
         requireCapabilities(UNLOAD_CAPABILITIES);
-        PluginContainer container = find(id).orElseThrow(() ->
-                new HotloadException(HotloadException.Kind.NOT_LOADED, id + " is not loaded"));
-        if (isSelf(container)) {
-            throw new HotloadException(HotloadException.Kind.SELF,
-                    "BileTools cannot unload itself on the proxy; restart the proxy instead");
-        }
-        String resolvedId = container.getDescription().getId();
+        List<PluginContainer> group = unloadOrder(id);
+        String resolvedId = group.get(group.size() - 1).getDescription().getId();
+        prepareGroup(group, reason);
+        Set<Path> dependents = new LinkedHashSet<>();
+        List<String> failures = new ArrayList<>();
         long started = System.nanoTime();
         operationDepth++;
         try {
-            Set<Path> dependentSources = unloadDependents(resolvedId);
-            List<String> failures = teardown(new TeardownPlan(resolvedId, container, runtimeCopies.get(resolvedId),
-                    LoadStage.INITIALIZED, options.lifecycleTimeout(), options.archivePlugins()));
-            trackedSources.remove(resolvedId);
-            runtimeCopies.remove(resolvedId);
-            logTiming("unload " + resolvedId + " took " + elapsedMillis(started)
-                    + "ms (dependents=" + dependentSources.size() + ")");
+            for (PluginContainer container : group) {
+                String memberId = container.getDescription().getId();
+                if (!memberId.equalsIgnoreCase(resolvedId)) {
+                    sourceOf(memberId).ifPresent(dependents::add);
+                }
+                failures.addAll(unloadSingle(container, reason));
+            }
+            logTiming("unload " + id + " took " + elapsedMillis(started) + "ms (dependents=" + dependents.size() + ")");
             if (!failures.isEmpty()) {
                 throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED,
-                        resolvedId + " did not unload cleanly: " + String.join(", ", failures)
-                                + describeDependents(dependentSources), null, dependentSources);
+                        id + " did not unload cleanly: " + String.join(", ", failures)
+                                + describeDependents(dependents), null, dependents);
             }
-            return dependentSources;
+            return dependents;
         } finally {
             operationDepth--;
         }
@@ -182,34 +197,84 @@ public final class VelocityPluginHotloader {
     }
 
     public PluginContainer reload(String id, Path sourceJar, Path originJar) throws HotloadException {
-        Objects.requireNonNull(id, "id");
-        PluginContainer existing = find(id).orElseThrow(() ->
-                new HotloadException(HotloadException.Kind.NOT_LOADED, id + " is not loaded"));
-        if (isSelf(existing)) {
-            throw new HotloadException(HotloadException.Kind.SELF,
-                    "BileTools cannot reload itself on the proxy; restart the proxy instead");
-        }
-        String resolvedId = existing.getDescription().getId();
+        requireCapabilities(LOAD_CAPABILITIES);
+        requireCapabilities(UNLOAD_CAPABILITIES);
+        List<PluginContainer> group = unloadOrder(id);
+        String resolvedId = group.get(group.size() - 1).getDescription().getId();
         Path origin = originJar != null ? originJar : sourceOf(resolvedId).orElseThrow(() ->
                 new HotloadException(HotloadException.Kind.LOAD_FAILED, "no source jar is recorded for " + resolvedId));
-        Path source = sourceJar != null ? sourceJar : origin;
+        Path candidate = stage(sourceJar == null ? origin : sourceJar, resolvedId);
+        List<RecoveryEntry> recovery = new ArrayList<>(group.size());
         long started = System.nanoTime();
         operationDepth++;
         try {
-            long unloadStarted = System.nanoTime();
-            Set<Path> dependentSources = unloadForReload(resolvedId);
-            long unloadMillis = elapsedMillis(unloadStarted);
-            long loadStarted = System.nanoTime();
-            PluginContainer reloaded = load(source, origin);
-            long loadMillis = elapsedMillis(loadStarted);
-            List<Path> ordered = restoreOrder(dependentSources);
-            restoreDependents(ordered);
-            logTiming("reload " + resolvedId + " took " + elapsedMillis(started) + "ms (unload=" + unloadMillis
-                    + ", load=" + loadMillis + ", dependents=" + ordered.size() + ")");
-            return reloaded;
+            preflightReplacement(resolvedId, candidate);
+            for (PluginContainer container : group) {
+                String memberId = container.getDescription().getId();
+                Path previous = recoveryCopies.get(memberId);
+                if (previous == null || !Files.isRegularFile(previous)) {
+                    throw new HotloadException(HotloadException.Kind.LOAD_FAILED,
+                            "no verified running-version copy for " + memberId + "; restart before reloading");
+                }
+                Path source = sourceOf(memberId).orElseThrow(() -> new HotloadException(
+                        HotloadException.Kind.LOAD_FAILED, "no source jar for " + memberId));
+                recovery.add(new RecoveryEntry(memberId, stage(previous, memberId), source, container));
+            }
+            prepareGroup(group, UnloadReason.HOT_RELOAD);
+            try {
+                for (PluginContainer container : group) {
+                    List<String> failures = unloadSingle(container, UnloadReason.HOT_RELOAD);
+                    if (!failures.isEmpty()) {
+                        throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED,
+                                container.getDescription().getId() + " did not unload cleanly: " + String.join(", ", failures));
+                    }
+                }
+                PluginContainer replacement = load(candidate, origin);
+                for (int index = recovery.size() - 2; index >= 0; index--) {
+                    RecoveryEntry entry = recovery.get(index);
+                    load(entry.copy(), entry.origin());
+                }
+                logTiming("reload " + resolvedId + " took " + elapsedMillis(started) + "ms (group=" + group.size() + ")");
+                return replacement;
+            } catch (HotloadException | RuntimeException failure) {
+                List<String> recoveryFailures = recoverGroup(recovery);
+                for (RecoveryEntry entry : recovery) {
+                    try {
+                        retainRecoveryCopy(entry.id(), entry.copy());
+                    } catch (HotloadException retentionFailure) {
+                        logger.error("Cannot preserve recovery jar for {}", entry.id(), retentionFailure);
+                        recoveryFailures.add(entry.id() + " recovery jar could not be retained");
+                    }
+                }
+                String outcome = recoveryFailures.isEmpty() ? "; previous dependency group restored"
+                        : "; recovery incomplete: " + String.join(", ", recoveryFailures);
+                throw new HotloadException(HotloadException.Kind.LOAD_FAILED,
+                        "reload of " + resolvedId + " failed" + outcome, failure);
+            }
         } finally {
+            deleteQuietly(candidate);
+            for (RecoveryEntry entry : recovery) {
+                deleteQuietly(entry.copy());
+            }
             operationDepth--;
         }
+    }
+
+    public List<String> inspect(String id) throws HotloadException {
+        PluginContainer container = find(id).orElseThrow(() -> new HotloadException(
+                HotloadException.Kind.NOT_LOADED, id + " is not loaded"));
+        Object instance = container.getInstance().orElse(null);
+        List<String> lines = new ArrayList<>();
+        lines.add(container.getDescription().getId() + " " + container.getDescription().getVersion().orElse("unknown"));
+        lines.add("Dependencies: " + container.getDescription().getDependencies());
+        lines.add("Affected dependents: " + dependentsOf(id));
+        lines.add("Recovery copy: " + (recoveryCopies.containsKey(container.getDescription().getId()) ? "available" : "unavailable"));
+        lines.add("Cooperative preparation: " + (instance instanceof ReloadParticipant));
+        lines.add("Owned commands: " + ownedCommandAliases(container, instance));
+        lines.add("Scheduled tasks: " + (instance == null ? 0 : proxy.getScheduler().tasksByPlugin(instance).size()));
+        lines.addAll(ownedResources.inspect(container));
+        lines.add(internals.report().summary());
+        return List.copyOf(lines);
     }
 
     public Optional<Path> sourceOf(String id) {
@@ -222,13 +287,186 @@ public final class VelocityPluginHotloader {
         return container == null ? Optional.empty() : container.getDescription().getSource();
     }
 
-    private Set<Path> unloadForReload(String id) throws HotloadException {
-        try {
-            return unload(id, UnloadReason.HOT_RELOAD);
-        } catch (HotloadException e) {
-            restoreDependents(restoreOrder(e.dependentSources()));
-            throw e;
+    private void captureStartupCopies() {
+        for (PluginContainer container : loadedPlugins()) {
+            if (isSelf(container)) {
+                continue;
+            }
+            container.getDescription().getSource().ifPresent(source -> {
+                try {
+                    retainRecoveryCopy(container.getDescription().getId(), source);
+                } catch (HotloadException failure) {
+                    logger.warn("Cannot preserve startup jar for {}", container.getDescription().getId(), failure);
+                }
+            });
         }
+    }
+
+    private void retainRecoveryCopy(String id, Path source) throws HotloadException {
+        Path copy = recoveryDirectory.resolve(id + "-" + UUID.randomUUID() + ".jar");
+        try {
+            Files.createDirectories(recoveryDirectory);
+            Files.copy(source, copy);
+            Path previous = recoveryCopies.put(id, copy);
+            if (previous != null) {
+                deleteQuietly(previous);
+            }
+        } catch (IOException failure) {
+            deleteQuietly(copy);
+            throw new HotloadException(HotloadException.Kind.LOAD_FAILED, "cannot preserve running jar for " + id, failure);
+        }
+    }
+
+    private void preflightReplacement(String id, Path candidate) throws HotloadException {
+        VelocityPluginDescriptor descriptor = readDescriptor(candidate);
+        if (!descriptor.id().equals(id)) {
+            throw new HotloadException(HotloadException.Kind.INVALID_DESCRIPTOR,
+                    "replacement id " + descriptor.id() + " does not match " + id);
+        }
+        List<String> missing = missingDependencies(descriptor);
+        if (!missing.isEmpty()) {
+            throw new HotloadException(HotloadException.Kind.MISSING_DEPENDENCY,
+                    id + " needs plugins that are not loaded: " + String.join(", ", missing));
+        }
+        Set<String> dependents = dependentsOf(id);
+        for (String dependency : descriptor.requiredDependencies()) {
+            PluginContainer target = find(dependency).orElse(null);
+            if (target != null && dependents.contains(target.getDescription().getId())) {
+                throw new HotloadException(HotloadException.Kind.MISSING_DEPENDENCY,
+                        "replacement creates a dependency cycle through " + dependency);
+            }
+        }
+    }
+
+    private List<PluginContainer> unloadOrder(String id) throws HotloadException {
+        PluginContainer target = find(id).orElseThrow(() -> new HotloadException(
+                HotloadException.Kind.NOT_LOADED, id + " is not loaded"));
+        List<PluginContainer> ordered = new ArrayList<>();
+        visitUnload(target, new LinkedHashSet<>(), new LinkedHashSet<>(), ordered);
+        return ordered;
+    }
+
+    private void visitUnload(PluginContainer container, Set<String> visiting, Set<String> visited,
+                             List<PluginContainer> ordered) throws HotloadException {
+        String id = container.getDescription().getId();
+        if (visited.contains(id)) {
+            return;
+        }
+        if (isSelf(container)) {
+            throw new HotloadException(HotloadException.Kind.SELF, "the operation would unload BileTools; restart instead");
+        }
+        if (!visiting.add(id)) {
+            throw new HotloadException(HotloadException.Kind.MISSING_DEPENDENCY, "dependency cycle involving " + id);
+        }
+        for (String dependent : directDependentsOf(id)) {
+            visitUnload(find(dependent).orElseThrow(), visiting, visited, ordered);
+        }
+        visiting.remove(id);
+        visited.add(id);
+        ordered.add(container);
+    }
+
+    private void prepareGroup(List<PluginContainer> group, UnloadReason reason) throws HotloadException {
+        List<ReloadParticipant> prepared = new ArrayList<>();
+        try {
+            for (PluginContainer container : group) {
+                if (!(container.getInstance().orElse(null) instanceof ReloadParticipant participant)) {
+                    continue;
+                }
+                prepared.add(participant);
+                CompletionStage<ReloadPreparation> stage = Objects.requireNonNull(participant.prepareReload(reason));
+                ReloadPreparation result = awaitPreparation(stage);
+                if (!result.ready()) {
+                    throw new HotloadException(HotloadException.Kind.PREPARATION_REFUSED,
+                            container.getDescription().getId() + " refused unloading: " + result.reason());
+                }
+            }
+        } catch (Exception failure) {
+            for (int index = prepared.size() - 1; index >= 0; index--) {
+                try {
+                    awaitPreparation(prepared.get(index).cancelReload());
+                } catch (Exception cancellation) {
+                    logger.error("Cannot resume a plugin after cancelled reload preparation", cancellation);
+                    failure.addSuppressed(cancellation);
+                }
+            }
+            if (failure instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            if (failure instanceof HotloadException hotload) {
+                throw hotload;
+            }
+            throw new HotloadException(HotloadException.Kind.PREPARATION_REFUSED,
+                    "reload preparation failed; dependency group was not unloaded", failure);
+        }
+    }
+
+    private <T> T awaitPreparation(CompletionStage<T> stage) throws Exception {
+        try {
+            return stage.toCompletableFuture().get(options.lifecycleTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException timeout) {
+            logger.error("Reload preparation exceeded {}; waiting for completion before changing plugin state", options.lifecycleTimeout());
+            stage.handle((result, failure) -> null).toCompletableFuture().join();
+            throw timeout;
+        }
+    }
+
+    private List<String> unloadSingle(PluginContainer container, UnloadReason reason) {
+        String id = container.getDescription().getId();
+        List<String> failures = new ArrayList<>();
+        if (container.getInstance().orElse(null) instanceof ReloadParticipant participant) {
+            runStep(failures, "commit reload preparation", () -> awaitPreparation(participant.commitReload(reason)));
+        }
+        failures.addAll(teardown(new TeardownPlan(id, container, runtimeCopies.get(id),
+                LoadStage.INITIALIZED, options.lifecycleTimeout(), options.archivePlugins())));
+        trackedSources.remove(id);
+        runtimeCopies.remove(id);
+        return failures;
+    }
+
+    private List<String> recoverGroup(List<RecoveryEntry> recovery) {
+        List<String> failures = new ArrayList<>();
+        List<PluginContainer> replacements = new ArrayList<>();
+        for (RecoveryEntry entry : recovery) {
+            PluginContainer current = find(entry.id()).orElse(null);
+            if (current != null && current != entry.original()) {
+                replacements.add(current);
+            }
+        }
+        try {
+            prepareGroup(replacements, UnloadReason.HOT_RELOAD);
+        } catch (HotloadException failure) {
+            logger.error("Cannot prepare replacement plugins for recovery", failure);
+            failures.add(failure.getMessage());
+            return failures;
+        }
+        for (RecoveryEntry entry : recovery) {
+            PluginContainer current = find(entry.id()).orElse(null);
+            if (current != null) {
+                failures.addAll(unloadSingle(current, UnloadReason.HOT_RELOAD));
+            }
+        }
+        for (int index = recovery.size() - 1; index >= 0; index--) {
+            RecoveryEntry entry = recovery.get(index);
+            try {
+                load(entry.copy(), entry.origin());
+            } catch (HotloadException failure) {
+                logger.error("Could not restore previous version of {}", entry.id(), failure);
+                failures.add(entry.id() + ": " + failure.getMessage());
+            }
+        }
+        return failures;
+    }
+
+    private List<String> ownedCommandAliases(PluginContainer container, Object instance) {
+        List<String> aliases = new ArrayList<>();
+        for (String alias : proxy.getCommandManager().getAliases()) {
+            CommandMeta meta = proxy.getCommandManager().getCommandMeta(alias);
+            if (meta != null && (meta.getPlugin() == instance || meta.getPlugin() == container)) {
+                aliases.add(alias);
+            }
+        }
+        return aliases;
     }
 
     private PluginContainer createRegisterAndStart(String id, Path runtimeCopy) throws HotloadException {
@@ -284,23 +522,18 @@ public final class VelocityPluginHotloader {
         teardown(new TeardownPlan(id, container, runtimeCopy, stage, ROLLBACK_EVENT_TIMEOUT, false));
     }
 
-    private Set<Path> unloadDependents(String id) throws HotloadException {
-        Set<Path> collected = new LinkedHashSet<>();
-        for (String dependent : directDependentsOf(id)) {
-            Optional<Path> dependentSource = sourceOf(dependent);
-            collected.addAll(unload(dependent, UnloadReason.DEPENDENT));
-            dependentSource.ifPresent(collected::add);
-        }
-        return collected;
-    }
-
     List<String> teardown(TeardownPlan plan) {
         PluginContainer container = plan.container();
         Object instance = container.getInstance().orElse(null);
         List<String> failures = new ArrayList<>();
         if (plan.stage() == LoadStage.INITIALIZED) {
-            runStep(failures, "scoped ProxyShutdownEvent",
-                    () -> internals.fireScopedCollecting(container, new ProxyShutdownEvent(), plan.eventTimeout()));
+            runStep(failures, "scoped ProxyShutdownEvent", () -> {
+                List<ProxyInternals.HandlerFailure> handlers = internals.fireScopedCollecting(
+                        container, new ProxyShutdownEvent(), plan.eventTimeout());
+                for (ProxyInternals.HandlerFailure handler : handlers) {
+                    failures.add("shutdown handler " + handler.handler());
+                }
+            });
         }
         if (plan.stage() != LoadStage.CREATED) {
             if (instance != null) {
@@ -310,6 +543,9 @@ public final class VelocityPluginHotloader {
             }
             runStep(failures, "unregister container", () -> internals.unregisterContainer(container));
         }
+        runStep(failures, "event caches", () -> internals.removeOwnedEventCaches(container));
+        runStep(failures, "owned registrations", () -> ownedResources.release(container));
+        runStep(failures, "packet registrations", () -> internals.removeOwnedPackets(container));
         runStep(failures, "shut down executor", () -> internals.shutdownContainerExecutor(container));
         runStep(failures, "close class loader", () -> internals.closeClassLoader(container));
         runStep(failures, "remove runtime copy", () -> removeRuntimeCopy(plan));
@@ -363,12 +599,6 @@ public final class VelocityPluginHotloader {
         Files.move(copy, archived, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private List<Path> restoreOrder(Set<Path> dependentSources) {
-        List<Path> ordered = new ArrayList<>(dependentSources);
-        Collections.reverse(ordered);
-        return ordered;
-    }
-
     private String describeDependents(Set<Path> dependentSources) {
         if (dependentSources.isEmpty()) {
             return "";
@@ -397,16 +627,6 @@ public final class VelocityPluginHotloader {
         }
         loadedSnapshot = List.copyOf(loaded);
         snapshotById = Map.copyOf(byId);
-    }
-
-    private void restoreDependents(List<Path> sources) {
-        for (Path source : sources) {
-            try {
-                load(source);
-            } catch (HotloadException e) {
-                logger.error("dependent {} did not come back after the reload", source.getFileName(), e);
-            }
-        }
     }
 
     private Path stage(Path sourceJar, String id) throws HotloadException {
@@ -552,6 +772,9 @@ public final class VelocityPluginHotloader {
     @FunctionalInterface
     private interface Step {
         void run() throws Exception;
+    }
+
+    private record RecoveryEntry(String id, Path copy, Path origin, PluginContainer original) {
     }
 
     enum LoadStage {

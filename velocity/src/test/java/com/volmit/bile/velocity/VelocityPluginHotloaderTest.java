@@ -1,5 +1,7 @@
 package com.volmit.bile.velocity;
 
+import com.volmit.bile.velocity.api.ReloadParticipant;
+import com.volmit.bile.velocity.api.ReloadPreparation;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.EventManager;
@@ -30,6 +32,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -352,7 +356,7 @@ class VelocityPluginHotloaderTest {
     }
 
     @Test
-    void unloadSurvivesAShutdownHandlerThatFails() throws Exception {
+    void unloadReportsShutdownFailureAfterFinishingCleanup() throws Exception {
         Object instance = new Object();
         PluginContainer demo = container("demo", instance, List.of(), temp.resolve("Demo.jar"));
         registerInMaps(demo);
@@ -360,9 +364,10 @@ class VelocityPluginHotloaderTest {
                 .thenReturn(List.of(new ProxyInternals.HandlerFailure("demo", "com.example.DemoVelocity",
                         new IllegalStateException("shutdown boom"))));
 
-        Set<Path> dependents = hotloader().unload("demo", UnloadReason.HOT_UNLOAD);
+        HotloadException failure = assertThrows(HotloadException.class,
+                () -> hotloader().unload("demo", UnloadReason.HOT_UNLOAD));
 
-        assertTrue(dependents.isEmpty());
+        assertEquals(HotloadException.Kind.UNLOAD_FAILED, failure.kind());
         verify(internals).unregisterContainer(demo);
         verify(internals).closeClassLoader(demo);
     }
@@ -423,7 +428,7 @@ class VelocityPluginHotloaderTest {
         HotloadException failure = assertThrows(HotloadException.class,
                 () -> hotloader().reload("core", coreJar));
 
-        assertEquals(HotloadException.Kind.UNLOAD_FAILED, failure.kind());
+        assertEquals(HotloadException.Kind.LOAD_FAILED, failure.kind());
         verify(internals).registerContainer(addon);
     }
 
@@ -587,7 +592,7 @@ class VelocityPluginHotloaderTest {
         List<String> lines = timingLines();
         assertEquals(2, lines.size(), lines.toString());
         assertTrue(lines.get(0).matches("load demo took \\d+ms"), lines.get(0));
-        assertTrue(lines.get(1).matches("reload demo took \\d+ms \\(unload=\\d+, load=\\d+, dependents=0\\)"), lines.get(1));
+        assertTrue(lines.get(1).matches("reload demo took \\d+ms \\(group=1\\)"), lines.get(1));
     }
 
     @Test
@@ -617,6 +622,133 @@ class VelocityPluginHotloaderTest {
         assertTrue(hotloader.isSelf(hotloader.find("biletools").orElseThrow()));
         assertFalse(hotloader.isSelf(demo));
         assertSame(internals, hotloader.internals());
+    }
+
+    @Test
+    void replacementIdentityIsRejectedBeforeAnyTeardown() throws Exception {
+        Path original = sourceJar("Demo.jar", JarFixtures.descriptor("demo", "com.example.Demo"));
+        PluginContainer demo = declare("demo", List.of());
+        registerInMaps(demo);
+        Path replacement = sourceJar("Wrong.jar", JarFixtures.descriptor("other", "com.example.Other"));
+        VelocityPluginHotloader hotloader = hotloader();
+
+        HotloadException failure = assertThrows(HotloadException.class, () -> hotloader.reload("demo", replacement, original));
+
+        assertEquals(HotloadException.Kind.INVALID_DESCRIPTOR, failure.kind());
+        verify(internals, never()).unregisterContainer(any());
+        assertSame(demo, hotloader.find("demo").orElseThrow());
+    }
+
+    @Test
+    void replacementFailureRestoresOriginalBytesAndWholeDependencyGroup() throws Exception {
+        Path coreJar = sourceJar("Core.jar", JarFixtures.descriptor("core", "com.example.Original"));
+        Path addonJar = sourceJar("Addon.jar", JarFixtures.descriptor("addon", "com.example.Addon", "[{\"id\":\"core\"}]"));
+        PluginContainer core = declare("core", List.of());
+        PluginContainer addon = declare("addon", List.of(new PluginDependency("core", "1", false)));
+        VelocityPluginHotloader hotloader = hotloader();
+        hotloader.load(coreJar);
+        hotloader.load(addonJar);
+        sourceJar("Core.jar", JarFixtures.descriptor("core", "com.example.Replacement"));
+        List<String> attempts = new ArrayList<>();
+        doAnswer(invocation -> {
+            Path staged = invocation.getArgument(0);
+            VelocityPluginDescriptor descriptor = VelocityPluginDescriptor.read(staged);
+            attempts.add(descriptor.mainClass());
+            if (descriptor.mainClass().equals("com.example.Replacement")) {
+                throw new HotloadException(HotloadException.Kind.LOAD_FAILED, "replacement refused");
+            }
+            return pendingFor(staged);
+        }).when(internals).createContainer(any());
+
+        HotloadException failure = assertThrows(HotloadException.class, () -> hotloader.reload("core", coreJar));
+
+        assertTrue(failure.getMessage().contains("previous dependency group restored"), failure.getMessage());
+        assertEquals(List.of("com.example.Replacement", "com.example.Original", "com.example.Addon"), attempts);
+        assertSame(core, hotloader.find("core").orElseThrow());
+        assertSame(addon, hotloader.find("addon").orElseThrow());
+        assertEquals(Optional.of(coreJar), hotloader.sourceOf("core"));
+    }
+
+    @Test
+    void startupJarSnapshotSurvivesAnOverwriteBeforeFirstReload() throws Exception {
+        Path jar = sourceJar("Demo.jar", JarFixtures.descriptor("demo", "com.example.Original"));
+        PluginContainer demo = container("demo", new Object(), List.of(), jar);
+        pending.put("demo", demo);
+        registerInMaps(demo);
+        VelocityPluginHotloader hotloader = hotloader();
+        sourceJar("Demo.jar", JarFixtures.descriptor("demo", "com.example.Replacement"));
+        List<String> attempts = new ArrayList<>();
+        doAnswer(invocation -> {
+            VelocityPluginDescriptor descriptor = VelocityPluginDescriptor.read(invocation.getArgument(0));
+            attempts.add(descriptor.mainClass());
+            if (descriptor.mainClass().contains("Replacement")) {
+                throw new HotloadException(HotloadException.Kind.LOAD_FAILED, "bad replacement");
+            }
+            return demo;
+        }).when(internals).createContainer(any());
+
+        assertThrows(HotloadException.class, () -> hotloader.reload("demo", jar));
+
+        assertEquals(List.of("com.example.Replacement", "com.example.Original"), attempts);
+        assertSame(demo, hotloader.find("demo").orElseThrow());
+    }
+
+    @Test
+    void dependentFailureIsReportedEvenWhenRecoverySucceeds() throws Exception {
+        Path coreJar = sourceJar("Core.jar", JarFixtures.descriptor("core", "com.example.Core"));
+        Path addonJar = sourceJar("Addon.jar", JarFixtures.descriptor("addon", "com.example.Addon", "[{\"id\":\"core\"}]"));
+        declare("core", List.of());
+        PluginContainer addon = declare("addon", List.of(new PluginDependency("core", "1", false)));
+        VelocityPluginHotloader hotloader = hotloader();
+        hotloader.load(coreJar);
+        hotloader.load(addonJar);
+        AtomicInteger attempts = new AtomicInteger();
+        doAnswer(invocation -> {
+            if (attempts.getAndIncrement() == 0) {
+                throw new HotloadException(HotloadException.Kind.LOAD_FAILED, "dependent failed");
+            }
+            return null;
+        }).when(internals).fireScoped(eq(addon), isA(ProxyInitializeEvent.class), any());
+
+        HotloadException failure = assertThrows(HotloadException.class, () -> hotloader.reload("core", coreJar));
+
+        assertTrue(failure.getMessage().contains("previous dependency group restored"));
+        assertEquals(2, attempts.get());
+        assertTrue(hotloader.find("addon").isPresent());
+    }
+
+    @Test
+    void groupVetoResumesPreparedParticipantsWithoutTeardown() throws Exception {
+        ReloadParticipant coreInstance = mock(ReloadParticipant.class);
+        ReloadParticipant addonInstance = mock(ReloadParticipant.class);
+        when(addonInstance.prepareReload(any())).thenReturn(CompletableFuture.completedFuture(ReloadPreparation.readyToUnload()));
+        when(coreInstance.prepareReload(any())).thenReturn(CompletableFuture.completedFuture(ReloadPreparation.refuse("save in progress")));
+        when(coreInstance.cancelReload()).thenReturn(CompletableFuture.completedFuture(null));
+        when(addonInstance.cancelReload()).thenReturn(CompletableFuture.completedFuture(null));
+        PluginContainer core = container("core", coreInstance, List.of(), null);
+        PluginContainer addon = container("addon", addonInstance, List.of(new PluginDependency("core", "1", false)), null);
+        registerInMaps(core);
+        registerInMaps(addon);
+
+        HotloadException failure = assertThrows(HotloadException.class, () -> hotloader().unload("core", UnloadReason.HOT_UNLOAD));
+
+        assertEquals(HotloadException.Kind.PREPARATION_REFUSED, failure.kind());
+        assertTrue(failure.getMessage().contains("save in progress"));
+        verify(coreInstance).cancelReload();
+        verify(addonInstance).cancelReload();
+        verify(internals, never()).unregisterContainer(any());
+    }
+
+    @Test
+    void missingScopedLifecycleCapabilityRefusesBeforeMutation() throws Exception {
+        when(internals.report()).thenReturn(reportWithout("event-manager.scoped-fire"));
+        Path jar = sourceJar("Demo.jar", JarFixtures.descriptor("demo", "com.example.Demo"));
+        declare("demo", List.of());
+
+        HotloadException failure = assertThrows(HotloadException.class, () -> hotloader().load(jar));
+
+        assertEquals(HotloadException.Kind.UNSUPPORTED_CAPABILITY, failure.kind());
+        verify(internals, never()).createContainer(any());
     }
 
     private VelocityPluginHotloader hotloader() {
@@ -712,7 +844,7 @@ class VelocityPluginHotloaderTest {
         for (String key : List.of("plugin-manager.maps", "plugin-loader.candidate", "plugin-loader.create",
                 "plugin-loader.module", "classloader.close", "classloader.registry",
                 "event-manager.register-internally", "event-manager.scoped-fire", "container.executor",
-                "command-manager.unregister")) {
+                "command-manager.unregister", "packet-registry.cleanup", "event-manager.cache-cleanup")) {
             capabilities.put(key, Boolean.TRUE);
         }
         return new ProxyCapabilityReport(capabilities, List.of());

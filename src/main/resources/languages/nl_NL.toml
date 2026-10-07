@@ -45,7 +45,14 @@
 #   {variables}  geldige tijdelijke aanduidingen
 #   {version}  Aangevraagde of getoonde versie van de bibliotheekplugin
 
+#   {enabled}  actief
+#   {recovery}  herstel
+#   {cooperative}  samenwerking
+#   {dependents}  afhankelijke plugins
+#   {capability}  ontladen
+
 [command]
+inspect = "Inspecteer of een plugin opnieuw kan worden geladen"
 version = "Toon de geïnstalleerde pluginversie"
 root = "BileTools-opdrachtgroep"
 load = "Een plugin-JAR uit de pluginsmap laden"
@@ -345,3 +352,6 @@ line = "Regel {line}"
 [language.editor.value]
 none = "Geen"
 empty = "(leeg)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: actief={enabled}, herstel={recovery}, samenwerking={cooperative}, afhankelijke plugins={dependents}, ontladen={capability}"

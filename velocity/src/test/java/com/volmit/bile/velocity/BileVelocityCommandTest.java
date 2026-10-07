@@ -145,7 +145,7 @@ public class BileVelocityCommandTest {
 
     @Test
     public void suggestsSubcommands() {
-        assertEquals(List.of("help", "list", "load", "reload", "unload", "version"),
+        assertEquals(List.of("help", "inspect", "list", "load", "reload", "unload", "version"),
                 command.suggest(invocation()));
         assertEquals(List.of("reload"), command.suggest(invocation("rel")));
     }

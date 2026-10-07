@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+}
+
+version = providers.gradleProperty('fixtureVersion').getOrElse('1')
+String fixtureMode = providers.gradleProperty('fixtureMode').getOrElse('good')
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+sourceSets {
+    library
+    main {
+        compileClasspath += sourceSets.library.output
+    }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:26.3.build.25-alpha'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
+tasks.named('processResources') {
+    inputs.property('fixtureVersion', project.version)
+    inputs.property('fixtureMode', fixtureMode)
+    filesMatching(['paper-plugin.yml', 'fixture.properties']) {
+        expand(fixtureVersion: project.version, fixtureMode: fixtureMode)
+    }
+}
+
+tasks.register('libraryJar', Jar) {
+    archiveFileName = 'fixture-library.jar'
+    from(sourceSets.library.output)
+}
+
+tasks.named('assemble') {
+    dependsOn('libraryJar')
+}

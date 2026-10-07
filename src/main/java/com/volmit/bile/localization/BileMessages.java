@@ -21,6 +21,8 @@ public final class BileMessages {
     public static final TextKey COMMAND_LOAD = TextKey.of("command.load", "Load a plugin jar from the plugins directory");
     public static final TextKey COMMAND_UNLOAD = TextKey.of("command.unload", "Unload an installed plugin");
     public static final TextKey COMMAND_RELOAD = TextKey.of("command.reload", "Reload an installed plugin");
+    public static final TextKey COMMAND_INSPECT = TextKey.of("command.inspect", "Inspect plugin reload readiness");
+    public static final TextKey INSPECT_RESULT = TextKey.of("message.inspect.result", "&a[&8Bile&a]: &f{plugin}&7: enabled={enabled}, recovery={recovery}, cooperative={cooperative}, dependents=[{dependents}], teardown={capability}");
     public static final TextKey COMMAND_UNINSTALL = TextKey.of("command.uninstall", "Delete a plugin jar from the plugins directory");
     public static final TextKey COMMAND_INSTALL = TextKey.of("command.install", "Install a plugin from the Bile library");
     public static final TextKey COMMAND_LIBRARY = TextKey.of("command.library", "List library plugins or versions for one plugin");
@@ -137,6 +139,7 @@ public final class BileMessages {
         MessageCatalog.Builder builder = MessageCatalog.builder(VolmitLocales.ENGLISH);
         builder.addAll(List.of(
                 COMMAND_ROOT, COMMAND_CONFIG, COMMAND_LANGUAGE, COMMAND_LOAD, COMMAND_UNLOAD, COMMAND_RELOAD,
+                COMMAND_INSPECT, INSPECT_RESULT,
                 COMMAND_UNINSTALL, COMMAND_INSTALL, COMMAND_LIBRARY, DEBUG_DESCRIPTION, DEBUG_DUMP_DESCRIPTION,
                 VERSION_DESCRIPTION));
         builder.addAll(List.of(

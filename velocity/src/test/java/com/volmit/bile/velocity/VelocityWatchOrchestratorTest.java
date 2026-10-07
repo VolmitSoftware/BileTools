@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -104,6 +106,38 @@ public class VelocityWatchOrchestratorTest {
     @AfterEach
     public void tearDown() {
         orchestrator.close();
+    }
+
+    @Test
+    public void expiredQueuedOperationsNeverRunAndRunningTimeoutStaysQuarantined() throws Exception {
+        orchestrator.close();
+        config = loadConfig("{\"lifecycle\": {\"operation-timeout-seconds\": 5}}");
+        orchestrator = newOrchestrator(config, new ProxyMessages(proxy, logger, false));
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch finish = new CountDownLatch(1);
+        when(hotloader.unload("first", UnloadReason.HOT_UNLOAD)).thenAnswer(invocation -> {
+            entered.countDown();
+            assertTrue(finish.await(15L, TimeUnit.SECONDS));
+            return Set.of();
+        });
+        try {
+            CompletableFuture<String> first = orchestrator.manualUnload("first");
+            assertTrue(entered.await(2L, TimeUnit.SECONDS));
+            CompletableFuture<String> queued = orchestrator.manualUnload("queued");
+            assertThrows(ExecutionException.class, () -> first.get(8L, TimeUnit.SECONDS));
+            assertThrows(ExecutionException.class, () -> queued.get(8L, TimeUnit.SECONDS));
+            ExecutionException rejected = assertThrows(ExecutionException.class,
+                    () -> orchestrator.manualUnload("retry").get(1L, TimeUnit.SECONDS));
+            assertTrue(rejected.getCause().getMessage().contains("still running"));
+            finish.countDown();
+            awaitCondition(() -> orchestrator.snapshot().dirtyPlugins().contains("first"));
+        } finally {
+            finish.countDown();
+            orchestrator.close();
+        }
+        verify(hotloader, never()).unload("queued", UnloadReason.HOT_UNLOAD);
+        verify(hotloader, never()).unload("retry", UnloadReason.HOT_UNLOAD);
+        assertTrue(orchestrator.snapshot().dirtyPlugins().contains("first"));
     }
 
     @Test

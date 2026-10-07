@@ -45,7 +45,14 @@
 #   {variables}  사용 가능한 자리표시자
 #   {version}  요청되거나 표시된 라이브러리 플러그인 버전
 
+#   {enabled}  활성
+#   {recovery}  복구
+#   {cooperative}  협력 지원
+#   {dependents}  종속 플러그인
+#   {capability}  언로드
+
 [command]
+inspect = "플러그인 다시 로드 준비 상태 확인"
 version = "설치된 플러그인 버전 표시"
 root = "BileTools 명령어 그룹"
 load = "plugins 디렉터리에서 플러그인 JAR 불러오기"
@@ -345,3 +352,6 @@ line = "{line}번째 줄"
 [language.editor.value]
 none = "없음"
 empty = "(비어 있음)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: 활성={enabled}, 복구={recovery}, 협력 지원={cooperative}, 종속 플러그인={dependents}, 언로드={capability}"

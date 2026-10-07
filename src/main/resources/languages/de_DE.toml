@@ -45,7 +45,14 @@
 #   {variables}  gültige Platzhalter
 #   {version}  Angeforderte oder angezeigte Bibliotheks-Plugin-Version
 
+#   {enabled}  aktiv
+#   {recovery}  Wiederherstellung
+#   {cooperative}  kooperativ
+#   {dependents}  abhängige Plugins
+#   {capability}  Entladen
+
 [command]
+inspect = "Neuladebereitschaft eines Plugins prüfen"
 version = "Installierte Plugin-Version anzeigen"
 root = "BileTools-Befehlsgruppe"
 load = "Plugin-JAR aus dem Plugin-Verzeichnis laden"
@@ -345,3 +352,6 @@ line = "Zeile {line}"
 [language.editor.value]
 none = "Keine"
 empty = "(leer)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: aktiv={enabled}, Wiederherstellung={recovery}, kooperativ={cooperative}, abhängige Plugins={dependents}, Entladen={capability}"

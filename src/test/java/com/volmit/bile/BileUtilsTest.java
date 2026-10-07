@@ -2,6 +2,7 @@ package com.volmit.bile;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
@@ -19,6 +20,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.AbstractSet;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Collection;
@@ -240,6 +242,25 @@ public class BileUtilsTest {
         assertEquals(List.of("RuntimeDependency"), BileUtils.getDependencies(runtimeJar));
         assertTrue(BileUtils.readPluginDescriptorFlag(runtimeJar, "folia-supported"));
         assertEquals("Dual+Example.jar", BileUtils.runtimeSourceBaseName(runtimeJar));
+    }
+
+    @Test
+    public void runtimeArchiveSourceSurvivesPaperRemappingSuffix() throws Exception {
+        File directory = temporaryFolder.newFolder("runtime-plugins");
+        String encoded = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("Dual+Example.jar".getBytes(StandardCharsets.UTF_8));
+        String archiveName = encoded + "-12345678-1234-1234-1234-123456789012";
+        File original = new File(directory, archiveName + ".jar");
+        assertTrue(original.createNewFile());
+        File remapped = new File(new File(directory, ".paper-remapped"), archiveName + "-1780000000000.jar");
+
+        assertEquals("Dual+Example.jar", BileUtils.runtimeSourceBaseName(remapped));
+        assertEquals(original, BileUtils.managedRuntimeArchive(remapped, directory));
+        assertTrue(original.delete());
+        assertEquals(remapped, BileUtils.managedRuntimeArchive(remapped, directory));
+        assertEquals("Dual+Example.jar", BileUtils.runtimeSourceBaseName(remapped));
+        assertNull(BileUtils.runtimeSourceBaseName(new File(directory, archiveName + "-invalid.jar")));
+        assertNull(BileUtils.managedRuntimeArchive(new File(directory.getParentFile(), remapped.getName()), directory));
     }
 
     @Test
@@ -533,25 +554,90 @@ public class BileUtilsTest {
     }
 
     @Test
-    public void scrubPluginCommands_survivesPoisonedCommandMapIteration_andRemovesDeclaredCommands() throws Exception {
+    public void scrubPluginCommands_reportsPoisonedIterationAfterRemovingDeclaredCommands() throws Exception {
         Plugin plugin = fakePlugin("Iris", """
                 name: Iris
                 version: 1.0.0
                 main: example.Plugin
                 commands:
-                  iris: {}
+                  iris:
+                    aliases: [ir]
                 """);
 
         Map<String, Command> commands = poisonedCommandMap();
-        commands.put("iris", namedCommand("iris"));
+        commands.put("iris", new OwnedCommand("iris", plugin));
         commands.put("iris:iris", namedCommand("iris:iris"));
+        commands.put("ir", new OwnedCommand("ir", plugin));
+        commands.put("iris:ir", namedCommand("iris:ir"));
         commands.put("other", namedCommand("other"));
 
-        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands);
+        assertThrows(IllegalStateException.class,
+                () -> BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands));
 
         assertFalse(commands.containsKey("iris"));
         assertFalse(commands.containsKey("iris:iris"));
+        assertFalse(commands.containsKey("ir"));
+        assertFalse(commands.containsKey("iris:ir"));
         assertTrue(commands.containsKey("other"));
+    }
+
+    @Test
+    public void scrubPluginCommands_preservesAnotherOwnersCollidingCommand() throws Exception {
+        Plugin plugin = fakePlugin("Target", """
+                name: Target
+                version: 1
+                main: example.Target
+                commands:
+                  shared: {}
+                """);
+        Plugin other = fakePlugin("Other", "name: Other\nversion: 1\nmain: example.Other\n");
+        Command winner = new OwnedCommand("shared", other);
+        Map<String, Command> commands = new HashMap<>();
+        commands.put("shared", winner);
+        commands.put("target:shared", new OwnedCommand("shared", plugin));
+        commands.put("target:foreign", winner);
+
+        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands);
+
+        assertEquals(winner, commands.get("shared"));
+        assertEquals(winner, commands.get("target:foreign"));
+        assertFalse(commands.containsKey("target:shared"));
+    }
+
+    @Test
+    public void scrubPluginCommands_removesOwnedDynamicCommandsAndAliases() throws Exception {
+        Plugin plugin = fakePlugin("Target", "name: Target\nversion: 1\nmain: example.Target\n");
+        Command command = new OwnedCommand("dynamic", plugin);
+        Map<String, Command> commands = new HashMap<>();
+        commands.put("dynamic", command);
+        commands.put("alias", command);
+        commands.put("target:dynamic", command);
+        commands.put("unrelated", namedCommand("unrelated"));
+
+        BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands);
+
+        assertEquals(Set.of("unrelated"), commands.keySet());
+    }
+
+    @Test
+    public void scrubPluginCommands_preservesAmbiguousBareLabelsWhenIterationFails() throws Exception {
+        Plugin plugin = fakePlugin("Target", """
+                name: Target
+                version: 1
+                main: example.Target
+                commands:
+                  shared: {}
+                """);
+        Command ambiguous = namedCommand("shared");
+        Map<String, Command> commands = poisonedCommandMap();
+        commands.put("shared", ambiguous);
+        commands.put("target:shared", namedCommand("shared"));
+
+        assertThrows(IllegalStateException.class,
+                () -> BileUtils.scrubPluginCommands(plugin, new SimpleCommandMap(null), commands));
+
+        assertEquals(ambiguous, commands.get("shared"));
+        assertFalse(commands.containsKey("target:shared"));
     }
 
     @Test
@@ -589,6 +675,25 @@ public class BileUtilsTest {
                 return false;
             }
         };
+    }
+
+    private static final class OwnedCommand extends Command implements PluginIdentifiableCommand {
+        private final Plugin plugin;
+
+        private OwnedCommand(String name, Plugin plugin) {
+            super(name);
+            this.plugin = plugin;
+        }
+
+        @Override
+        public Plugin getPlugin() {
+            return plugin;
+        }
+
+        @Override
+        public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+            return false;
+        }
     }
 
     /**

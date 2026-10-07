@@ -45,7 +45,14 @@
 #   {variables}  chỗ giữ chỗ hợp lệ
 #   {version}  Phiên bản plugin thư viện được yêu cầu hoặc liệt kê
 
+#   {enabled}  hoạt động
+#   {recovery}  khôi phục
+#   {cooperative}  phối hợp
+#   {dependents}  phụ thuộc
+#   {capability}  gỡ tải
+
 [command]
+inspect = "Kiểm tra khả năng tải lại plugin"
 version = "Hiển thị phiên bản plugin đã cài đặt"
 root = "Nhóm lệnh BileTools"
 load = "Nạp tệp JAR plugin từ thư mục plugins"
@@ -345,3 +352,6 @@ line = "Dòng {line}"
 [language.editor.value]
 none = "Không có"
 empty = "(trống)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: hoạt động={enabled}, khôi phục={recovery}, phối hợp={cooperative}, phụ thuộc={dependents}, gỡ tải={capability}"

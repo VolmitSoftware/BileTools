@@ -45,7 +45,14 @@
 #   {variables}  使用可能なプレースホルダー
 #   {version}  要求または表示されたライブラリプラグインのバージョン
 
+#   {enabled}  有効
+#   {recovery}  復元
+#   {cooperative}  協調対応
+#   {dependents}  依存プラグイン
+#   {capability}  アンロード
+
 [command]
+inspect = "プラグインの再読み込み準備状態を確認"
 version = "インストールされているプラグインのバージョンを表示"
 root = "BileToolsコマンドグループ"
 load = "pluginsディレクトリからプラグインJARを読み込む"
@@ -345,3 +352,6 @@ line = "行{line}"
 [language.editor.value]
 none = "なし"
 empty = "(空)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: 有効={enabled}, 復元={recovery}, 協調対応={cooperative}, 依存プラグイン={dependents}, アンロード={capability}"

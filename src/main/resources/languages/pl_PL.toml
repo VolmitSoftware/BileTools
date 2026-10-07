@@ -45,7 +45,14 @@
 #   {variables}  dozwolone symbole zastępcze
 #   {version}  Żądana lub wyświetlana wersja pluginu z biblioteki
 
+#   {enabled}  aktywna
+#   {recovery}  odzyskiwanie
+#   {cooperative}  współpraca
+#   {dependents}  zależne
+#   {capability}  wyładowanie
+
 [command]
+inspect = "Sprawdź gotowość wtyczki do przeładowania"
 version = "Pokaż wersję zainstalowanej wtyczki"
 root = "Grupa komend BileTools"
 load = "Wczytaj plik JAR wtyczki z katalogu plugins"
@@ -345,3 +352,6 @@ line = "Linia {line}"
 [language.editor.value]
 none = "Brak"
 empty = "(pusty)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: aktywna={enabled}, odzyskiwanie={recovery}, współpraca={cooperative}, zależne={dependents}, wyładowanie={capability}"

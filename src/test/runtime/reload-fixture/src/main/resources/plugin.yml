@@ -1,0 +1,9 @@
+name: ${fixtureName}
+version: '${fixtureVersion}'
+main: com.volmit.bile.fixture.ReloadFixture
+api-version: '1.20'
+folia-supported: true
+depend: [${fixtureDependencies}]
+commands:
+  sharedprobe:
+  fixturestate:

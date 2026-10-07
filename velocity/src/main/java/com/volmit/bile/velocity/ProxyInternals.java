@@ -8,7 +8,6 @@ import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.EventHandler;
 import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.EventTask;
-import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.PluginDescription;
 import com.velocitypowered.api.plugin.PluginManager;
@@ -37,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class ProxyInternals {
     static final String CAP_PLUGIN_MAPS = "plugin-manager.maps";
@@ -49,11 +47,13 @@ public final class ProxyInternals {
     static final String CAP_REGISTER_INTERNALLY = "event-manager.register-internally";
     static final String CAP_SCOPED_FIRE = "event-manager.scoped-fire";
     static final String CAP_CONTAINER_EXECUTOR = "container.executor";
+    static final String CAP_EVENT_CACHE_CLEANUP = "event-manager.cache-cleanup";
+    static final String CAP_PACKET_REGISTRY = "packet-registry.cleanup";
     static final String CAP_COMMAND_UNREGISTER = "command-manager.unregister";
 
     static final List<String> CAPABILITY_KEYS = List.of(CAP_PLUGIN_MAPS, CAP_LOADER_CANDIDATE, CAP_LOADER_CREATE,
             CAP_LOADER_MODULE, CAP_CLASSLOADER_CLOSE, CAP_CLASSLOADER_REGISTRY, CAP_REGISTER_INTERNALLY,
-            CAP_SCOPED_FIRE, CAP_CONTAINER_EXECUTOR, CAP_COMMAND_UNREGISTER);
+            CAP_SCOPED_FIRE, CAP_CONTAINER_EXECUTOR, CAP_COMMAND_UNREGISTER, CAP_PACKET_REGISTRY, CAP_EVENT_CACHE_CLEANUP);
 
     private static final Path DEFAULT_PLUGINS_DIRECTORY = Path.of("plugins");
     private static final long EXECUTOR_DRAIN_SECONDS = 5L;
@@ -62,7 +62,6 @@ public final class ProxyInternals {
     private final Logger logger;
     private final Handles handles;
     private final ProxyCapabilityReport report;
-    private final AtomicBoolean fallbackFireAnnounced = new AtomicBoolean();
     private volatile Path pluginsDirectory;
 
     private ProxyInternals(ProxyServer proxy, Logger logger, Handles handles, ProxyCapabilityReport report) {
@@ -86,6 +85,16 @@ public final class ProxyInternals {
         resolvePluginLoader(resolution, handles, proxyLoader);
         resolveClassLoaderRegistry(resolution, handles, proxyLoader);
         resolveEventManager(resolution, handles, proxyLoader);
+        try {
+            VelocityPacketCleanup.validateLayout(proxyLoader);
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            resolution.fail(CAP_PACKET_REGISTRY, "Velocity packet registration maps: " + failure.getMessage());
+        }
+        try {
+            VelocityEventCacheCleanup.validateLayout(proxyLoader);
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            resolution.fail(CAP_EVENT_CACHE_CLEANUP, "Velocity event caches: " + failure.getMessage());
+        }
         handles.providedIds = quietMethod(PluginDescription.class, "getProvidedIds");
         handles.mainClass = quietDeclaredMethod(proxyLoader,
                 "com.velocitypowered.proxy.plugin.loader.java.JavaVelocityPluginDescription", "getMainClass");
@@ -223,9 +232,7 @@ public final class ProxyInternals {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(timeout, "timeout");
-        if (!report.supports(CAP_SCOPED_FIRE)) {
-            return fireAnnotatedFallback(target, event);
-        }
+        require(CAP_SCOPED_FIRE);
         List<ScopedHandler> handlers = scopedHandlers(target, event);
         if (handlers.isEmpty()) {
             return List.of();
@@ -249,6 +256,20 @@ public final class ProxyInternals {
         return List.copyOf(failures);
     }
 
+    public void removeOwnedEventCaches(PluginContainer container) throws ReflectiveOperationException {
+        ClassLoader loader = classLoaderOf(container).orElse(null);
+        if (loader != null) {
+            VelocityEventCacheCleanup.remove(handles.eventManager, loader);
+        }
+    }
+
+    public void removeOwnedPackets(PluginContainer container) throws ReflectiveOperationException {
+        ClassLoader loader = classLoaderOf(container).orElse(null);
+        if (loader != null) {
+            VelocityPacketCleanup.remove(proxy.getClass().getClassLoader(), loader);
+        }
+    }
+
     public void closeClassLoader(PluginContainer container) throws HotloadException {
         Objects.requireNonNull(container, "container");
         ClassLoader loader = classLoaderOf(container).orElse(null);
@@ -269,7 +290,7 @@ public final class ProxyInternals {
         warnIfStillRegistered(loader, container);
     }
 
-    public void shutdownContainerExecutor(PluginContainer container) {
+    public void shutdownContainerExecutor(PluginContainer container) throws HotloadException {
         Objects.requireNonNull(container, "container");
         if (handles.hasExecutorService == null || !handles.containerType.isInstance(container)) {
             return;
@@ -281,13 +302,13 @@ public final class ProxyInternals {
             ExecutorService service = container.getExecutorService();
             service.shutdownNow();
             if (!service.awaitTermination(EXECUTOR_DRAIN_SECONDS, TimeUnit.SECONDS)) {
-                logger.warn("executor for {} did not drain within {}s", id(container), EXECUTOR_DRAIN_SECONDS);
+                throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED, "executor for " + id(container) + " did not drain");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            logger.warn("interrupted while draining the executor for {}", id(container), e);
+            throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED, "interrupted draining executor for " + id(container), e);
         } catch (ReflectiveOperationException | RuntimeException e) {
-            logger.warn("cannot shut down the executor for {}", id(container), e);
+            throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED, "cannot shut down executor for " + id(container), e);
         }
     }
 
@@ -580,8 +601,11 @@ public final class ProxyInternals {
             completion.get(Math.max(1L, remainingMillis(fire.deadlineNanos())), TimeUnit.MILLISECONDS);
             return null;
         } catch (TimeoutException e) {
+            logger.error("{} for {} exceeded {}; waiting for the running handler before cleanup",
+                    fire.event().getClass().getSimpleName(), id(fire.target()), fire.timeout());
+            completion.handle((result, failure) -> null).join();
             throw new HotloadException(HotloadException.Kind.TIMEOUT, fire.event().getClass().getSimpleName()
-                    + " for " + id(fire.target()) + " did not finish within " + fire.timeout(), e);
+                    + " for " + id(fire.target()) + " exceeded " + fire.timeout(), e);
         } catch (ExecutionException e) {
             return e.getCause() == null ? e : e.getCause();
         } catch (InterruptedException e) {
@@ -599,49 +623,6 @@ public final class ProxyInternals {
         return failures.size() == 1 ? "" : " (and " + (failures.size() - 1) + " more handler failures)";
     }
 
-    private List<HandlerFailure> fireAnnotatedFallback(PluginContainer target, Object event) throws HotloadException {
-        Object instance = target.getInstance().orElse(null);
-        if (instance == null) {
-            return List.of();
-        }
-        if (fallbackFireAnnounced.compareAndSet(false, true)) {
-            logger.warn("scoped event fire unavailable; using @Subscribe reflection, handlers registered without "
-                    + "annotations will not see lifecycle events");
-        }
-        List<HandlerFailure> failures = new ArrayList<>();
-        for (Method method : annotatedSubscribers(instance.getClass(), event.getClass())) {
-            try {
-                method.invoke(instance, event);
-            } catch (InvocationTargetException e) {
-                Throwable error = e.getCause() == null ? e : e.getCause();
-                logger.error("{} handler {} for {} failed", event.getClass().getSimpleName(), method.getName(),
-                        id(target), error);
-                failures.add(new HandlerFailure(id(target), method.getName(), error));
-            } catch (ReflectiveOperationException e) {
-                throw new HotloadException(HotloadException.Kind.LOAD_FAILED,
-                        "cannot invoke " + method.getName() + " on " + id(target), e);
-            }
-        }
-        return List.copyOf(failures);
-    }
-
-    private List<Method> annotatedSubscribers(Class<?> listenerType, Class<?> eventType) {
-        List<Method> methods = new ArrayList<>();
-        for (Class<?> type = listenerType; type != null && type != Object.class; type = type.getSuperclass()) {
-            for (Method method : type.getDeclaredMethods()) {
-                if (!method.isAnnotationPresent(Subscribe.class) || method.getParameterCount() != 1) {
-                    continue;
-                }
-                if (!method.getParameterTypes()[0].isAssignableFrom(eventType)) {
-                    continue;
-                }
-                method.setAccessible(true);
-                methods.add(method);
-            }
-        }
-        return methods;
-    }
-
     private Optional<ClassLoader> mainClassLoader(PluginDescription description) {
         if (handles.mainClass == null || !handles.mainClass.getDeclaringClass().isInstance(description)) {
             return Optional.empty();
@@ -655,14 +636,14 @@ public final class ProxyInternals {
         }
     }
 
-    private void warnIfStillRegistered(ClassLoader loader, PluginContainer container) {
+    private void warnIfStillRegistered(ClassLoader loader, PluginContainer container) throws HotloadException {
         if (handles.classLoaderRegistry == null) {
             return;
         }
         try {
             Object registry = handles.classLoaderRegistry.get(null);
             if (registry instanceof Collection<?> loaders && loaders.contains(loader)) {
-                logger.warn("class loader for {} is still registered after close", id(container));
+                throw new HotloadException(HotloadException.Kind.UNLOAD_FAILED, "class loader for " + id(container) + " remains registered after close");
             }
         } catch (ReflectiveOperationException | RuntimeException e) {
             logger.debug("cannot verify class loader deregistration for {}", id(container), e);

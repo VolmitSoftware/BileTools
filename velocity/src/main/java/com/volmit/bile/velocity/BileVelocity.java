@@ -26,6 +26,7 @@ public final class BileVelocity {
     private final Path dataDirectory;
 
     private VelocityWatchOrchestrator orchestrator;
+    private VelocityOwnedResources ownedResources;
 
     @Inject
     public BileVelocity(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -45,6 +46,7 @@ public final class BileVelocity {
             VelocityPluginHotloader hotloader = new VelocityPluginHotloader(proxy, logger, dataDirectory, this,
                     internals, new HotloadOptions(config.healthCheck(), config.logTimings(), config.archivePlugins(),
                     Duration.ofSeconds(config.lifecycleTimeoutSeconds())));
+            ownedResources = hotloader.ownedResources();
             ProxyMessages messages = new ProxyMessages(proxy, logger, config.notifyPlayers());
             Path pluginsDirectory = dataDirectory.toAbsolutePath().normalize().getParent();
             started = new VelocityWatchOrchestrator(proxy, this, logger, pluginsDirectory, dataDirectory, config,
@@ -83,6 +85,10 @@ public final class BileVelocity {
         } catch (RuntimeException exception) {
             logger.error("BileTools proxy support did not stop cleanly", exception);
         }
+    }
+
+    public VelocityOwnedResources ownedResources() {
+        return Objects.requireNonNull(ownedResources, "BileTools has not initialized");
     }
 
     private void reportCapabilities(ProxyCapabilityReport report) {

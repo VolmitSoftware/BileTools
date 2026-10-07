@@ -40,6 +40,7 @@ public final class HotloadException extends Exception {
         LOAD_FAILED,
         UNLOAD_FAILED,
         HEALTH_FAILED,
+        PREPARATION_REFUSED,
         TIMEOUT
     }
 }

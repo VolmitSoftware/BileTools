@@ -45,7 +45,14 @@
 #   {variables}  geçerli yer tutucular
 #   {version}  İstenen veya gösterilen kütüphane eklentisi sürümü
 
+#   {enabled}  etkin
+#   {recovery}  kurtarma
+#   {cooperative}  işbirliği
+#   {dependents}  bağımlılar
+#   {capability}  kaldırma
+
 [command]
+inspect = "Eklentinin yeniden yükleme hazırlığını incele"
 version = "Yüklü eklenti sürümünü göster"
 root = "BileTools komut grubu"
 load = "plugins dizininden bir eklenti JAR dosyası yükle"
@@ -345,3 +352,6 @@ line = "Satır {line}"
 [language.editor.value]
 none = "Yok"
 empty = "(boş)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: etkin={enabled}, kurtarma={recovery}, işbirliği={cooperative}, bağımlılar={dependents}, kaldırma={capability}"

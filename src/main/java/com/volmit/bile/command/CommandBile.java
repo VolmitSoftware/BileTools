@@ -74,6 +74,14 @@ public class CommandBile {
         plugin.unloadPlugin(sender, pluginName);
     }
 
+    @Director(name = "inspect", sync = true, description = "Inspect plugin reload readiness", descriptionKey = "command.inspect")
+    public void inspect(
+            @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,
+            @Param(name = "sender", contextual = true) CommandSender sender
+    ) {
+        plugin.inspectPlugin(sender, pluginName);
+    }
+
     @Director(name = "reload", description = "Reload an installed plugin", descriptionKey = "command.reload")
     public void reload(
             @Param(name = "plugin", description = "Installed plugin name", descriptionKey = "parameter.installed_plugin", customHandler = InstalledPluginNameHandler.class) String pluginName,

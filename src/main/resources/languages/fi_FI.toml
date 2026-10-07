@@ -45,7 +45,14 @@
 #   {variables}  sallitut paikkamerkit
 #   {version}  Kirjastolisäosan pyydetty tai näytetty versio
 
+#   {enabled}  käytössä
+#   {recovery}  palautus
+#   {cooperative}  yhteistoiminta
+#   {dependents}  riippuvaiset
+#   {capability}  purkaminen
+
 [command]
+inspect = "Tarkista lisäosan uudelleenlatausvalmius"
 version = "Näytä asennetun lisäosan versio"
 root = "BileTools-komentoryhmä"
 load = "Lataa pluginin JAR-tiedosto plugins-hakemistosta"
@@ -345,3 +352,6 @@ line = "Rivi {line}"
 [language.editor.value]
 none = "Ei ole"
 empty = "(tyhjä)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: käytössä={enabled}, palautus={recovery}, yhteistoiminta={cooperative}, riippuvaiset={dependents}, purkaminen={capability}"

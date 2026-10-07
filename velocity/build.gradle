@@ -54,3 +54,45 @@ sourceSets.main.java {
     include 'com/volmit/bile/watch/PluginDependencyOrder.java'
     include 'com/volmit/bile/watch/PluginJarDirectoryWatcher.java'
 }
+
+sourceSets {
+    qa {
+        java.srcDir 'src/qa/java'
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+    }
+}
+
+def fixtureDefinitions = [
+        [task: 'qaCoreOriginal', id: 'qacore', main: 'ReloadProbe', revision: 'original', dependencies: ['biletools', 'qaobserver']],
+        [task: 'qaCoreReplacement', id: 'qacore', main: 'ReloadProbe', revision: 'replacement', dependencies: ['biletools', 'qaobserver']],
+        [task: 'qaCoreBroken', id: 'qacore', main: 'ReloadProbe', revision: 'broken', dependencies: ['biletools', 'qaobserver']],
+        [task: 'qaAddon', id: 'qaaddon', main: 'DependentProbe', revision: '1', dependencies: ['biletools', 'qacore']],
+        [task: 'qaObserver', id: 'qaobserver', main: 'LifecycleObserver', revision: '1', dependencies: []]
+]
+fixtureDefinitions.each { definition ->
+    def resources = layout.buildDirectory.dir("qa-resources/${definition.task}")
+    def prepare = tasks.register("${definition.task}Resources") {
+        outputs.dir(resources)
+        inputs.properties(definition)
+        doLast {
+            File directory = resources.get().asFile
+            directory.mkdirs()
+            new File(directory, 'velocity-plugin.json').text = groovy.json.JsonOutput.toJson([
+                    id: definition.id, name: definition.id, version: definition.revision,
+                    main: "com.volmit.bile.velocity.qa.${definition.main}",
+                    dependencies: definition.dependencies.collect { [id: it] }
+            ])
+            new File(directory, 'revision.txt').text = definition.revision
+        }
+    }
+    tasks.register(definition.task, Jar) {
+        dependsOn tasks.named('qaClasses'), prepare
+        archiveFileName.set("${definition.task}.jar")
+        destinationDirectory.set(layout.buildDirectory.dir('qa'))
+        from(sourceSets.qa.output) { include "com/volmit/bile/velocity/qa/${definition.main}*.class" }
+        from(resources)
+    }
+}
+tasks.register('qaFixtures') {
+    dependsOn fixtureDefinitions.collect { tasks.named(it.task) }
+}

@@ -80,6 +80,7 @@ public final class VelocityWatchOrchestrator implements AutoCloseable {
     private final Queue<FingerprintSync> pendingFingerprintSyncs = new ConcurrentLinkedQueue<>();
     private final Queue<Path> pendingForgets = new ConcurrentLinkedQueue<>();
     private final Set<String> dirtyPlugins = ConcurrentHashMap.newKeySet();
+    private final AtomicReference<LifecycleOperation> activeOperation = new AtomicReference<>();
     private final AtomicLong reloadsTotal = new AtomicLong();
 
     private PluginJarDirectoryWatcher watcher;
@@ -704,33 +705,64 @@ public final class VelocityWatchOrchestrator implements AutoCloseable {
     }
 
     private CompletableFuture<String> dispatch(String pluginId, LifecycleCall call) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        try {
-            pluginOperations.execute(() -> {
-                try {
-                    future.complete(call.run());
-                } catch (HotloadException exception) {
-                    reportFailure(pluginId, exception);
-                    future.completeExceptionally(exception);
-                } catch (Throwable throwable) {
-                    markDirty(pluginId);
-                    logger.error("Unexpected failure during a lifecycle operation for {}", pluginId, throwable);
-                    future.completeExceptionally(throwable);
-                }
-            });
-        } catch (RejectedExecutionException exception) {
-            future.completeExceptionally(new HotloadException(HotloadException.Kind.LOAD_FAILED,
-                    "BileTools is shutting down; " + pluginId + " was not touched.", exception));
-            return future;
+        LifecycleOperation active = activeOperation.get();
+        if (active != null && active.expired) {
+            return CompletableFuture.failedFuture(new HotloadException(HotloadException.Kind.TIMEOUT,
+                    active.pluginId + " is still running after its timeout; wait for completion or restart the proxy"));
         }
-
-        CompletableFuture<String> bounded = future.orTimeout(config.lifecycleTimeoutSeconds(), TimeUnit.SECONDS);
-        bounded.whenComplete((message, failure) -> {
+        LifecycleOperation operation = new LifecycleOperation(pluginId);
+        operation.result.orTimeout(config.lifecycleTimeoutSeconds(), TimeUnit.SECONDS).whenComplete((message, failure) -> {
             if (unwrap(failure) instanceof TimeoutException) {
+                synchronized (operation) {
+                    operation.expired = true;
+                }
                 reportTimeout(pluginId);
             }
         });
-        return bounded;
+        try {
+            pluginOperations.execute(() -> executeOperation(operation, call));
+        } catch (RejectedExecutionException exception) {
+            operation.result.completeExceptionally(new HotloadException(HotloadException.Kind.LOAD_FAILED,
+                    "BileTools is shutting down; " + pluginId + " was not touched.", exception));
+        }
+        return operation.result;
+    }
+
+    private void executeOperation(LifecycleOperation operation, LifecycleCall call) {
+        synchronized (operation) {
+            if (operation.result.isDone()) {
+                return;
+            }
+            activeOperation.set(operation);
+        }
+        try {
+            String result = call.run();
+            operation.result.complete(result);
+        } catch (HotloadException exception) {
+            reportFailure(operation.pluginId, exception);
+            operation.result.completeExceptionally(exception);
+        } catch (Throwable throwable) {
+            markDirty(operation.pluginId);
+            logger.error("Unexpected failure during a lifecycle operation for {}", operation.pluginId, throwable);
+            operation.result.completeExceptionally(throwable);
+        } finally {
+            if (operation.expired) {
+                markDirty(operation.pluginId);
+                logger.warn("Timed-out lifecycle operation for {} has finished; inspect its state before retrying", operation.pluginId);
+            }
+            activeOperation.compareAndSet(operation, null);
+        }
+    }
+
+    public CompletableFuture<String> manualInspect(String id) {
+        try {
+            LifecycleOperation active = activeOperation.get();
+            String state = active == null ? "Lifecycle worker: idle" : "Lifecycle worker: " + active.pluginId
+                    + (active.expired ? " (timed out, still running)" : " (running)");
+            return CompletableFuture.completedFuture(state + "\n" + String.join("\n", hotloader.inspect(id)));
+        } catch (HotloadException | RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
     }
 
     private CompletableFuture<String> announce(CompletableFuture<String> operation) {
@@ -777,7 +809,10 @@ public final class VelocityWatchOrchestrator implements AutoCloseable {
     }
 
     private void clearDirty(String pluginId) {
-        dirtyPlugins.remove(pluginId.toLowerCase(Locale.ROOT));
+        LifecycleOperation active = activeOperation.get();
+        if (active == null || !active.expired) {
+            dirtyPlugins.remove(pluginId.toLowerCase(Locale.ROOT));
+        }
     }
 
     private void forgetPath(Path source) {
@@ -920,6 +955,16 @@ public final class VelocityWatchOrchestrator implements AutoCloseable {
         } catch (InterruptedException exception) {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class LifecycleOperation {
+        private final String pluginId;
+        private final CompletableFuture<String> result = new CompletableFuture<>();
+        private volatile boolean expired;
+
+        private LifecycleOperation(String pluginId) {
+            this.pluginId = pluginId;
         }
     }
 

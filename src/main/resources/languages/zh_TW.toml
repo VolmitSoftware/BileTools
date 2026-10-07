@@ -45,7 +45,14 @@
 #   {variables}  可用佔位符
 #   {version}  請求或列出的程式庫插件版本
 
+#   {enabled}  啟用
+#   {recovery}  復原
+#   {cooperative}  協作
+#   {dependents}  相依外掛
+#   {capability}  卸載
+
 [command]
+inspect = "檢查外掛重新載入就緒狀態"
 version = "顯示已安裝的插件版本"
 root = "BileTools 指令群組"
 load = "從 plugins 目錄載入外掛 JAR 檔案"
@@ -345,3 +352,6 @@ line = "第 {line} 行"
 [language.editor.value]
 none = "無"
 empty = "(空)"
+
+[message.inspect]
+result = "&a[&8Bile&a]: &f{plugin}&7: 啟用={enabled}, 復原={recovery}, 協作={cooperative}, 相依外掛={dependents}, 卸載={capability}"
