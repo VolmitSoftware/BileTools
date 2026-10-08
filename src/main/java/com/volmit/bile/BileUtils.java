@@ -2144,8 +2144,22 @@ public class BileUtils {
                 }
             }
 
+<<<<<<< Updated upstream
             teardownStep(plugin, "task cancellation", () -> PlatformTasks.cancelPluginTasks(plugin), teardownFailures);
             teardownStep(plugin, "event cleanup", () -> HandlerList.unregisterAll(plugin), teardownFailures);
+=======
+            try {
+                if (ReloadAware.invokePreUnload(plugin, reason)) {
+                    BileTools.debug(() -> "Completed pre-unload hook on " + plugin.getName()
+                            + " (" + reason + ").");
+                }
+            } catch (Throwable t) {
+                BileTools.warn("Pre-unload hook failed for " + plugin.getName() + ".", t);
+            }
+
+            PlatformTasks.cancelPluginTasks(plugin);
+            HandlerList.unregisterAll(plugin);
+>>>>>>> Stashed changes
             String name = plugin.getName();
             PluginManager pluginManager = Bukkit.getPluginManager();
             SimpleCommandMap commandMap = null;
