@@ -11,6 +11,7 @@ import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.localization.MessageArgs;
 import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
+import art.arcane.volmlib.util.update.BukkitUpdateService;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.plugin.ComponentLog;
@@ -149,6 +150,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private volatile DirectorRuntimeEngine director;
     private BileLocalization localization;
     private BukkitLanguageSwitcher languageSwitcher;
+    private volatile BukkitUpdateService updates;
     private BukkitDebugDump debugDump;
     private BileConfigEditor configEditor;
     private final AtomicBoolean selfReloadQueued = new AtomicBoolean(false);
@@ -269,6 +271,10 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
             throw exception;
         }
+        BukkitUpdateService currentUpdates = updates;
+        if (currentUpdates != null) {
+            currentUpdates.reconfigure();
+        }
         if (previous.isMetrics() != candidate.isMetrics()) {
             PlatformTasks.runGlobal(this, this::refreshMetrics);
         }
@@ -349,6 +355,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
                 new BukkitLanguageSwitcher.Options(ROOT_COMMAND, "biletools.config",
                         BileFancyMenu.theme(), localization.directorResolver(), localization.editorOptions(),
                         this::renderLanguageEditFeedback));
+        updates = BukkitUpdateService.register(this, new BukkitUpdateService.Options(
+                "VolmitSoftware", "BileTools", "biletools.update", () -> cfg.isUpdateNotifications()));
         debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(
                 () -> true,
                 new BileDebugContributor(this),
@@ -712,7 +720,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
     @Override
     public void onDisable() {
-        freezeForUnload();
+        freezeForUnload(true);
         pluginOperationExecutor.shutdownNow();
         remoteDeployExecutor.shutdownNow();
         snapshotExecutor.shutdownNow();
@@ -723,8 +731,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     @Override
     public CompletionStage<Void> commitReload(ReloadAware.PreUnloadReason reason) {
         getLogger().info("BileTools pre-unload hook fired (" + reason + "). Freezing watcher + slave before unload.");
-        freezeForUnload();
-        return CompletableFuture.completedFuture(null);
+        return freezeForUnload(false);
     }
 
     @EventHandler
@@ -732,7 +739,8 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         BileUtils.rememberRunningPlugin(event.getPlugin());
     }
 
-    private void freezeForUnload() {
+    private CompletionStage<Void> freezeForUnload(boolean disabling) {
+        CompletionStage<Void> editorCleanup = CompletableFuture.completedFuture(null);
         Metrics activeMetrics = metrics;
         metrics = null;
         if (activeMetrics != null) {
@@ -756,9 +764,16 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             configEditor.shutdown();
             configEditor = null;
         }
+        if (updates != null) {
+            updates.close();
+            updates = null;
+        }
         if (languageSwitcher != null) {
-            languageSwitcher.close();
-            languageSwitcher = null;
+            if (disabling) {
+                languageSwitcher.close();
+            } else {
+                editorCleanup = languageSwitcher.closeAsync();
+            }
         }
         if (localization != null) {
             localization.close();
@@ -810,6 +825,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             }
             srv = null;
         }
+        return editorCleanup;
     }
 
     public void reset(File f) {

@@ -109,6 +109,7 @@ public final class BileMessages {
     public static final TextKey GUI_PROMPT_TIMEOUT = TextKey.of("gui.prompt.timeout", "&a[&8Bile&a]: &eConfiguration edit expired without changing anything.");
     public static final TextKey SETTING_LANGUAGE = setting("general.language", "Active language locale");
     public static final TextKey SETTING_ARCHIVE = setting("general.archive_plugins", "Archive plugin jars before replacement");
+    public static final TextKey SETTING_UPDATES = setting("update-notifications", "Update notifications");
     public static final TextKey SETTING_METRICS = setting("metrics.enabled", "Anonymous bStats metrics");
     public static final TextKey SETTING_SLAVE_ENABLED = setting("remote_slave.enabled", "Remote receiver");
     public static final TextKey SETTING_SLAVE_PORT = setting("remote_slave.port", "Remote receiver port");
@@ -166,7 +167,7 @@ public final class BileMessages {
                 GUI_CATEGORY_LIFECYCLE, GUI_CATEGORY_LANGUAGES, GUI_BACK, GUI_CLOSE, GUI_STATE, GUI_TOGGLE,
                 GUI_NUMBER, GUI_TEXT, GUI_LANGUAGE_SELECT, GUI_CATEGORY_OPEN, GUI_FILE_ONLY, GUI_PROMPT,
                 GUI_PROMPT_LIST, GUI_PROMPT_CANCEL, GUI_PROMPT_CANCELLED, GUI_PROMPT_TIMEOUT, SETTING_LANGUAGE,
-                SETTING_ARCHIVE, SETTING_METRICS, SETTING_SLAVE_ENABLED, SETTING_SLAVE_PORT,
+                SETTING_ARCHIVE, SETTING_UPDATES, SETTING_METRICS, SETTING_SLAVE_ENABLED, SETTING_SLAVE_PORT,
                 SETTING_SLAVE_PAYLOAD, SETTING_MASTER_ENABLED, SETTING_MASTER_TARGETS,
                 SETTING_MASTER_SIGNATURES, SETTING_SOCKET_TIMEOUT, SETTING_MAX_TRANSFER, SETTING_WATCHER_IDLE,
                 SETTING_WATCHER_ACTIVE, SETTING_WATCHER_DEBOUNCE, SETTING_WATCHER_IGNORE, SETTING_WATCHER_ONLY,

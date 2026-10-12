@@ -355,3 +355,6 @@ empty = "(leeg)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: actief={enabled}, herstel={recovery}, samenwerking={cooperative}, afhankelijke plugins={dependents}, ontladen={capability}"
+
+[gui.setting]
+update-notifications = "&aUpdatemeldingen"

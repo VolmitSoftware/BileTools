@@ -355,3 +355,6 @@ empty = "(ריק)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: פעיל={enabled}, שחזור={recovery}, שיתופי={cooperative}, תלויים={dependents}, פריקה={capability}"
+
+[gui.setting]
+update-notifications = "&aהתראות עדכון"

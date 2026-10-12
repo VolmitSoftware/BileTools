@@ -355,3 +355,6 @@ empty = "(tyhjä)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: käytössä={enabled}, palautus={recovery}, yhteistoiminta={cooperative}, riippuvaiset={dependents}, purkaminen={capability}"
+
+[gui.setting]
+update-notifications = "&aPäivitysilmoitukset"

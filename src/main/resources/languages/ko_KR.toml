@@ -355,3 +355,6 @@ empty = "(비어 있음)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: 활성={enabled}, 복구={recovery}, 협력 지원={cooperative}, 종속 플러그인={dependents}, 언로드={capability}"
+
+[gui.setting]
+update-notifications = "&a업데이트 알림"

@@ -8,6 +8,9 @@ commands:
   biletools:
     aliases: [bile, bi, b, vomit, vom]
 permissions:
+  biletools.update:
+    description: View BileTools updates in shared Volmit notifications and reports
+    default: op
   biletools.debug:
     description: Allows creating and optionally uploading diagnostic reports.
     default: op

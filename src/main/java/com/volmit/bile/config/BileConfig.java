@@ -14,6 +14,7 @@ import java.util.Set;
 
 public final class BileConfig {
     private static final String PATH_LANGUAGE = "language";
+    private static final String PATH_UPDATES = "update-notifications";
     private static final String PATH_METRICS = "metrics";
     private static final String PATH_SLAVE_ENABLED = "remote-deploy.slave.slave-enabled";
     private static final String PATH_SLAVE_PORT = "remote-deploy.slave.slave-port";
@@ -35,6 +36,7 @@ public final class BileConfig {
 
     private final String language;
     private final boolean metrics;
+    private final boolean updateNotifications;
     private final boolean remoteSlaveEnabled;
     private final int remoteSlavePort;
     private final String remoteSlavePayload;
@@ -55,6 +57,7 @@ public final class BileConfig {
     private BileConfig(Builder builder) {
         language = sanitizeScalar(builder.language, "en_US");
         metrics = builder.metrics;
+        updateNotifications = builder.updateNotifications;
         remoteSlaveEnabled = builder.remoteSlaveEnabled;
         remoteSlavePort = Math.max(1, Math.min(65_535, builder.remoteSlavePort));
         remoteSlavePayload = sanitizeScalar(builder.remoteSlavePayload, "pickapassword");
@@ -86,6 +89,7 @@ public final class BileConfig {
         Builder builder = defaults.toBuilder()
                 .language(sanitizeScalar(yaml.getString(PATH_LANGUAGE), defaults.language))
                 .metrics(yaml.getBoolean(PATH_METRICS, defaults.metrics))
+                .updateNotifications(yaml.getBoolean(PATH_UPDATES, defaults.updateNotifications))
                 .remoteSlaveEnabled(yaml.getBoolean(PATH_SLAVE_ENABLED, defaults.remoteSlaveEnabled))
                 .remoteSlavePort(yaml.getInt(PATH_SLAVE_PORT, defaults.remoteSlavePort))
                 .remoteSlavePayload(sanitizeScalar(yaml.getString(PATH_SLAVE_PAYLOAD), defaults.remoteSlavePayload))
@@ -136,6 +140,7 @@ public final class BileConfig {
     public void write(YamlConfiguration yaml) {
         yaml.set(PATH_LANGUAGE, language);
         yaml.set(PATH_METRICS, metrics);
+        yaml.set(PATH_UPDATES, updateNotifications);
         yaml.set(PATH_SLAVE_ENABLED, remoteSlaveEnabled);
         yaml.set(PATH_SLAVE_PORT, remoteSlavePort);
         yaml.set(PATH_SLAVE_PAYLOAD, remoteSlavePayload);
@@ -186,6 +191,10 @@ public final class BileConfig {
 
     public String getLanguage() {
         return language;
+    }
+
+    public boolean isUpdateNotifications() {
+        return updateNotifications;
     }
 
     public boolean isMetrics() {
@@ -291,6 +300,7 @@ public final class BileConfig {
     public static final class Builder {
         private String language = "en_US";
         private boolean metrics = true;
+        private boolean updateNotifications = true;
         private boolean remoteSlaveEnabled;
         private int remoteSlavePort = 9_876;
         private String remoteSlavePayload = "pickapassword";
@@ -315,6 +325,7 @@ public final class BileConfig {
         private Builder(BileConfig config) {
             language = config.language;
             metrics = config.metrics;
+            updateNotifications = config.updateNotifications;
             remoteSlaveEnabled = config.remoteSlaveEnabled;
             remoteSlavePort = config.remoteSlavePort;
             remoteSlavePayload = config.remoteSlavePayload;
@@ -335,6 +346,11 @@ public final class BileConfig {
 
         public Builder language(String value) {
             language = value;
+            return this;
+        }
+
+        public Builder updateNotifications(boolean value) {
+            updateNotifications = value;
             return this;
         }
 

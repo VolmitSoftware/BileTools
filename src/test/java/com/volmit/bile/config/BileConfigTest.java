@@ -14,6 +14,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BileConfigTest {
+    @Test
+    public void updateNotificationsDefaultOnAndOptOutSurvivesCopiesAndReload() throws Exception {
+        File file = temporaryFolder.newFile("updates.yml");
+        BileConfig defaults = BileConfig.load(file);
+        assertTrue(defaults.isUpdateNotifications());
+        defaults.toBuilder().updateNotifications(false).build().save(file);
+        BileConfig loaded = BileConfig.load(file);
+        assertFalse(loaded.isUpdateNotifications());
+        assertFalse(loaded.toBuilder().language("de_DE").build().isUpdateNotifications());
+    }
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 

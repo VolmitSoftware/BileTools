@@ -355,3 +355,6 @@ empty = "(trống)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: hoạt động={enabled}, khôi phục={recovery}, phối hợp={cooperative}, phụ thuộc={dependents}, gỡ tải={capability}"
+
+[gui.setting]
+update-notifications = "&aThông báo cập nhật"

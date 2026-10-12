@@ -355,3 +355,6 @@ empty = "(空)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: 啟用={enabled}, 復原={recovery}, 協作={cooperative}, 相依外掛={dependents}, 卸載={capability}"
+
+[gui.setting]
+update-notifications = "&a更新通知"

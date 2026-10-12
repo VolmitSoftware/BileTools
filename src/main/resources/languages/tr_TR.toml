@@ -355,3 +355,6 @@ empty = "(boş)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: etkin={enabled}, kurtarma={recovery}, işbirliği={cooperative}, bağımlılar={dependents}, kaldırma={capability}"
+
+[gui.setting]
+update-notifications = "&aGüncelleme bildirimleri"

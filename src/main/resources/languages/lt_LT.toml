@@ -355,3 +355,6 @@ empty = "(tuščia)"
 
 [message.inspect]
 result = "&a[&8Bile&a]: &f{plugin}&7: įjungtas={enabled}, atkūrimas={recovery}, bendradarbiavimas={cooperative}, priklausomi={dependents}, iškėlimas={capability}"
+
+[gui.setting]
+update-notifications = "&aPranešimai apie atnaujinimus"

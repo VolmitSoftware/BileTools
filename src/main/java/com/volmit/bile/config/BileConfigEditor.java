@@ -449,6 +449,9 @@ public final class BileConfigEditor implements Listener {
         return List.of(
                 setting(Category.GENERAL, "language", BileMessages.SETTING_LANGUAGE, Material.WRITABLE_BOOK,
                         SettingKind.LOCALE, 1D, BileConfig::getLanguage, (builder, value) -> builder.language(value.trim())),
+                setting(Category.GENERAL, "update-notifications", BileMessages.SETTING_UPDATES, Material.SPYGLASS,
+                        SettingKind.BOOLEAN, 1D, config -> Boolean.toString(config.isUpdateNotifications()),
+                        (builder, value) -> builder.updateNotifications(bool(value))),
                 setting(Category.GENERAL, "archive-plugins", BileMessages.SETTING_ARCHIVE, Material.CHEST,
                         SettingKind.BOOLEAN, 1D, config -> Boolean.toString(config.isArchivePlugins()),
                         (builder, value) -> builder.archivePlugins(bool(value))),
