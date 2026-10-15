@@ -15,7 +15,7 @@ public final class SplashScreen {
         ChatColor meta = ChatColor.GRAY;
         String pluginVersion = plugin.getDescription().getVersion();
         String releaseTrain = SplashScreenSupport.releaseTrain(pluginVersion);
-        String serverVersion = SplashScreenSupport.serverVersionWithoutMcSuffix();
+        String serverVersion = SplashScreenSupport.serverVersionWithoutMcSuffix(plugin.getServer().getVersion());
         String startupDate = SplashScreenSupport.startupDate();
         String supportedMcVersion = "1.20.1 - 26.x";
 
