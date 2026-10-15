@@ -1,6 +1,7 @@
 package com.volmit.bile;
 
 import art.arcane.volmlib.util.plugin.SplashScreenSupport;
+import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 
 import java.util.logging.Level;
@@ -15,7 +16,7 @@ public final class SplashScreen {
         ChatColor meta = ChatColor.GRAY;
         String pluginVersion = plugin.getDescription().getVersion();
         String releaseTrain = SplashScreenSupport.releaseTrain(pluginVersion);
-        String serverVersion = SplashScreenSupport.serverVersionWithoutMcSuffix();
+        String serverVersion = SplashScreenSupport.serverVersionWithoutMcSuffix(Bukkit.getVersion());
         String startupDate = SplashScreenSupport.startupDate();
         String supportedMcVersion = "1.20.1 - 26.x";
 
