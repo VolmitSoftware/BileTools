@@ -1,0 +1,78 @@
+name: Bug report
+description: Something in BileTools isn't working.
+labels: [bug]
+type: Bug
+assignees: [SwiftSwamp]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Make sure you're on the [latest release](https://github.com/VolmitSoftware/BileTools/releases/latest) and that it hasn't [already been reported](https://github.com/VolmitSoftware/BileTools/issues?q=is%3Aissue).
+
+        BileTools supports Paper, Purpur, and Leaf from 1.20.1 through 26.3, with Folia and Canvas supported and Spigot on a best-effort basis. It also runs on Velocity 3.4 and newer. Minecraft 26.1 and newer needs Java 25.
+  - type: textarea
+    id: issue
+    attributes:
+      label: What issue are you having?
+      description: Include any error message you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start a server with BileTools installed
+        2. Change ... in the config
+        3. Run /biletools ...
+        4. ... happens instead of ...
+    validations:
+      required: true
+  - type: input
+    id: diagnostics
+    attributes:
+      label: Debug dump or latest log file
+      description: Run `/biletools debug dump upload=true` and paste the link. If BileTools won't start, upload `logs/latest.log` to [mclo.gs](https://mclo.gs) and paste that link instead.
+      placeholder: https://mclo.gs/...
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: "BileTools version"
+      description: Run `/biletools debug version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Server software
+      options:
+        - "Paper"
+        - "Purpur"
+        - "Leaf"
+        - "Folia"
+        - "Canvas"
+        - "Spigot"
+        - "Velocity"
+        - Other (unsupported)
+    validations:
+      required: true
+  - type: dropdown
+    id: minecraft
+    attributes:
+      label: Minecraft version
+      options:
+        - "26.3"
+        - "26.2"
+        - "26.1"
+        - "1.21"
+        - "1.20"
+        - Other (unsupported)
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Other plugins involved, screenshots, or videos.
