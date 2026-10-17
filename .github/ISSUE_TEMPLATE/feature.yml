@@ -1,0 +1,28 @@
+name: Suggestion
+description: Suggest a new feature or a change to BileTools.
+labels: [enhancement]
+type: Feature
+assignees: [SwiftSwamp]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [existing suggestions](https://github.com/VolmitSoftware/BileTools/issues?q=is%3Aissue+label%3Aenhancement) first and add relevant information to the existing issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are your suggestions for new features or changes?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How should it work?
+      description: Provide as much detail as possible on what you would like changed or added.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Any additional information such as screenshots, examples, etc.
