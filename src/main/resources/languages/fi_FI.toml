@@ -169,7 +169,6 @@ number = "&8Vasen +1, oikea -1, vaihto ×10, pudota kirjoittaaksesi.&r"
 text = "&8Napsauta kirjoittaaksesi uuden arvon chattiin.&r"
 language = "&8Napsauta valitaksesi käytettävissä olevan kielen tai kirjoita kielitunnus.&r"
 category = "&8Napsauta muokataksesi tämän luokan kaikkia asetuksia.&r"
-file_only = "&8Arkaluonteinen arvo; muokkaa biletools.yml-tiedostoa ja lataa BileTools uudelleen."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eKirjoita asetuksen &f{setting}&r&e uusi arvo chattiin.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnonyymit bStats-mittarit&r"
 [gui.setting.remote_slave]
 enabled = "&aEtävastaanotin"
 port = "&aEtävastaanottimen portti"
-payload = "&aEtävastaanottimen salaisuus"
 
 [gui.setting.remote_master]
 enabled = "&aEtäkäyttöönotto"
-targets = "&aEtäkäyttöönoton kohteet"
 signatures = "&aEtäkäyttöönotettavien lisäosien nimet"
 
 [gui.setting.network]

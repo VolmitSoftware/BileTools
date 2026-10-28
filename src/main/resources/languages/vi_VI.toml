@@ -169,7 +169,6 @@ number = "&8Trái +1, phải -1, shift ×10, thả để nhập.&r"
 text = "&8Nhấp để nhập giá trị mới trong trò chuyện.&r"
 language = "&8Nhấp để chọn ngôn ngữ khả dụng hoặc nhập mã vùng.&r"
 category = "&8Nhấp để sửa mọi thiết lập trong mục này.&r"
-file_only = "&8Giá trị nhạy cảm; sửa biletools.yml rồi tải lại BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eNhập giá trị mới cho &f{setting}&r&e trong trò chuyện.&r"
@@ -188,11 +187,9 @@ enabled = "&dThống kê bStats ẩn danh&r"
 [gui.setting.remote_slave]
 enabled = "&aBộ nhận từ xa"
 port = "&aCổng của bộ nhận từ xa"
-payload = "&aMã bí mật của bộ nhận từ xa"
 
 [gui.setting.remote_master]
 enabled = "&aTriển khai từ xa"
-targets = "&aĐích triển khai từ xa"
 signatures = "&aTên plugin triển khai từ xa"
 
 [gui.setting.network]

@@ -18,9 +18,12 @@ public final class BileConfig {
     private static final String PATH_METRICS = "metrics";
     private static final String PATH_SLAVE_ENABLED = "remote-deploy.slave.slave-enabled";
     private static final String PATH_SLAVE_PORT = "remote-deploy.slave.slave-port";
-    private static final String PATH_SLAVE_PAYLOAD = "remote-deploy.slave.slave-payload";
+    private static final String PATH_SLAVE_BIND_ADDRESS = "remote-deploy.slave.slave-bind-address";
+    private static final String PATH_SLAVE_TRUSTED_KEYS = "remote-deploy.slave.trusted-keys";
+    private static final String PATH_SLAVE_ALLOWED_ADDRESSES = "remote-deploy.slave.allowed-addresses";
     private static final String PATH_MASTER_ENABLED = "remote-deploy.master.master-enabled";
     private static final String PATH_MASTER_DEPLOY_TO = "remote-deploy.master.master-deploy-to";
+    private static final String PATH_MASTER_TRUSTED_KEYS = "remote-deploy.master.trusted-keys";
     private static final String PATH_MASTER_DEPLOY_SIGNATURES = "remote-deploy.master.master-deploy-signatures";
     private static final String PATH_ARCHIVE_PLUGINS = "archive-plugins";
     private static final String PATH_REMOTE_SOCKET_TIMEOUT_MS = "remote-deploy.socket-timeout-ms";
@@ -39,9 +42,12 @@ public final class BileConfig {
     private final boolean updateNotifications;
     private final boolean remoteSlaveEnabled;
     private final int remoteSlavePort;
-    private final String remoteSlavePayload;
+    private final String remoteSlaveBindAddress;
+    private final List<String> remoteSlaveTrustedKeys;
+    private final List<String> remoteSlaveAllowedAddresses;
     private final boolean remoteMasterEnabled;
     private final List<String> remoteMasterDeployTargets;
+    private final List<String> remoteMasterTrustedKeys;
     private final List<String> remoteMasterDeploySignatures;
     private final boolean archivePlugins;
     private final int remoteSocketTimeoutMs;
@@ -60,9 +66,12 @@ public final class BileConfig {
         updateNotifications = builder.updateNotifications;
         remoteSlaveEnabled = builder.remoteSlaveEnabled;
         remoteSlavePort = Math.max(1, Math.min(65_535, builder.remoteSlavePort));
-        remoteSlavePayload = sanitizeScalar(builder.remoteSlavePayload, "pickapassword");
+        remoteSlaveBindAddress = sanitizeScalar(builder.remoteSlaveBindAddress, "0.0.0.0");
+        remoteSlaveTrustedKeys = List.copyOf(sanitizeList(builder.remoteSlaveTrustedKeys));
+        remoteSlaveAllowedAddresses = List.copyOf(sanitizeList(builder.remoteSlaveAllowedAddresses));
         remoteMasterEnabled = builder.remoteMasterEnabled;
         remoteMasterDeployTargets = List.copyOf(sanitizeList(builder.remoteMasterDeployTargets));
+        remoteMasterTrustedKeys = List.copyOf(sanitizeList(builder.remoteMasterTrustedKeys));
         remoteMasterDeploySignatures = List.copyOf(sanitizeList(builder.remoteMasterDeploySignatures));
         archivePlugins = builder.archivePlugins;
         remoteSocketTimeoutMs = Math.max(1_000, builder.remoteSocketTimeoutMs);
@@ -92,10 +101,16 @@ public final class BileConfig {
                 .updateNotifications(yaml.getBoolean(PATH_UPDATES, defaults.updateNotifications))
                 .remoteSlaveEnabled(yaml.getBoolean(PATH_SLAVE_ENABLED, defaults.remoteSlaveEnabled))
                 .remoteSlavePort(yaml.getInt(PATH_SLAVE_PORT, defaults.remoteSlavePort))
-                .remoteSlavePayload(sanitizeScalar(yaml.getString(PATH_SLAVE_PAYLOAD), defaults.remoteSlavePayload))
+                .remoteSlaveBindAddress(sanitizeScalar(yaml.getString(PATH_SLAVE_BIND_ADDRESS), defaults.remoteSlaveBindAddress))
+                .remoteSlaveTrustedKeys(yaml.contains(PATH_SLAVE_TRUSTED_KEYS)
+                        ? yaml.getStringList(PATH_SLAVE_TRUSTED_KEYS) : defaults.remoteSlaveTrustedKeys)
+                .remoteSlaveAllowedAddresses(yaml.contains(PATH_SLAVE_ALLOWED_ADDRESSES)
+                        ? yaml.getStringList(PATH_SLAVE_ALLOWED_ADDRESSES) : defaults.remoteSlaveAllowedAddresses)
                 .remoteMasterEnabled(yaml.getBoolean(PATH_MASTER_ENABLED, defaults.remoteMasterEnabled))
                 .remoteMasterDeployTargets(yaml.contains(PATH_MASTER_DEPLOY_TO)
                         ? yaml.getStringList(PATH_MASTER_DEPLOY_TO) : defaults.remoteMasterDeployTargets)
+                .remoteMasterTrustedKeys(yaml.contains(PATH_MASTER_TRUSTED_KEYS)
+                        ? yaml.getStringList(PATH_MASTER_TRUSTED_KEYS) : defaults.remoteMasterTrustedKeys)
                 .remoteMasterDeploySignatures(yaml.contains(PATH_MASTER_DEPLOY_SIGNATURES)
                         ? yaml.getStringList(PATH_MASTER_DEPLOY_SIGNATURES) : defaults.remoteMasterDeploySignatures)
                 .archivePlugins(yaml.getBoolean(PATH_ARCHIVE_PLUGINS, defaults.archivePlugins))
@@ -143,9 +158,12 @@ public final class BileConfig {
         yaml.set(PATH_UPDATES, updateNotifications);
         yaml.set(PATH_SLAVE_ENABLED, remoteSlaveEnabled);
         yaml.set(PATH_SLAVE_PORT, remoteSlavePort);
-        yaml.set(PATH_SLAVE_PAYLOAD, remoteSlavePayload);
+        yaml.set(PATH_SLAVE_BIND_ADDRESS, remoteSlaveBindAddress);
+        yaml.set(PATH_SLAVE_TRUSTED_KEYS, remoteSlaveTrustedKeys);
+        yaml.set(PATH_SLAVE_ALLOWED_ADDRESSES, remoteSlaveAllowedAddresses);
         yaml.set(PATH_MASTER_ENABLED, remoteMasterEnabled);
         yaml.set(PATH_MASTER_DEPLOY_TO, remoteMasterDeployTargets);
+        yaml.set(PATH_MASTER_TRUSTED_KEYS, remoteMasterTrustedKeys);
         yaml.set(PATH_MASTER_DEPLOY_SIGNATURES, remoteMasterDeploySignatures);
         yaml.set(PATH_ARCHIVE_PLUGINS, archivePlugins);
         yaml.set(PATH_REMOTE_SOCKET_TIMEOUT_MS, remoteSocketTimeoutMs);
@@ -209,8 +227,16 @@ public final class BileConfig {
         return remoteSlavePort;
     }
 
-    public String getRemoteSlavePayload() {
-        return remoteSlavePayload;
+    public String getRemoteSlaveBindAddress() {
+        return remoteSlaveBindAddress;
+    }
+
+    public List<String> getRemoteSlaveTrustedKeys() {
+        return remoteSlaveTrustedKeys;
+    }
+
+    public List<String> getRemoteSlaveAllowedAddresses() {
+        return remoteSlaveAllowedAddresses;
     }
 
     public boolean isRemoteMasterEnabled() {
@@ -219,6 +245,10 @@ public final class BileConfig {
 
     public List<String> getRemoteMasterDeployTargets() {
         return remoteMasterDeployTargets;
+    }
+
+    public List<String> getRemoteMasterTrustedKeys() {
+        return remoteMasterTrustedKeys;
     }
 
     public List<String> getRemoteMasterDeploySignatures() {
@@ -303,9 +333,12 @@ public final class BileConfig {
         private boolean updateNotifications = true;
         private boolean remoteSlaveEnabled;
         private int remoteSlavePort = 9_876;
-        private String remoteSlavePayload = "pickapassword";
+        private String remoteSlaveBindAddress = "0.0.0.0";
+        private List<String> remoteSlaveTrustedKeys = List.of();
+        private List<String> remoteSlaveAllowedAddresses = List.of();
         private boolean remoteMasterEnabled;
-        private List<String> remoteMasterDeployTargets = List.of("yourserver.com:9876:password");
+        private List<String> remoteMasterDeployTargets = List.of();
+        private List<String> remoteMasterTrustedKeys = List.of();
         private List<String> remoteMasterDeploySignatures = List.of("MyPlugin", "AnotherPlugin");
         private boolean archivePlugins = true;
         private int remoteSocketTimeoutMs = 15_000;
@@ -328,9 +361,12 @@ public final class BileConfig {
             updateNotifications = config.updateNotifications;
             remoteSlaveEnabled = config.remoteSlaveEnabled;
             remoteSlavePort = config.remoteSlavePort;
-            remoteSlavePayload = config.remoteSlavePayload;
+            remoteSlaveBindAddress = config.remoteSlaveBindAddress;
+            remoteSlaveTrustedKeys = config.remoteSlaveTrustedKeys;
+            remoteSlaveAllowedAddresses = config.remoteSlaveAllowedAddresses;
             remoteMasterEnabled = config.remoteMasterEnabled;
             remoteMasterDeployTargets = config.remoteMasterDeployTargets;
+            remoteMasterTrustedKeys = config.remoteMasterTrustedKeys;
             remoteMasterDeploySignatures = config.remoteMasterDeploySignatures;
             archivePlugins = config.archivePlugins;
             remoteSocketTimeoutMs = config.remoteSocketTimeoutMs;
@@ -369,8 +405,18 @@ public final class BileConfig {
             return this;
         }
 
-        public Builder remoteSlavePayload(String value) {
-            remoteSlavePayload = value;
+        public Builder remoteSlaveBindAddress(String value) {
+            remoteSlaveBindAddress = value;
+            return this;
+        }
+
+        public Builder remoteSlaveTrustedKeys(List<String> value) {
+            remoteSlaveTrustedKeys = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder remoteSlaveAllowedAddresses(List<String> value) {
+            remoteSlaveAllowedAddresses = List.copyOf(Objects.requireNonNull(value, "value"));
             return this;
         }
 
@@ -381,6 +427,11 @@ public final class BileConfig {
 
         public Builder remoteMasterDeployTargets(List<String> value) {
             remoteMasterDeployTargets = List.copyOf(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        public Builder remoteMasterTrustedKeys(List<String> value) {
+            remoteMasterTrustedKeys = List.copyOf(Objects.requireNonNull(value, "value"));
             return this;
         }
 

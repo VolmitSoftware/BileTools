@@ -169,7 +169,6 @@ number = "&8Esquerdo +1, direito -1, Shift ×10, larga para escrever.&r"
 text = "&8Clica para escrever um novo valor no chat.&r"
 language = "&8Clica para escolher um idioma disponível ou escreve uma região.&r"
 category = "&8Clica para editar todas as definições desta categoria.&r"
-file_only = "&8Valor confidencial; edita biletools.yml e recarrega o BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eEscreve um novo valor para &f{setting}&r&e no chat.&r"
@@ -188,11 +187,9 @@ enabled = "&dMétricas anónimas do bStats&r"
 [gui.setting.remote_slave]
 enabled = "&aRecetor remoto"
 port = "&aPorta do recetor remoto"
-payload = "&aSegredo do recetor remoto"
 
 [gui.setting.remote_master]
 enabled = "&aImplementação remota"
-targets = "&aDestinos de implementação remota"
 signatures = "&aNomes dos plugins para implementação remota"
 
 [gui.setting.network]

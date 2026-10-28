@@ -169,7 +169,6 @@ number = "&8Lewy +1, prawy -1, Shift ×10, upuść, aby wpisać.&r"
 text = "&8Kliknij, aby wpisać nową wartość na czacie.&r"
 language = "&8Kliknij, aby wybrać dostępny język, lub wpisz ustawienia regionalne.&r"
 category = "&8Kliknij, aby edytować wszystkie ustawienia w tej kategorii.&r"
-file_only = "&8Wartość poufna; edytuj biletools.yml i przeładuj BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eWpisz na czacie nową wartość ustawienia &f{setting}&r&e.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnonimowe statystyki bStats&r"
 [gui.setting.remote_slave]
 enabled = "&aOdbiornik zdalny"
 port = "&aPort odbiornika zdalnego"
-payload = "&aSekret odbiornika zdalnego"
 
 [gui.setting.remote_master]
 enabled = "&aWdrażanie zdalne"
-targets = "&aCele wdrażania zdalnego"
 signatures = "&aNazwy pluginów do zdalnego wdrożenia"
 
 [gui.setting.network]

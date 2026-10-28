@@ -169,7 +169,6 @@ number = "&8Links +1, rechts -1, shift ×10, laat vallen om te typen.&r"
 text = "&8Klik om een nieuwe waarde in de chat te typen.&r"
 language = "&8Klik om een beschikbare taal te kiezen of typ een landinstelling.&r"
 category = "&8Klik om elke instelling in deze categorie te bewerken.&r"
-file_only = "&8Gevoelige waarde; bewerk biletools.yml en herlaad BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eTyp een nieuwe waarde voor &f{setting}&r&e in de chat.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnonieme bStats-statistieken&r"
 [gui.setting.remote_slave]
 enabled = "&aExterne ontvanger"
 port = "&aPoort van de externe ontvanger"
-payload = "&aGeheim van de externe ontvanger"
 
 [gui.setting.remote_master]
 enabled = "&aExterne uitrol"
-targets = "&aDoelen voor externe uitrol"
 signatures = "&aPluginnamen voor externe uitrol"
 
 [gui.setting.network]

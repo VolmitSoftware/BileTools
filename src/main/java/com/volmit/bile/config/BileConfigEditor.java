@@ -174,9 +174,6 @@ public final class BileConfigEditor implements Listener {
     }
 
     private void handleSetting(Player player, Category category, Setting setting, InventoryClickEvent event) {
-        if (setting.kind == SettingKind.FILE_ONLY) {
-            return;
-        }
         if (setting.kind == SettingKind.LOCALE) {
             player.closeInventory();
             plugin.languageSwitcher().command(player, new String[]{"server"});
@@ -284,7 +281,7 @@ public final class BileConfigEditor implements Listener {
     }
 
     private ItemStack settingItem(Player player, Setting setting, BileConfig config) {
-        String value = setting.kind == SettingKind.FILE_ONLY ? "redacted" : display(setting.reader.apply(config));
+        String value = display(setting.reader.apply(config));
         MessageArgs arguments = setting.kind == SettingKind.BOOLEAN
                 ? MessageArgs.builder().trusted("value", Boolean.parseBoolean(value) ? "&aenabled" : "&cdisabled").build()
                 : MessageArgs.builder().untrusted("value", value).build();
@@ -293,7 +290,6 @@ public final class BileConfigEditor implements Listener {
             case INTEGER, LONG -> BileMessages.GUI_NUMBER;
             case LIST -> BileMessages.GUI_TEXT;
             case LOCALE -> BileMessages.GUI_LANGUAGE_SELECT;
-            case FILE_ONLY -> BileMessages.GUI_FILE_ONLY;
         };
         return item(setting.material, legacy(player, setting.name), List.of(
                 legacy(player, BileMessages.GUI_STATE, arguments), legacy(player, instruction)));
@@ -441,10 +437,6 @@ public final class BileConfigEditor implements Listener {
         return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
     }
 
-    private static void rejectFileOnlyEdit(BileConfig.Builder builder, String value) {
-        throw new IllegalStateException("sensitive settings are file-only");
-    }
-
     private static List<Setting> createSettings() {
         return List.of(
                 setting(Category.GENERAL, "language", BileMessages.SETTING_LANGUAGE, Material.WRITABLE_BOOK,
@@ -466,16 +458,10 @@ public final class BileConfigEditor implements Listener {
                         Material.COMPARATOR, SettingKind.INTEGER, 1D,
                         config -> Integer.toString(config.getRemoteSlavePort()),
                         (builder, value) -> builder.remoteSlavePort(Integer.parseInt(value.trim()))),
-                setting(Category.REMOTE_SLAVE, "remote-deploy.slave.slave-payload", BileMessages.SETTING_SLAVE_PAYLOAD,
-                        Material.TRIPWIRE_HOOK, SettingKind.FILE_ONLY, 1D, config -> "redacted",
-                        BileConfigEditor::rejectFileOnlyEdit),
                 setting(Category.REMOTE_MASTER, "remote-deploy.master.master-enabled", BileMessages.SETTING_MASTER_ENABLED,
                         Material.ENDER_EYE, SettingKind.BOOLEAN, 1D,
                         config -> Boolean.toString(config.isRemoteMasterEnabled()),
                         (builder, value) -> builder.remoteMasterEnabled(bool(value))),
-                setting(Category.REMOTE_MASTER, "remote-deploy.master.master-deploy-to", BileMessages.SETTING_MASTER_TARGETS,
-                        Material.TRIPWIRE_HOOK, SettingKind.FILE_ONLY, 1D, config -> "redacted",
-                        BileConfigEditor::rejectFileOnlyEdit),
                 setting(Category.REMOTE_MASTER, "remote-deploy.master.master-deploy-signatures", BileMessages.SETTING_MASTER_SIGNATURES,
                         Material.NAME_TAG, SettingKind.LIST, 1D,
                         config -> String.join(", ", config.getRemoteMasterDeploySignatures()),
@@ -540,7 +526,7 @@ public final class BileConfigEditor implements Listener {
     }
 
     private enum SettingKind {
-        BOOLEAN, INTEGER, LONG, LIST, LOCALE, FILE_ONLY;
+        BOOLEAN, INTEGER, LONG, LIST, LOCALE;
 
         private boolean numeric() {
             return this == INTEGER || this == LONG;

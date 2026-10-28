@@ -169,7 +169,6 @@ number = "&8Gauche +1, droite -1, Maj ×10, jeter pour saisir.&r"
 text = "&8Cliquez pour saisir une nouvelle valeur dans le chat.&r"
 language = "&8Cliquez pour choisir une langue disponible ou saisissez un code régional.&r"
 category = "&8Cliquez pour modifier tous les paramètres de cette catégorie.&r"
-file_only = "&8Valeur sensible ; modifiez biletools.yml, puis rechargez BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eSaisissez une nouvelle valeur pour &f{setting}&r&e dans le chat.&r"
@@ -188,11 +187,9 @@ enabled = "&dStatistiques bStats anonymes&r"
 [gui.setting.remote_slave]
 enabled = "&aRécepteur distant"
 port = "&aPort du récepteur distant"
-payload = "&aSecret du récepteur distant"
 
 [gui.setting.remote_master]
 enabled = "&aDéploiement distant"
-targets = "&aCibles de déploiement distant"
 signatures = "&aNoms des plugins à déployer"
 
 [gui.setting.network]

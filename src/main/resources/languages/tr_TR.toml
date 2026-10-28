@@ -169,7 +169,6 @@ number = "&8Sol +1, sağ -1, shift ×10, yazmak için bırakma tuşu.&r"
 text = "&8Sohbette yeni bir değer yazmak için tıklayın.&r"
 language = "&8Kullanılabilir bir dil seçmek veya yerel ayar yazmak için tıklayın.&r"
 category = "&8Bu kategorideki her ayarı düzenlemek için tıklayın.&r"
-file_only = "&8Hassas değer; biletools.yml dosyasını düzenleyip BileTools’u yeniden yükleyin."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eSohbette &f{setting}&r&e için yeni bir değer yazın.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnonim bStats istatistikleri&r"
 [gui.setting.remote_slave]
 enabled = "&aUzak alıcı"
 port = "&aUzak alıcı bağlantı noktası"
-payload = "&aUzak alıcı gizli anahtarı"
 
 [gui.setting.remote_master]
 enabled = "&aUzak dağıtım"
-targets = "&aUzak dağıtım hedefleri"
 signatures = "&aUzak dağıtım eklentilerinin adları"
 
 [gui.setting.network]

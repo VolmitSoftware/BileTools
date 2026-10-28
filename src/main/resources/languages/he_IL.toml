@@ -169,7 +169,6 @@ number = "&8שמאל +1, ימין -1, Shift ×10, השלכה כדי להקליד
 text = "&8לחצו כדי להקליד ערך חדש בצ׳אט.&r"
 language = "&8לחצו כדי לבחור שפה זמינה או להקליד אזור שפה.&r"
 category = "&8לחצו כדי לערוך כל הגדרה בקטגוריה זו.&r"
-file_only = "&8ערך רגיש; יש לערוך את biletools.yml ולטעון מחדש את BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eהקלידו בצ׳אט ערך חדש עבור &f{setting}&r&e.&r"
@@ -188,11 +187,9 @@ enabled = "&dמדדי bStats אנונימיים&r"
 [gui.setting.remote_slave]
 enabled = "&aמקלט מרוחק"
 port = "&aיציאת המקלט המרוחק"
-payload = "&aהסוד של המקלט המרוחק"
 
 [gui.setting.remote_master]
 enabled = "&aפריסה מרוחקת"
-targets = "&aיעדי הפריסה המרוחקת"
 signatures = "&aשמות תוספים לפריסה מרוחקת"
 
 [gui.setting.network]

@@ -169,7 +169,6 @@ number = "&8Kairysis +1, dešinysis -1, Shift ×10, išmeskite norėdami įvesti
 text = "&8Spustelėkite ir pokalbyje įveskite naują reikšmę.&r"
 language = "&8Spustelėkite norėdami pasirinkti prieinamą kalbą arba įveskite lokalę.&r"
 category = "&8Spustelėkite norėdami redaguoti kiekvieną šios kategorijos nustatymą.&r"
-file_only = "&8Slapta reikšmė; redaguokite biletools.yml ir iš naujo įkelkite BileTools."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &ePokalbyje įveskite naują &f{setting}&r&e reikšmę.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnoniminė bStats statistika&r"
 [gui.setting.remote_slave]
 enabled = "&aNuotolinis imtuvas"
 port = "&aNuotolinio imtuvo prievadas"
-payload = "&aNuotolinio imtuvo paslaptis"
 
 [gui.setting.remote_master]
 enabled = "&aNuotolinis diegimas"
-targets = "&aNuotolinio diegimo paskirties vietos"
 signatures = "&aNuotoliniu būdu diegiamų papildinių pavadinimai"
 
 [gui.setting.network]

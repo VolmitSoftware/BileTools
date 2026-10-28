@@ -169,7 +169,6 @@ number = "&8左 +1，右 -1，Shift ×10，拖动到类型。&r"
 text = "&8点击在聊天中输入新值.&r"
 language = "&8点击选择可用语言或输入区域设置。&r"
 category = "&8点击编辑此类别中的每个设置.&r"
-file_only = "&8敏感值；请编辑 biletools.yml，然后重新加载 BileTools。"
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &e在聊天中输入&f{setting}&r&e的新值.&r"
@@ -188,11 +187,9 @@ enabled = "&d匿名 bStats 统计&r"
 [gui.setting.remote_slave]
 enabled = "&a远程接收器"
 port = "&a远程接收器端口"
-payload = "&a远程接收器密钥"
 
 [gui.setting.remote_master]
 enabled = "&a远程部署"
-targets = "&a远程部署目标"
 signatures = "&a远程部署的插件名称"
 
 [gui.setting.network]

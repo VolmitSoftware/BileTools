@@ -101,7 +101,6 @@ public final class BileMessages {
     public static final TextKey GUI_TEXT = TextKey.of("gui.lore.text", "&8Click to type a new value in chat.");
     public static final TextKey GUI_LANGUAGE_SELECT = TextKey.of("gui.lore.language", "&8Click to choose an available language or type a locale.");
     public static final TextKey GUI_CATEGORY_OPEN = TextKey.of("gui.lore.category", "&8Click to edit every setting in this category.");
-    public static final TextKey GUI_FILE_ONLY = TextKey.of("gui.lore.file_only", "&8Sensitive value; edit biletools.yml, then reload BileTools.");
     public static final TextKey GUI_PROMPT = TextKey.of("gui.prompt.request", "&a[&8Bile&a]: &eType a new value for &f{setting}&e in chat.");
     public static final TextKey GUI_PROMPT_LIST = TextKey.of("gui.prompt.list", "&a[&8Bile&a]: &7Separate list entries with commas. Type &fnone&7 for an empty list.");
     public static final TextKey GUI_PROMPT_CANCEL = TextKey.of("gui.prompt.cancel", "&a[&8Bile&a]: &7Type &fcancel&7 to stop. This prompt expires in 60 seconds.");
@@ -113,9 +112,7 @@ public final class BileMessages {
     public static final TextKey SETTING_METRICS = setting("metrics.enabled", "Anonymous bStats metrics");
     public static final TextKey SETTING_SLAVE_ENABLED = setting("remote_slave.enabled", "Remote receiver");
     public static final TextKey SETTING_SLAVE_PORT = setting("remote_slave.port", "Remote receiver port");
-    public static final TextKey SETTING_SLAVE_PAYLOAD = setting("remote_slave.payload", "Remote receiver secret");
     public static final TextKey SETTING_MASTER_ENABLED = setting("remote_master.enabled", "Remote deployment");
-    public static final TextKey SETTING_MASTER_TARGETS = setting("remote_master.targets", "Remote deployment targets");
     public static final TextKey SETTING_MASTER_SIGNATURES = setting("remote_master.signatures", "Remote deployment plugin names");
     public static final TextKey SETTING_SOCKET_TIMEOUT = setting("network.socket_timeout", "Remote socket timeout milliseconds");
     public static final TextKey SETTING_MAX_TRANSFER = setting("network.max_transfer", "Maximum transfer bytes");
@@ -165,11 +162,10 @@ public final class BileMessages {
                 GUI_ROOT_TITLE, GUI_CATEGORY_TITLE, GUI_CATEGORY_GENERAL, GUI_CATEGORY_METRICS,
                 GUI_CATEGORY_REMOTE_SLAVE, GUI_CATEGORY_REMOTE_MASTER, GUI_CATEGORY_NETWORK, GUI_CATEGORY_WATCHER,
                 GUI_CATEGORY_LIFECYCLE, GUI_CATEGORY_LANGUAGES, GUI_BACK, GUI_CLOSE, GUI_STATE, GUI_TOGGLE,
-                GUI_NUMBER, GUI_TEXT, GUI_LANGUAGE_SELECT, GUI_CATEGORY_OPEN, GUI_FILE_ONLY, GUI_PROMPT,
+                GUI_NUMBER, GUI_TEXT, GUI_LANGUAGE_SELECT, GUI_CATEGORY_OPEN, GUI_PROMPT,
                 GUI_PROMPT_LIST, GUI_PROMPT_CANCEL, GUI_PROMPT_CANCELLED, GUI_PROMPT_TIMEOUT, SETTING_LANGUAGE,
                 SETTING_ARCHIVE, SETTING_UPDATES, SETTING_METRICS, SETTING_SLAVE_ENABLED, SETTING_SLAVE_PORT,
-                SETTING_SLAVE_PAYLOAD, SETTING_MASTER_ENABLED, SETTING_MASTER_TARGETS,
-                SETTING_MASTER_SIGNATURES, SETTING_SOCKET_TIMEOUT, SETTING_MAX_TRANSFER, SETTING_WATCHER_IDLE,
+                SETTING_MASTER_ENABLED, SETTING_MASTER_SIGNATURES, SETTING_SOCKET_TIMEOUT, SETTING_MAX_TRANSFER, SETTING_WATCHER_IDLE,
                 SETTING_WATCHER_ACTIVE, SETTING_WATCHER_DEBOUNCE, SETTING_WATCHER_IGNORE, SETTING_WATCHER_ONLY,
                 SETTING_LOG_TIMINGS, SETTING_HEALTH_CHECK));
         builder.addAll(DirectorMessages.keys());

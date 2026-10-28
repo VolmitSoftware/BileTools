@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -51,6 +52,30 @@ public class BileConfigTest {
         BileConfig config = BileConfig.load(configFile);
 
         assertTrue(config.getWatcherIgnore().isEmpty());
+    }
+
+    @Test
+    public void remoteDeployStartsWithoutPlaceholdersAndKeepsTrustedKeys() throws Exception {
+        File configFile = temporaryFolder.newFile("biletools.yml");
+
+        BileConfig defaults = BileConfig.load(configFile);
+        assertTrue(defaults.getRemoteSlaveTrustedKeys().isEmpty());
+        assertTrue(defaults.getRemoteMasterDeployTargets().isEmpty());
+        assertEquals("0.0.0.0", defaults.getRemoteSlaveBindAddress());
+        assertTrue(defaults.getRemoteSlaveAllowedAddresses().isEmpty());
+        assertTrue(defaults.getRemoteMasterTrustedKeys().isEmpty());
+
+        defaults.toBuilder()
+                .remoteSlaveBindAddress(" 10.0.0.5 ")
+                .remoteSlaveTrustedKeys(List.of("key-one", " key-two ", "key-one"))
+                .remoteMasterTrustedKeys(List.of(" receiver-key "))
+                .build()
+                .save(configFile);
+        BileConfig loaded = BileConfig.load(configFile);
+
+        assertEquals("10.0.0.5", loaded.getRemoteSlaveBindAddress());
+        assertEquals(List.of("key-one", "key-two"), loaded.getRemoteSlaveTrustedKeys());
+        assertEquals(List.of("receiver-key"), loaded.getRemoteMasterTrustedKeys());
     }
 
     @Test

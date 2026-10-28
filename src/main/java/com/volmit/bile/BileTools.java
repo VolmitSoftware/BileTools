@@ -1,5 +1,7 @@
 package com.volmit.bile;
 
+import art.arcane.volmlib.util.crypto.Ed25519;
+import art.arcane.volmlib.util.crypto.Ed25519KeyFiles;
 import art.arcane.volmlib.util.diagnostics.BukkitDebugDump;
 import art.arcane.volmlib.util.director.DirectorEngineOptions;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
@@ -52,6 +54,7 @@ import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -60,6 +63,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,6 +109,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private static final String AUTOMATIC_RELOAD_COMPLETION_FILE = "watcher-handoff-completion.lock";
     private static final long PLUGIN_OPERATION_TIMEOUT_SECONDS = 120L;
     private static final long REMOTE_DEPLOY_TIMEOUT_SECONDS = 90L;
+    private static final String REMOTE_DEPLOY_KEY_DIRECTORY = "remote-deploy";
     // bstats.org plugin id
     private static final int BSTATS_PLUGIN_ID = 33192;
     private static final Logger FALLBACK_LOGGER = Logger.getLogger("BileTools");
@@ -113,6 +119,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             className -> !className.startsWith(PROXY_CLASS_PREFIX);
 
     private volatile SlaveBileServer srv;
+    private volatile KeyPair remoteDeployKey;
     private volatile Metrics metrics;
     public static BileTools bile;
     private BileToolsIntegrationService integrationService;
@@ -220,21 +227,6 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         return logger == null ? FALLBACK_LOGGER : logger;
     }
 
-    public static void streamFile(File f, String address, int port, String password) throws IOException {
-        streamFile(f, f == null ? null : f.getName(), address, port, password);
-    }
-
-    private static void streamFile(File file,
-                                   String transferFileName,
-                                   String address,
-                                   int port,
-                                   String password) throws IOException {
-        int timeoutMs = cfg == null ? 15_000 : cfg.getRemoteSocketTimeoutMs();
-        long maxBytes = cfg == null ? 256L * 1024L * 1024L : cfg.getRemoteMaxTransferBytes();
-        RemoteDeployProtocol.streamFile(
-                file, transferFileName, address, port, password, timeoutMs, maxBytes);
-    }
-
     private void readTheConfig() throws Exception {
         File f = new File(getDataFolder(), "biletools.yml");
         cfg = BileConfig.load(f);
@@ -244,6 +236,9 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         BileConfig previous = cfg;
         if (!candidate.getLanguage().equalsIgnoreCase(previous.getLanguage())) {
             throw new IllegalArgumentException("use the language selector to change the active language");
+        }
+        if ((candidate.isRemoteMasterEnabled() || candidate.isRemoteSlaveEnabled()) && remoteDeployKey == null) {
+            loadRemoteDeployKey();
         }
         boolean reconfigureReceiver = receiverConfigurationChanged(previous, candidate);
         if (reconfigureReceiver) {
@@ -301,13 +296,36 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
     private boolean receiverConfigurationChanged(BileConfig previous, BileConfig candidate) {
         return previous.isRemoteSlaveEnabled() != candidate.isRemoteSlaveEnabled()
                 || previous.getRemoteSlavePort() != candidate.getRemoteSlavePort()
-                || !previous.getRemoteSlavePayload().equals(candidate.getRemoteSlavePayload())
+                || !previous.getRemoteSlaveBindAddress().equals(candidate.getRemoteSlaveBindAddress())
+                || !previous.getRemoteSlaveTrustedKeys().equals(candidate.getRemoteSlaveTrustedKeys())
+                || !previous.getRemoteSlaveAllowedAddresses().equals(candidate.getRemoteSlaveAllowedAddresses())
                 || previous.getRemoteSocketTimeoutMs() != candidate.getRemoteSocketTimeoutMs()
                 || previous.getRemoteMaxTransferBytes() != candidate.getRemoteMaxTransferBytes();
     }
 
+    private void loadRemoteDeployKey() throws IOException {
+        RemoteDeployProtocol.requireEd25519();
+        Path keyDirectory = getDataFolder().toPath().resolve(REMOTE_DEPLOY_KEY_DIRECTORY);
+        Path privateKey = keyDirectory.resolve("server.key");
+        boolean generate = !Files.exists(privateKey);
+        KeyPair keyPair = Ed25519KeyFiles.loadOrCreate(privateKey, keyDirectory.resolve("server.pub"));
+        remoteDeployKey = keyPair;
+        PublicKey publicKey = keyPair.getPublic();
+        if (generate) {
+            getLogger().info("Generated a new remote deploy key pair in " + keyDirectory);
+        }
+        getLogger().info("Remote deploy public key " + Ed25519.fingerprint(publicKey) + ": "
+                + Ed25519.encodePublicKeyText(publicKey));
+        getLogger().info("Add this key to remote-deploy.slave.trusted-keys on servers that receive from this one,"
+                + " and to remote-deploy.master.trusted-keys on servers that deploy to this one.");
+    }
+
     private void startSlaveServer(BileConfig config) throws IOException {
-        SlaveBileServer server = new SlaveBileServer(config);
+        KeyPair identity = remoteDeployKey;
+        if (identity == null) {
+            throw new IOException("Remote deploy key is unavailable");
+        }
+        SlaveBileServer server = new SlaveBileServer(config, identity);
         server.start();
         srv = server;
     }
@@ -373,16 +391,23 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
             getLogger().info("Spigot-compatible mode: paper-plugin.yml-only jars are rejected; dual-descriptor jars load through plugin.yml.");
         }
 
+        if (cfg.isRemoteMasterEnabled() || cfg.isRemoteSlaveEnabled()) {
+            try {
+                loadRemoteDeployKey();
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Failed to load the remote deploy key; remote deploy is paused", e);
+            }
+        }
+
         if (cfg.isRemoteSlaveEnabled()) {
-            getLogger().info("Starting Remote Slave Server on *:" + cfg.getRemoteSlavePort());
+            String endpoint = cfg.getRemoteSlaveBindAddress() + ":" + cfg.getRemoteSlavePort();
+            getLogger().info("Starting Remote Slave Server on " + endpoint);
 
             try {
-                srv = new SlaveBileServer(cfg);
-                srv.start();
-                getLogger().info("Remote Slave Server online!");
+                startSlaveServer(cfg);
+                getLogger().info("Remote Slave Server online with " + cfg.getRemoteSlaveTrustedKeys().size() + " trusted master key(s)");
             } catch (Throwable e) {
-                getLogger().log(Level.SEVERE,
-                        "Failed to start Remote Slave Server on *:" + cfg.getRemoteSlavePort(), e);
+                getLogger().log(Level.SEVERE, "Failed to start Remote Slave Server on " + endpoint, e);
             }
         }
 
@@ -2088,40 +2113,50 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         appliedFingerprints.remove(candidate.source());
     }
 
+    private void sendToRemoteTarget(File sourceFile, String transferFileName, RemoteDeployTarget target, SSLContext tls) {
+        try {
+            RemoteDeployProtocol.streamFile(sourceFile, transferFileName, target, tls,
+                    cfg.getRemoteSocketTimeoutMs(), cfg.getRemoteMaxTransferBytes());
+        } catch (UnknownHostException e) {
+            getLogger().warning("Invalid remote deploy host: " + target.host());
+        } catch (IOException e) {
+            getLogger().warning("Failed remote deploy to " + target + ": " + e.getMessage());
+        }
+    }
+
     private void deployToRemoteTargets(File sourceFile, String transferFileName, String pluginName) {
         List<String> targets = cfg.getRemoteMasterDeployTargets();
         if (targets.isEmpty()) {
             return;
         }
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        for (String target : targets) {
-            String[] split = target.split(":", 3);
-            if (split.length < 3) {
-                getLogger().warning("Invalid remote deploy target format at configured target "
-                        + targets.indexOf(target));
-                continue;
-            }
+        KeyPair identity = remoteDeployKey;
+        if (identity == null) {
+            getLogger().warning("Remote deploy key is unavailable; skipped deploying " + pluginName);
+            return;
+        }
+        SSLContext tls;
+        try {
+            tls = RemoteDeployProtocol.tlsContext(identity, RemoteDeployProtocol.decodeTrustedKeys(
+                    "remote-deploy.master.trusted-keys", cfg.getRemoteMasterTrustedKeys()));
+        } catch (IOException e) {
+            getLogger().warning("Skipped deploying " + pluginName + ": " + e.getMessage());
+            return;
+        }
 
-            String host = split[0];
-            String password = split[2];
-            int port;
+        List<CompletableFuture<Void>> futures = new ArrayList<>(targets.size());
+        for (int index = 0; index < targets.size(); index++) {
+            RemoteDeployTarget target;
             try {
-                port = Integer.parseInt(split[1]);
-            } catch (NumberFormatException e) {
-                getLogger().warning("Invalid port in remote deploy target " + host);
+                target = RemoteDeployTarget.parse(targets.get(index));
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("Invalid remote deploy target " + (index + 1)
+                        + " in remote-deploy.master.master-deploy-to: " + e.getMessage());
                 continue;
             }
 
-            futures.add(CompletableFuture.runAsync(() -> {
-                try {
-                    streamFile(sourceFile, transferFileName, host, port, password);
-                } catch (UnknownHostException e) {
-                    getLogger().warning("Invalid remote deploy host: " + host);
-                } catch (IOException e) {
-                    getLogger().warning("Failed remote deploy to " + host + ":" + port + ": " + e.getMessage());
-                }
-            }, remoteDeployExecutor));
+            futures.add(CompletableFuture.runAsync(
+                    () -> sendToRemoteTarget(sourceFile, transferFileName, target, tls), remoteDeployExecutor));
         }
 
         try {

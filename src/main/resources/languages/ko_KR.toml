@@ -169,7 +169,6 @@ number = "&8왼쪽 +1, 오른쪽 -1, 시프트 ×10, 형식에 드롭.&r"
 text = "&8채팅에서 새 값을 입력하려면 클릭하세요.&r"
 language = "&8사용 가능한 언어를 선택하거나 로케일을 입력하려면 클릭하세요.&r"
 category = "&8이 카테고리의 모든 설정을 편집하려면 클릭하세요.&r"
-file_only = "&8민감한 값입니다. biletools.yml을 수정한 뒤 BileTools를 다시 불러오세요."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &e채팅에서&f{setting}&r&e의 새 값을 입력하세요.&r"
@@ -188,11 +187,9 @@ enabled = "&d익명 bStats 통계&r"
 [gui.setting.remote_slave]
 enabled = "&a원격 수신기"
 port = "&a원격 수신기 포트"
-payload = "&a원격 수신기 비밀값"
 
 [gui.setting.remote_master]
 enabled = "&a원격 배포"
-targets = "&a원격 배포 대상"
 signatures = "&a원격 배포할 플러그인 이름"
 
 [gui.setting.network]

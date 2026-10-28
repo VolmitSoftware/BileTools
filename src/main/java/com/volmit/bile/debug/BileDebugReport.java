@@ -4,7 +4,6 @@ import art.arcane.volmlib.util.diagnostics.DebugDumpReport;
 import com.volmit.bile.config.BileConfig;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,9 +46,14 @@ final class BileDebugReport {
         value(report, "archive-plugins", config.isArchivePlugins());
         value(report, "remote-deploy.slave.slave-enabled", config.isRemoteSlaveEnabled());
         value(report, "remote-deploy.slave.slave-port", config.getRemoteSlavePort());
-        value(report, "remote-deploy.slave.slave-payload", "redacted");
+        value(report, "remote-deploy.slave.slave-bind-address",
+                config.getRemoteSlaveBindAddress().equals("0.0.0.0") ? "all interfaces" : "redacted");
+        value(report, "remote-deploy.slave.trusted-keys", entryCount(config.getRemoteSlaveTrustedKeys()));
+        value(report, "remote-deploy.slave.allowed-addresses", config.getRemoteSlaveAllowedAddresses().isEmpty()
+                ? "any address" : entryCount(config.getRemoteSlaveAllowedAddresses()));
         value(report, "remote-deploy.master.master-enabled", config.isRemoteMasterEnabled());
-        value(report, "remote-deploy.master.master-deploy-to", redactedTargets(config.getRemoteMasterDeployTargets()));
+        value(report, "remote-deploy.master.master-deploy-to", entryCount(config.getRemoteMasterDeployTargets()));
+        value(report, "remote-deploy.master.trusted-keys", entryCount(config.getRemoteMasterTrustedKeys()));
         value(report, "remote-deploy.master.master-deploy-signatures", String.join(", ", config.getRemoteMasterDeploySignatures()));
         value(report, "remote-deploy.socket-timeout-ms", config.getRemoteSocketTimeoutMs());
         value(report, "remote-deploy.max-transfer-bytes", config.getRemoteMaxTransferBytes());
@@ -62,13 +66,8 @@ final class BileDebugReport {
         value(report, "lifecycle.health-check", config.isHealthCheck());
     }
 
-    private static String redactedTargets(List<String> targets) {
-        ArrayList<String> redacted = new ArrayList<>(targets.size());
-        for (String target : targets) {
-            String[] parts = target.split(":", 3);
-            redacted.add(parts.length >= 2 ? parts[0] + ":" + parts[1] + ":redacted" : "invalid target");
-        }
-        return redacted.isEmpty() ? "none" : String.join(", ", redacted);
+    private static String entryCount(List<String> values) {
+        return values.size() + (values.size() == 1 ? " entry (redacted)" : " entries (redacted)");
     }
 
     private static void section(StringBuilder report, String name) {

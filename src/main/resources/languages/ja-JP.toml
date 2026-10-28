@@ -169,7 +169,6 @@ number = "&8左 +1、右 -1、Shift ×10、タイプにドロップ.&r"
 text = "&8チャットで新しい値を入力するにはクリックしてください。&r"
 language = "&8利用可能な言語を選択するか、ロケールを入力するにはクリックしてください。&r"
 category = "&8このカテゴリのすべての設定を編集するにはクリックしてください。&r"
-file_only = "&8機密値です。biletools.ymlを編集してBileToolsを再読み込みしてください。"
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eチャットで&f{setting}&r&eの新しい値を入力してください。&r"
@@ -188,11 +187,9 @@ enabled = "&d匿名のbStats統計&r"
 [gui.setting.remote_slave]
 enabled = "&aリモート受信"
 port = "&aリモート受信ポート"
-payload = "&aリモート受信の共有シークレット"
 
 [gui.setting.remote_master]
 enabled = "&aリモート配信"
-targets = "&aリモート配信先"
 signatures = "&aリモート配信するプラグイン名"
 
 [gui.setting.network]

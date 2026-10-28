@@ -169,7 +169,6 @@ number = "&8Links +1, rechts -1, Umschalt ×10, Ablegen zum Eingeben.&r"
 text = "&8Klicken, um einen neuen Wert im Chat einzugeben.&r"
 language = "&8Klicken, um eine verfügbare Sprache auszuwählen oder eine Sprachkennung einzugeben.&r"
 category = "&8Klicken, um alle Einstellungen dieser Kategorie zu bearbeiten.&r"
-file_only = "&8Vertraulicher Wert; biletools.yml bearbeiten und BileTools neu laden."
 
 [gui.prompt]
 request = "&a[&8Bile&a]: &eGib im Chat einen neuen Wert für &f{setting}&r&e ein.&r"
@@ -188,11 +187,9 @@ enabled = "&dAnonyme bStats-Metriken&r"
 [gui.setting.remote_slave]
 enabled = "&aRemote-Empfänger"
 port = "&aPort des Remote-Empfängers"
-payload = "&aGeheimschlüssel des Remote-Empfängers"
 
 [gui.setting.remote_master]
 enabled = "&aRemote-Bereitstellung"
-targets = "&aZiele der Remote-Bereitstellung"
 signatures = "&aNamen der bereitzustellenden Plugins"
 
 [gui.setting.network]
