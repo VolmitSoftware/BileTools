@@ -53,6 +53,7 @@ def universalJarTask = tasks.register('universalJar', Jar) {
     group = 'build'
     description = 'Packages the Bukkit and Velocity entry points in one BileTools plugin jar.'
     archiveClassifier.set('')
+    archiveFileName.set("BileTools v${project.version} [CraftBukkit] ${bukkitMinecraftRange}.jar")
     duplicatesStrategy = DuplicatesStrategy.FAIL
     dependsOn(shadowJarTask, velocityJarTask)
     from(shadowJarTask.flatMap { it.archiveFile }.map { zipTree(it) }) {
@@ -385,6 +386,7 @@ pluginPackaging {
         create('bukkit') {
             taskName = 'shadowJar'
             policyName = 'BileTools'
+            intermediate = true
             prunePrefixes = ['art/arcane/volmlib/']
             keepPrefixes = ['art/arcane/volmlib/util/matter/slices/']
             shrinkRules = [file('packaging/shrink.pro')]
