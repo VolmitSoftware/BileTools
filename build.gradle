@@ -518,4 +518,14 @@ tasks.register('prepareRelease', Sync) {
     rename { String name -> "BileTools-${project.version}-bukkit.jar" }
 }
 
+tasks.register('buildSwiftSwamp', Copy) {
+    group = 'development'
+    description = 'Builds, verifies, and stages BileTools in the workspace BUILDS directory.'
+    dependsOn('check', universalJarTask)
+    outputs.upToDateWhen { false }
+    from(universalJarTask.flatMap { Jar archive -> archive.archiveFile })
+    into(providers.gradleProperty('buildsDirectory').orElse('../BUILDS'))
+    rename { String ignored -> 'BileTools.jar' }
+}
+
 apply from: 'gradle/multiplexor.gradle'
