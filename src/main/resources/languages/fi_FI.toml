@@ -2,68 +2,74 @@
 #
 # === Tiedoston muokkaus ===
 # plugins/BileTools/languages/fi_FI.toml
-# Voit muokata tätä tiedostoa suoraan. Paikalliset muutokset säilyvät; puuttuvat tai virheelliset kohdat käyttävät sisäänrakennettua englantia.
+# Muokkaa tätä tiedostoa suoraan. Paikalliset muutokset säilyvät; puuttuvien tai virheellisten kohtien tilalla käytetään sisäänrakennettua englantia.
 # /biletools language server edit fi_FI
 #
 # === Etuliite ===
-# Etuliite &a[&8Bile&a]: on kirjoitettu suoraan jokaiseen viestiin; muokkaa sitä kyseisissä viesteissä.
+# Etuliite &a[&8Bile&a]: on osa jokaista chat-viestiä; muokkaa sitä siellä.
+# Etuliitteelle ei ole erillistä asetusta eikä muuttujaa.
 #
 # === Muotoilu ===
-# Värit: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B ja [RRGGBB]. MiniMessage toimii myös omissa muotoiluissa.
+# Värit ja tyylit: &0-&f, &k-&r.
+# RGB-värit: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage tukee mukautettua muotoilua. Jos haluat näyttää merkin & tai [ sellaisenaan, kirjoita sen eteen kenoviiva.
 #
 # === Muuttujat ===
-# Säilytä muuttujien nimet ja käytä vain kunkin viestin omia muuttujia.
-#   {after}  Arvo muutoksen jälkeen
-#   {argument}  odottamaton argumentti
-#   {before}  Arvo ennen muutosta
-#   {category}  luokka
-#   {command}  komentopolku
-#   {context}  Lisäosan uudelleenlatauksen syy
-#   {count}  Etäkohteiden määrä ja monikkomuodon valitsin; Viestien määrä
+# Älä muuta muuttujien nimiä, ja käytä vain kuhunkin viestiin kuuluvia muuttujia.
+#   {added}  Kielipäivityksen lisäämät viestit
+#   {after}  Viestin arvo muokkauksen jälkeen
+#   {argument}  Odottamaton komennon argumentti
+#   {before}  Viestin arvo ennen muokkausta
+#   {capability}  Tarvittavien purkutoimintojen saatavuus
+#   {category}  Asetuseditorin luokka
+#   {command}  Komentopolku tai lähetetty komento
+#   {context}  Lisäosan uudelleenlatauksen syy tai laukaisija
+#   {cooperative}  Tukeeko lisäosa yhteistoiminnallista uudelleenlatausta
+#   {count}  Määritettyjen etäkäyttöönoton kohteiden määrä ja monikkomuodon valitsin
+#   {dependents}  Uudelleenlatausryhmään kuuluvat lisäosat
+#   {enabled}  Onko tarkasteltava lisäosa käytössä
 #   {file}  Lisäosan JAR-tiedoston nimi
-#   {group}  luokka
-#   {host}  Lähettäjän IP-osoite
+#   {group}  Kielieditorin viestiryhmä
+#   {host}  Saapuvan lähettäjän IP-osoite
 #   {installedVersion}  Lisäosan tällä hetkellä asennettu versio
-#   {key}  Viestin tai parametrin avain
+#   {kept}  Kielipäivityksessä säilytetyt paikalliset muokkaukset
+#   {key}  Komennon parametrin tai viestin avain
 #   {latestVersion}  Kirjaston uusin saatavilla oleva versio
-#   {line}  Lähderivi tai viivanumero
-#   {locale}  kielitunnus
-#   {maximum}  Suurin sallittu arvo
-#   {milliseconds}  Lataamisen, purkamisen tai uudelleenlataamisen kesto millisekunteina
-#   {new}  uusi arvo
-#   {old}  edellinen arvo
-#   {parameter}  parametrin nimi
+#   {line}  Rivinumero luetteloviestissä
+#   {locale}  Kielitunnus
+#   {maximum}  Editorin syötteen enimmäispituus
+#   {milliseconds}  Lataamisen, muistista poistamisen tai uudelleenlataamisen kesto millisekunteina
+#   {new}  Asetuksen tai viestin uusi arvo
+#   {old}  Asetuksen tai viestin edellinen arvo
+#   {parameter}  Komennon parametrin nimi
 #   {permission}  Vaadittu käyttöoikeus
-#   {personal}  henkilökohtainen kielitunnus
-#   {plugin}  Liitännäisen nimi
-#   {reason}  virheen syy
+#   {personal}  Oma kielitunnus, jos se eroaa palvelimen oletuksesta
+#   {plugin}  Lisäosan nimi
+#   {reason}  Virheen syy
+#   {recovery}  Onko käynnissä olevan version palautus-JAR saatavilla
+#   {remaining}  Aika seuraavaan sallittuun kielitarkistukseen
 #   {section}  Kielieditorin osio
-#   {setting}  asetuksen nimi
-#   {target}  Liitännäisen nimi
-#   {type}  tyyppi
-#   {value}  nykyinen, oletus- tai raaka-arvo
-#   {variables}  sallitut paikkamerkit
-#   {version}  Kirjastolisäosan pyydetty tai näytetty versio
-
-#   {enabled}  käytössä
-#   {recovery}  palautus
-#   {cooperative}  yhteistoiminta
-#   {dependents}  riippuvaiset
-#   {capability}  purkaminen
+#   {setting}  Asetuksen nimi tai viestin avain
+#   {target}  Kielivalinnan kohde
+#   {type}  Komennon parametrin tyyppi
+#   {updated}  Kielipäivityksen muuttamat viestit
+#   {value}  Nykyinen, oletus- tai annettu arvo
+#   {variables}  Viestin vaatimien muuttujien nimet
+#   {version}  Kirjastolisäosan pyydetty tai luettelossa näkyvä versio
 
 [command]
 inspect = "Tarkista lisäosan uudelleenlatausvalmius"
 version = "Näytä asennetun lisäosan versio"
-root = "BileTools-komentoryhmä"
-load = "Lataa pluginin JAR-tiedosto plugins-hakemistosta"
+root = "BileToolsin pääkomento"
+load = "Lataa lisäosan JAR-tiedosto plugins-hakemistosta"
 unload = "Poista asennettu lisäosa muistista"
 reload = "Lataa asennettu lisäosa uudelleen"
-uninstall = "Poista pluginin JAR-tiedosto plugins-hakemistosta"
+uninstall = "Poista lisäosan JAR-tiedosto plugins-hakemistosta"
 install = "Asenna lisäosa Bile-kirjastosta"
 library = "Luettele kirjaston lisäosat tai yhden lisäosan versiot"
-debug_dump = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
+debug_dump = "Luo kattava BileToolsin diagnostiikkaraportti"
 debug = "BileToolsin diagnostiikkatyökalut"
-config = "Avaa kaikki asetukset sisältävä pelinsisäinen editori"
+config = "Avaa täydellinen pelinsisäinen asetuseditori"
 language = "Valitse oma kielesi tai palvelimen kieli"
 
 [parameter]
@@ -82,47 +88,43 @@ version_required = "Versio ei voi olla tyhjä"
 permission_denied = "&a[&8Bile&a]: &7Tarvitset oikeuden &f{permission}&7 tai OP-aseman."
 unknown_command = "&a[&8Bile&a]: &7Tuntematon komento \"&f{command}&7\"."
 restart_required = "&a[&8Bile&a]: &e{plugin}&7 vaatii palvelimen täydellisen uudelleenkäynnistyksen."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 merkittiin vialliseksi elinkaarivirheen jälkeen. Sen automaattiset uudelleenlataukset on keskeytetty."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 merkittiin epävakaaksi elinkaarivirheen jälkeen. Sen automaattiset uudelleenlataukset on keskeytetty."
 reloading_context = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Lisäosaa ei löytynyt: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Ladataan uudelleen: &f{plugin}&7."
 player_only = "&a[&8Bile&a]: &cVain pelaaja voi käyttää tätä komentoa."
 
 [message.remote]
-receiving = "&a[&8Bile&a]: &7Vastaanotetaan &f{file}&7 palvelimelta &f{host}&7."
+receiving = "&a[&8Bile&a]: &7Vastaanotetaan &f{file}&7 osoitteesta &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7Otettiin käyttöön &f{plugin}&7 palvelimilla: &f{count}&7 etäpalvelinta."
-one = "&a[&8Bile&a]: &7Otettiin käyttöön &f{plugin}&7 palvelimella: &f{count}&7 etäpalvelin."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Pikakäyttöönotto valmis: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Pikakäyttöönotto epäonnistui: &c{file}&7."
+other = "&a[&8Bile&a]: &7Lisäosa &f{plugin}&7 otettiin käyttöön &f{count}&7 etäpalvelimella."
+one = "&a[&8Bile&a]: &7Lisäosa &f{plugin}&7 otettiin käyttöön &f{count}&7 etäpalvelimella."
 
 [message.reload]
 success = "&a[&8Bile&a]: &7Ladattu uudelleen: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7Uudelleenlataus epäonnistui: &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7Uudelleenlataus lisätty jonoon: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7Ladattu uudelleen: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Uudelleenlataus epäonnistui: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7Lisäosaa \"&f{plugin}&7\" ei voitu ladata uudelleen."
 
 [message.unload]
 success = "&a[&8Bile&a]: &7Poistettu muistista: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7Muistista poistaminen epäonnistui: &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7Muistista poisto lisätty jonoon: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7Poistettu muistista: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Muistista poistaminen epäonnistui: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7Lisäosaa \"&f{plugin}&7\" ei voitu poistaa muistista."
 
 [message.load]
 queued = "&a[&8Bile&a]: &7Lataus lisätty jonoon: &f{plugin}&7."
 success = "&a[&8Bile&a]: &7Ladattu: &f{plugin}&7 tiedostosta &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Lataus epäonnistui: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7Lisäosaa \"&f{plugin}&7\" ei voitu ladata."
 
 [message.uninstall]
 queued = "&a[&8Bile&a]: &7Asennuksen poisto lisätty jonoon: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Poistettu asennus: &f{plugin}&7 tiedostosta &f{file}&7."
+success = "&a[&8Bile&a]: &7Asennus poistettu: &f{plugin}&7 tiedostosta &f{file}&7."
 delete_failed = "&a[&8Bile&a]: &7Lisäosa poistettiin muistista, mutta tiedostoa &c{file}&7 ei voitu poistaa. Poista tiedosto ennen uutta asennusta."
-failed = "&a[&8Bile&a]: &7Asennuksen poisto epäonnistui: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7Lisäosan \"&f{plugin}&7\" asennusta ei voitu poistaa."
 
 [message.library]
 plugin_not_found = "&a[&8Bile&a]: &7Lisäosaa ei löytynyt kirjastosta: \"&f{plugin}&7\"."
@@ -130,7 +132,7 @@ version_not_found = "&a[&8Bile&a]: &7Versiota \"&f{version}&7\" ei löytynyt lis
 install_queued = "&a[&8Bile&a]: &7Kirjastoasennus lisätty jonoon: &f{plugin}&7."
 install_success = "&a[&8Bile&a]: &7Asennettu kirjastosta: &f{file}&7."
 install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 asennettiin ja se vaatii palvelimen täydellisen uudelleenkäynnistyksen."
-install_failed = "&a[&8Bile&a]: &7Asennus epäonnistui: \"&f{plugin}&7\"."
+install_failed = "&a[&8Bile&a]: &7Lisäosaa \"&f{plugin}&7\" ei voitu asentaa."
 empty = "&a[&8Bile&a]: &7Kirjasto on tyhjä."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} asennettu) &f{latestVersion}&7 (uusin)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (uusin)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (uusin)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aKattava pelinsisäinen asetuseditori avattiin.&r"
-save_failed = "&a[&8Bile&a]: &cAsetusta &f{setting}&r&c ei voitu ottaa käyttöön: {reason}&r"
+opened = "&a[&8Bile&a]: &7Täydellinen pelinsisäinen asetuseditori avattiin."
+save_failed = "&a[&8Bile&a]: &cAsetusta &f{setting}&c ei voitu ottaa käyttöön: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 muutettiin arvoon &f{new}&7; aiemmin &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 muutettiin arvosta &f{old}&7 arvoon &f{new}&7."
 
 [gui.title]
 root = "&2BileToolsin asetukset"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dYleiset&r"
+general = "&aYleiset"
 metrics = "&aTilastot"
 remote_slave = "&aEtävastaanotin"
 remote_master = "&aEtäkäyttöönotto"
-network = "&aVerkkorajat"
+network = "&aVerkkorajoitukset"
 watcher = "&aLisäosien valvonta"
 lifecycle = "&aElinkaari"
-languages = "&dKielet&r"
+languages = "&aKielet"
 
 [gui.navigation]
-back = "&eTakaisin&r"
-close = "&cSulje&r"
+back = "&eTakaisin"
+close = "&cSulje"
 
 [gui.lore]
-state = "&7Nykyinen:&r {value}"
-toggle = "&8Napsauta vaihtaaksesi.&r"
-number = "&8Vasen +1, oikea -1, vaihto ×10, pudota kirjoittaaksesi.&r"
-text = "&8Napsauta kirjoittaaksesi uuden arvon chattiin.&r"
-language = "&8Napsauta valitaksesi käytettävissä olevan kielen tai kirjoita kielitunnus.&r"
-category = "&8Napsauta muokataksesi tämän luokan kaikkia asetuksia.&r"
+state = "&7Nykyinen: {value}"
+toggle = "&8Napsauta vaihtaaksesi."
+number = "&8Vasen napsautus +1, oikea -1, Vaihto ×10, pudota kirjoittaaksesi."
+text = "&8Napsauta kirjoittaaksesi uuden arvon chattiin."
+language = "&8Napsauta valitaksesi käytettävissä olevan kielen tai kirjoita kielitunnus."
+category = "&8Napsauta muokataksesi tämän luokan kaikkia asetuksia."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eKirjoita asetuksen &f{setting}&r&e uusi arvo chattiin.&r"
-list = "&a[&8Bile&a]: &7Erota luettelon kohdat pilkuilla. Kirjoita &fnone&r&7, jos haluat tyhjän luettelon.&r"
-cancel = "&a[&8Bile&a]: &7Kirjoita &fcancel&r&7 lopettaaksesi. Kehote vanhenee 60 sekunnissa.&r"
-cancelled = "&a[&8Bile&a]: &eAsetusten muokkaus peruutettiin.&r"
-timeout = "&a[&8Bile&a]: &eAsetusten muokkaus vanheni muuttamatta mitään.&r"
+request = "&a[&8Bile&a]: &eKirjoita asetuksen &f{setting}&e uusi arvo chattiin."
+list = "&a[&8Bile&a]: &7Erota luettelon kohdat pilkuilla. Kirjoita &fnone&7, jos haluat tyhjän luettelon."
+cancel = "&a[&8Bile&a]: &7Kirjoita &fcancel&7 lopettaaksesi. Kehote vanhenee 60 sekunnin kuluttua."
+cancelled = "&a[&8Bile&a]: &eAsetusten muokkaus peruutettiin."
+timeout = "&a[&8Bile&a]: &eAsetusten muokkaus vanheni muuttamatta mitään."
 
 [gui.setting.general]
-language = "&dAktiivinen kielitunnus&r"
+language = "&aAktiivinen kielitunnus"
 archive_plugins = "&aArkistoi lisäosien JAR-tiedostot ennen korvaamista"
 
 [gui.setting.metrics]
-enabled = "&dAnonyymit bStats-mittarit&r"
+enabled = "&aAnonyymit bStats-tilastot"
 
 [gui.setting.remote_slave]
 enabled = "&aEtävastaanotin"
@@ -252,41 +254,50 @@ edit_messages = "Muokkaa kieliviestejä"
 use_server_default = "Käytä palvelimen oletuskieltä"
 current = "Nykyinen: {locale}"
 current_with_personal = "Nykyinen: {locale} (Omasi: {personal})"
-your_description = "Vaihda vain näkemäsi viestit."
+your_description = "Vaihda vain sinulle näkyvien viestien kieli."
 reset_description = "Käytä palvelimen oletuskieltä."
-server_description = "Vaihda palvelimen oletuskieli."
+server_description = "Vaihda palvelimen oletuskieli"
 edit_description = "Avaa kielikohtainen viestieditori."
 select_description = "Napsauta valitaksesi tämän kielen."
 remove_personal_description = "Poista henkilökohtainen kielivalintasi."
 no_controls = "Sinulla ei ole käytettävissä kieliasetuksia."
 command = "Komento: {command}"
 selected = "valittu"
-all-volmit-plugins = "Kaikki Volmit-lisäosat"
+all-volmit-plugins = "kaikki Volmit-lisäosat"
 
 [language.error]
-stopping = "Kielivalintaa ei ole saatavilla, kun plugin pysähtyy."
+stopping = "Kielivalinta ei ole käytettävissä, kun lisäosa pysähtyy."
 editor-player-only = "Avaa kielieditori pelissä."
 no-providers = "Yhtään Volmit-kielipalvelua ei ole saatavilla."
 numeric-page = "Anna sivunumero numerona."
-personal-player-only = "Pelaajan kieliasetukset on valittava pelissä."
-personal-permission = "Sinulla ei ole lupaa valita kieltäsi."
+personal-player-only = "Pelaajan oma kieli on valittava pelissä."
+personal-permission = "Sinulla ei ole oikeutta valita kieltäsi."
 plugin-personal-permission = "Sinulla ei ole oikeutta valita kieltäsi lisäosalle {plugin}."
 plugin-server-permission = "Sinulla ei ole oikeutta muuttaa lisäosan {plugin} palvelinkieltä."
-server-locale-required = "Valitse palvelimen oletuskieleksi kielikoodi, kuten en_US."
+server-locale-required = "Valitse palvelimen oletuskieleksi kielitunnus, kuten en_US."
 unavailable-for-all = "Kieli {locale} ei ole saatavilla kaikille valituille lisäosille."
 
 [language.usage]
 editor = "Käyttö: /{command} language server edit [locale]"
-selection = "Käyttö: /{command} language self [locale|reset] or server [locale]"
+selection = "Käyttö: /{command} language self [locale|reset] tai server [locale]"
 volmit-selection = "Käyttö: /volmit plugins languages [locale]"
+update = "Käyttö: /{command} language update"
 
 [language.selection]
-preparing = "Valmistellaan kieltä {locale} kohteelle {target}..."
+preparing = "Valmistellaan kieltä {locale} (kohde: {target})..."
 save-failed = "{plugin}: kielivalintaa ei voitu tallentaa; tarkista palvelinkonsoli."
 english-fallback = "{plugin}: {locale} ei ole saatavilla; käytetään englantia (en_US)."
-personal-selected = "{plugin}: kieli on nyt {locale}."
-server-selected = "{plugin}: palvelinkieli on nyt {locale}."
+personal-selected = "{plugin}: kielesi on nyt {locale}."
+server-selected = "{plugin}: palvelimen kieli on nyt {locale}."
 server-default-selected = "{plugin}: kielesi noudattaa nyt palvelimen oletuskieltä."
+
+[language.update]
+checking = "{plugin}: tarkistetaan kielivaraston muutoksia..."
+unchanged = "{plugin}: asennetut kielet vastaavat jo varastoa."
+applied = "{plugin}: {locale} päivitetty (lisätty: {added}, muutettu: {updated}, säilytettyjä paikallisia muokkauksia: {kept})."
+cooldown = "{plugin}: kielivarasto tarkistettiin äskettäin; yritä uudelleen {remaining} kuluttua."
+locale-failed = "{plugin}: kieltä {locale} ei päivitetty: {reason}"
+failed = "{plugin}: kielipäivitys epäonnistui: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -307,7 +318,7 @@ guidance = "Käytä \\n rivinvaihtoon ja \\\\ kenoviivaan tai palaa kirjoittamal
 
 [language.editor.input]
 expired = "Kielieditorin syöttöaika päättyi."
-too-long = "Syöte saa sisältää enintään {maximum} merkkiä."
+too-long = "Editorin syöte saa olla enintään {maximum} merkkiä."
 unable-to-save = "Tallennus epäonnistui: {reason}"
 
 [language.editor.navigation]
@@ -332,7 +343,7 @@ edit-chat = "&7Muokkaa chatissa napsauttamalla.&r"
 open = "&8Avaa tämä kieli napsauttamalla.&r"
 
 [language.editor.category]
-message-count = "&7{count} viestiä&r"
+message-count = "&7Viestejä: {count}&r"
 open = "&8Avaa tämä luokka napsauttamalla.&r"
 
 [language.editor.error]
@@ -347,11 +358,11 @@ change = "{key}: ”{before}” muutettiin arvoon ”{after}”."
 line = "Rivi {line}"
 
 [language.editor.value]
-none = "Ei ole"
+none = "Ei mitään"
 empty = "(tyhjä)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: käytössä={enabled}, palautus={recovery}, yhteistoiminta={cooperative}, riippuvaiset={dependents}, purkaminen={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: käytössä={enabled}, palautus={recovery}, yhteistoiminnallinen={cooperative}, riippuvaiset=[{dependents}], purku={capability}"
 
 [gui.setting]
 update-notifications = "&aPäivitysilmoitukset"

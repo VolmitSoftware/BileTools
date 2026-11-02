@@ -2,69 +2,75 @@
 #
 # === Chỉnh sửa tệp ===
 # plugins/BileTools/languages/vi_VI.toml
-# Bạn có thể chỉnh sửa trực tiếp tệp này. Thay đổi cục bộ được giữ lại; mục thiếu hoặc không hợp lệ dùng bản tiếng Anh tích hợp.
+# Hãy chỉnh sửa trực tiếp tệp này. Thay đổi cục bộ được giữ lại; mục bị thiếu hoặc không hợp lệ sẽ dùng bản tiếng Anh tích hợp sẵn.
 # /biletools language server edit vi_VI
 #
 # === Tiền tố ===
-# Tiền tố &a[&8Bile&a]: được viết trực tiếp trong mỗi thông báo; hãy sửa tại các thông báo tương ứng.
+# Tiền tố &a[&8Bile&a]: là một phần của mỗi thông báo trò chuyện; hãy sửa nó ngay trong thông báo đó.
+# Không có cài đặt tiền tố riêng hay biến tiền tố.
 #
 # === Định dạng ===
-# Màu: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B và [RRGGBB]. MiniMessage vẫn dùng được cho định dạng tùy chỉnh.
+# Màu và kiểu chữ: &0-&f, &k-&r.
+# Màu RGB: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage hỗ trợ định dạng tùy chỉnh. Đặt dấu gạch chéo ngược trước & hoặc [ để hiển thị nguyên ký tự đó.
 #
 # === Biến ===
-# Giữ nguyên tên biến và chỉ dùng những biến có sẵn trong từng thông báo.
-#   {after}  Giá trị sau khi thay đổi
-#   {argument}  đối số ngoài dự kiến
-#   {before}  Giá trị trước khi thay đổi
-#   {category}  danh mục
-#   {command}  đường dẫn lệnh
-#   {context}  Lý do tải lại plugin
-#   {count}  Số đích từ xa và giá trị chọn dạng số nhiều; Số thông báo
+# Giữ nguyên tên biến và chỉ dùng những biến thuộc về từng thông báo.
+#   {added}  Thông báo được thêm bởi bản cập nhật ngôn ngữ
+#   {after}  Giá trị thông báo sau khi chỉnh sửa
+#   {argument}  Đối số lệnh ngoài dự kiến
+#   {before}  Giá trị thông báo trước khi chỉnh sửa
+#   {capability}  Tình trạng sẵn có của các khả năng dọn dẹp cần thiết
+#   {category}  Danh mục của trình chỉnh sửa cài đặt
+#   {command}  Đường dẫn lệnh hoặc lệnh đã gửi
+#   {context}  Lý do hoặc nguyên nhân nạp lại plugin
+#   {cooperative}  Plugin có hỗ trợ nạp lại phối hợp hay không
+#   {count}  Số máy chủ đích triển khai từ xa đã cấu hình và bộ chọn dạng số nhiều
+#   {dependents}  Các plugin thuộc nhóm nạp lại
+#   {enabled}  Plugin được kiểm tra có đang bật hay không
 #   {file}  Tên tệp JAR của plugin
-#   {group}  danh mục
-#   {host}  Địa chỉ IP của người gửi
-#   {installedVersion}  Phiên bản plugin hiện được cài đặt
-#   {key}  Khóa thông báo hoặc tham số
+#   {group}  Nhóm thông báo trong trình chỉnh sửa ngôn ngữ
+#   {host}  Địa chỉ IP của bên gửi đến
+#   {installedVersion}  Phiên bản plugin hiện đang cài
+#   {kept}  Chỉnh sửa cục bộ được giữ lại khi cập nhật ngôn ngữ
+#   {key}  Khóa tham số lệnh hoặc khóa thông báo
 #   {latestVersion}  Phiên bản mới nhất có trong thư viện
-#   {line}  Số dòng hay dòng nguồn
-#   {locale}  mã vùng
-#   {maximum}  Giá trị được chấp nhận tối đa
-#   {milliseconds}  Thời gian tải, gỡ hoặc tải lại tính bằng mili giây
-#   {new}  giá trị mới
-#   {old}  giá trị trước
-#   {parameter}  tên tham số
-#   {permission}  Quyền cần có
-#   {personal}  mã vùng cá nhân
-#   {plugin}  Tên phần bổ sung
-#   {reason}  lý do lỗi
+#   {line}  Số dòng trong một thông báo dạng danh sách
+#   {locale}  Mã ngôn ngữ
+#   {maximum}  Độ dài tối đa của nội dung nhập trong trình chỉnh sửa
+#   {milliseconds}  Thời gian nạp, gỡ khỏi bộ nhớ hoặc nạp lại tính bằng mili giây
+#   {new}  Giá trị mới của cài đặt hoặc thông báo
+#   {old}  Giá trị trước đó của cài đặt hoặc thông báo
+#   {parameter}  Tên tham số lệnh
+#   {permission}  Nút quyền cần có
+#   {personal}  Mã ngôn ngữ cá nhân khi khác với mặc định của máy chủ
+#   {plugin}  Tên plugin
+#   {reason}  Lý do thất bại
+#   {recovery}  Có tệp JAR khôi phục của phiên bản đang chạy hay không
+#   {remaining}  Thời gian còn lại đến lần kiểm tra ngôn ngữ tiếp theo
 #   {section}  Mục trong trình chỉnh sửa ngôn ngữ
-#   {setting}  tên cài đặt
-#   {target}  Tên phần bổ sung
-#   {type}  kiểu
-#   {value}  giá trị hiện tại, mặc định hoặc thô
-#   {variables}  chỗ giữ chỗ hợp lệ
+#   {setting}  Tên cài đặt hoặc khóa thông báo
+#   {target}  Đối tượng của lựa chọn ngôn ngữ
+#   {type}  Kiểu tham số lệnh
+#   {updated}  Thông báo được thay đổi bởi bản cập nhật ngôn ngữ
+#   {value}  Giá trị hiện tại, mặc định hoặc đã nhập
+#   {variables}  Tên các biến bắt buộc của thông báo
 #   {version}  Phiên bản plugin thư viện được yêu cầu hoặc liệt kê
 
-#   {enabled}  hoạt động
-#   {recovery}  khôi phục
-#   {cooperative}  phối hợp
-#   {dependents}  phụ thuộc
-#   {capability}  gỡ tải
-
 [command]
-inspect = "Kiểm tra khả năng tải lại plugin"
-version = "Hiển thị phiên bản plugin đã cài đặt"
-root = "Nhóm lệnh BileTools"
+inspect = "Kiểm tra mức sẵn sàng nạp lại của plugin"
+version = "Hiển thị phiên bản plugin đã cài"
+root = "Lệnh gốc của BileTools"
 load = "Nạp tệp JAR plugin từ thư mục plugins"
 unload = "Gỡ plugin đã cài khỏi bộ nhớ"
 reload = "Nạp lại plugin đã cài"
 uninstall = "Xóa tệp JAR plugin khỏi thư mục plugins"
 install = "Cài plugin từ thư viện Bile"
 library = "Liệt kê plugin trong thư viện hoặc các phiên bản của một plugin"
-debug_dump = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
+debug_dump = "Tạo báo cáo chẩn đoán đầy đủ cho BileTools"
 debug = "Công cụ chẩn đoán BileTools"
-config = "Mở trình chỉnh sửa toàn bộ cấu hình trong trò chơi"
-language = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
+config = "Mở trình chỉnh sửa cài đặt đầy đủ trong trò chơi"
+language = "Chọn ngôn ngữ của bạn hoặc ngôn ngữ máy chủ"
 
 [parameter]
 installed_plugin = "Tên plugin đã cài"
@@ -79,13 +85,13 @@ library_plugin_name_required = "Tên plugin trong thư viện không được đ
 version_required = "Phiên bản không được để trống"
 
 [message]
-permission_denied = "&a[&8Bile&a]: &7Bạn cần &f{permission}&7 hoặc OP."
-unknown_command = "&a[&8Bile&a]: &7Lệnh không xác định \"&f{command}&7\"."
-restart_required = "&a[&8Bile&a]: &e{plugin}&7 yêu cầu khởi động lại toàn bộ máy chủ."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 bị đánh dấu lỗi sau sự cố vòng đời. Tự động nạp lại plugin này đã bị tạm dừng."
-reloading_context = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy plugin: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7Đang nạp lại: &f{plugin}&7."
+permission_denied = "&a[&8Bile&a]: &7Bạn cần quyền &f{permission}&7 hoặc OP."
+unknown_command = "&a[&8Bile&a]: &7Lệnh không xác định: \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 cần khởi động lại toàn bộ máy chủ."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 đã bị đánh dấu lỗi sau một sự cố vòng đời. Đã tạm dừng tự động nạp lại cho plugin này."
+reloading_context = "&a[&8Bile&a]: &7Đang nạp lại &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Đang nạp lại &f{plugin}&7."
 player_only = "&a[&8Bile&a]: &cChỉ người chơi mới có thể dùng lệnh này."
 
 [message.remote]
@@ -95,42 +101,38 @@ receiving = "&a[&8Bile&a]: &7Đang nhận &f{file}&7 từ &f{host}&7."
 other = "&a[&8Bile&a]: &7Đã triển khai &f{plugin}&7 tới &f{count}&7 máy chủ từ xa."
 one = "&a[&8Bile&a]: &7Đã triển khai &f{plugin}&7 tới &f{count}&7 máy chủ từ xa."
 
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Triển khai nóng hoàn tất: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Triển khai nóng thất bại: &c{file}&7."
-
 [message.reload]
-success = "&a[&8Bile&a]: &7Đã nạp lại: &f{plugin}&7 (&f{milliseconds}&7ms)."
+success = "&a[&8Bile&a]: &7Đã nạp lại &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7Nạp lại thất bại: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp lại: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Đã nạp lại: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Nạp lại thất bại: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp lại &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Đã nạp lại &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Không thể nạp lại \"&f{plugin}&7\"."
 
 [message.unload]
-success = "&a[&8Bile&a]: &7Đã gỡ khỏi bộ nhớ: &f{plugin}&7 (&f{milliseconds}&7ms)."
+success = "&a[&8Bile&a]: &7Đã gỡ &f{plugin}&7 khỏi bộ nhớ (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7Gỡ khỏi bộ nhớ thất bại: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ khỏi bộ nhớ: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Đã gỡ khỏi bộ nhớ: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Gỡ khỏi bộ nhớ thất bại: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ &f{plugin}&7 khỏi bộ nhớ."
+command_success = "&a[&8Bile&a]: &7Đã gỡ &f{plugin}&7 khỏi bộ nhớ (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Không thể gỡ \"&f{plugin}&7\" khỏi bộ nhớ."
 
 [message.load]
-queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Đã nạp: &f{plugin}&7 từ &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Nạp thất bại: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng nạp &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Đã nạp &f{plugin}&7 từ &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Không thể nạp \"&f{plugin}&7\"."
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ cài đặt: &f{plugin}&7."
+queued = "&a[&8Bile&a]: &7Đã xếp hàng gỡ cài đặt &f{plugin}&7."
 success = "&a[&8Bile&a]: &7Đã gỡ cài đặt &f{plugin}&7 khỏi &f{file}&7."
-delete_failed = "&a[&8Bile&a]: &7Plugin đã được gỡ khỏi bộ nhớ nhưng không thể xóa &c{file}&7. Hãy xóa tệp trước khi cài lại plugin."
-failed = "&a[&8Bile&a]: &7Gỡ cài đặt thất bại: \"&f{plugin}&7\"."
+delete_failed = "&a[&8Bile&a]: &7Plugin đã được gỡ khỏi bộ nhớ nhưng không thể xóa &c{file}&7. Hãy xóa tệp này trước khi cài lại plugin."
+failed = "&a[&8Bile&a]: &7Không thể gỡ cài đặt \"&f{plugin}&7\"."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy plugin trong thư viện: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7Không tìm thấy phiên bản \"&f{version}&7\" cho \"&f{plugin}&7\"."
-install_queued = "&a[&8Bile&a]: &7Đã xếp hàng cài từ thư viện: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7Đã cài từ thư viện: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 đã được cài và yêu cầu khởi động lại toàn bộ máy chủ."
-install_failed = "&a[&8Bile&a]: &7Cài đặt thất bại: \"&f{plugin}&7\"."
+plugin_not_found = "&a[&8Bile&a]: &7Không tìm thấy \"&f{plugin}&7\" trong thư viện."
+version_not_found = "&a[&8Bile&a]: &7Không tìm thấy phiên bản \"&f{version}&7\" của \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Đã xếp hàng cài &f{plugin}&7 từ thư viện."
+install_success = "&a[&8Bile&a]: &7Đã cài &f{file}&7 từ thư viện."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 đã được cài và cần khởi động lại toàn bộ máy chủ."
+install_failed = "&a[&8Bile&a]: &7Không thể cài \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7Thư viện trống."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} đã cài) &f{latestVersion}&7 (mới nhất)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (mới nhất)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (mới nhất)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aĐã mở trình chỉnh sửa cấu hình đầy đủ trong trò chơi.&r"
-save_failed = "&a[&8Bile&a]: &cKhông thể áp dụng &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7Đã mở trình chỉnh sửa cài đặt đầy đủ trong trò chơi."
+save_failed = "&a[&8Bile&a]: &cKhông thể áp dụng &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 đã đổi thành &f{new}&7; trước đó là &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 đã đổi thành &f{new}&7 (trước đó là &f{old}&7)."
 
 [gui.title]
-root = "&2Cấu hình BileTools"
+root = "&2Cài đặt BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dChung&r"
+general = "&aChung"
 metrics = "&aThống kê"
 remote_slave = "&aBộ nhận từ xa"
 remote_master = "&aTriển khai từ xa"
 network = "&aGiới hạn mạng"
 watcher = "&aTheo dõi plugin"
 lifecycle = "&aVòng đời"
-languages = "&dNgôn ngữ&r"
+languages = "&aNgôn ngữ"
 
 [gui.navigation]
-back = "&eQuay lại&r"
-close = "&cĐóng&r"
+back = "&eQuay lại"
+close = "&cĐóng"
 
 [gui.lore]
-state = "&7Hiện tại:&r {value}"
-toggle = "&8Nhấp để bật hoặc tắt.&r"
-number = "&8Trái +1, phải -1, shift ×10, thả để nhập.&r"
-text = "&8Nhấp để nhập giá trị mới trong trò chuyện.&r"
-language = "&8Nhấp để chọn ngôn ngữ khả dụng hoặc nhập mã vùng.&r"
-category = "&8Nhấp để sửa mọi thiết lập trong mục này.&r"
+state = "&7Hiện tại: {value}"
+toggle = "&8Nhấp để bật hoặc tắt."
+number = "&8Chuột trái +1, chuột phải -1, Shift ×10, thả vật phẩm để nhập."
+text = "&8Nhấp để nhập giá trị mới trong trò chuyện."
+language = "&8Nhấp để chọn một ngôn ngữ có sẵn hoặc nhập mã ngôn ngữ."
+category = "&8Nhấp để chỉnh sửa mọi cài đặt trong danh mục này."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eNhập giá trị mới cho &f{setting}&r&e trong trò chuyện.&r"
-list = "&a[&8Bile&a]: &7Phân tách các mục bằng dấu phẩy. Nhập &fnone&r&7 để dùng danh sách trống.&r"
-cancel = "&a[&8Bile&a]: &7Nhập &fcancel&r&7 để dừng. Yêu cầu này hết hạn sau 60 giây.&r"
-cancelled = "&a[&8Bile&a]: &eĐã hủy chỉnh sửa cấu hình.&r"
-timeout = "&a[&8Bile&a]: &eChỉnh sửa cấu hình đã hết hạn mà không thay đổi gì.&r"
+request = "&a[&8Bile&a]: &eNhập giá trị mới cho &f{setting}&e trong trò chuyện."
+list = "&a[&8Bile&a]: &7Phân tách các mục trong danh sách bằng dấu phẩy. Nhập &fnone&7 để có danh sách trống."
+cancel = "&a[&8Bile&a]: &7Nhập &fcancel&7 để dừng. Lời nhắc này hết hạn sau 60 giây."
+cancelled = "&a[&8Bile&a]: &eĐã hủy chỉnh sửa cài đặt."
+timeout = "&a[&8Bile&a]: &eChỉnh sửa cài đặt đã hết hạn mà không thay đổi gì."
 
 [gui.setting.general]
-language = "&dMã vùng ngôn ngữ đang dùng&r"
-archive_plugins = "&aLưu trữ JAR của plugin trước khi thay thế"
+language = "&aMã ngôn ngữ đang dùng"
+archive_plugins = "&aLưu trữ tệp JAR plugin trước khi thay thế"
 
 [gui.setting.metrics]
-enabled = "&dThống kê bStats ẩn danh&r"
+enabled = "&aThống kê bStats ẩn danh"
 
 [gui.setting.remote_slave]
 enabled = "&aBộ nhận từ xa"
@@ -193,19 +195,19 @@ enabled = "&aTriển khai từ xa"
 signatures = "&aTên plugin triển khai từ xa"
 
 [gui.setting.network]
-socket_timeout = "&aThời gian chờ kết nối từ xa tính bằng mili giây"
-max_transfer = "&aKích thước truyền tối đa tính bằng byte"
+socket_timeout = "&aThời gian chờ socket từ xa (mili giây)"
+max_transfer = "&aDung lượng truyền tối đa (byte)"
 
 [gui.setting.watcher]
-idle = "&aKhoảng kiểm tra khi rảnh tính bằng tick"
-active = "&aKhoảng kiểm tra khi hoạt động tính bằng tick"
-debounce = "&aĐộ trễ ổn định dấu vân tay tệp tính bằng tick"
+idle = "&aChu kỳ kiểm tra khi rảnh (tick)"
+active = "&aChu kỳ kiểm tra khi hoạt động (tick)"
+debounce = "&aĐộ trễ ổn định dấu vân tay tệp (tick)"
 ignore = "&aTên plugin bị bỏ qua"
 only = "&aTên plugin được phép"
 
 [gui.setting.lifecycle]
 log_timings = "&aNhật ký thời gian vòng đời"
-health_check = "&aKiểm tra hoạt động sau khi tải"
+health_check = "&aKiểm tra tình trạng sau khi nạp"
 
 [director.help]
 no_subcommands = "Không có lệnh con trên trang này."
@@ -213,7 +215,7 @@ no_description = "Không có mô tả"
 command_group = "Nhóm lệnh. Nhấp để mở."
 category = "Danh mục lệnh"
 no_parameters = "Không có tham số. Nhấp để điền sẵn lệnh."
-parameters_hover = "Di chuột qua các tham số để tìm hiểu thêm."
+parameters_hover = "Di chuột qua các tham số để xem thêm."
 
 [director.help.navigation]
 back = "Quay lại"
@@ -237,8 +239,8 @@ type = "Tham số này có kiểu {type}."
 [director.runtime.error]
 invalid_origin = "Không thể chạy lệnh này từ nguồn này."
 unknown_parameter = "Khóa tham số không xác định: {key}"
-unexpected_argument = "Đối số không mong đợi \"{argument}\". Các tham số tùy chọn phải được chỉ định bằng khóa, ví dụ seed=123"
-unclosed_group = "Thiếu dấu \"]\" đóng cho tham số {key}"
+unexpected_argument = "Đối số ngoài dự kiến \"{argument}\". Tham số tùy chọn phải có khóa, ví dụ seed=123"
+unclosed_group = "Thiếu dấu đóng \"]\" cho tham số {key}"
 conversion_failed = "Không thể chuyển \"{value}\" thành {type} cho {parameter}"
 default_parse_failed = "Không thể phân tích giá trị mặc định của tham số {parameter}"
 missing_argument = "Thiếu đối số \"{parameter}\" ({type})"
@@ -247,50 +249,59 @@ execution_failed = "Không thể thực thi lệnh {command}: {reason}"
 [language.menu]
 your_language = "Ngôn ngữ của bạn"
 reset_your_language = "Đặt lại ngôn ngữ của bạn"
-server_default = "Ngôn ngữ mặc định của máy chủ"
+server_default = "Mặc định của máy chủ"
 edit_messages = "Chỉnh sửa thông báo ngôn ngữ"
-use_server_default = "Dùng ngôn ngữ mặc định của máy chủ"
+use_server_default = "Dùng mặc định của máy chủ"
 current = "Hiện tại: {locale}"
 current_with_personal = "Hiện tại: {locale} (Của bạn: {personal})"
 your_description = "Chỉ thay đổi những thông báo bạn thấy."
 reset_description = "Dùng ngôn ngữ mặc định của máy chủ."
-server_description = "Thay đổi ngôn ngữ mặc định của máy chủ."
-edit_description = "Mở trình chỉnh sửa thông báo cho từng ngôn ngữ."
+server_description = "Thay đổi ngôn ngữ mặc định của máy chủ"
+edit_description = "Mở trình chỉnh sửa thông báo theo từng ngôn ngữ."
 select_description = "Nhấp để chọn ngôn ngữ này."
 remove_personal_description = "Xóa lựa chọn ngôn ngữ cá nhân của bạn."
-no_controls = "Bạn không có quyền dùng các tùy chọn ngôn ngữ."
-command = "Câu lệnh: {command}"
-selected = "Đã chọn"
-all-volmit-plugins = "Tất cả plugin Volmit"
+no_controls = "Không có tùy chọn ngôn ngữ nào dành cho bạn."
+command = "Lệnh: {command}"
+selected = "đã chọn"
+all-volmit-plugins = "tất cả plugin Volmit"
 
 [language.error]
-stopping = "Không có khả năng chọn ngôn ngữ trong khi bổ sung đang dừng."
-editor-player-only = "Mở trình soạn thảo ngôn ngữ trong trò chơi."
+stopping = "Không thể chọn ngôn ngữ khi plugin đang dừng."
+editor-player-only = "Hãy mở trình chỉnh sửa ngôn ngữ trong trò chơi."
 no-providers = "Không có nhà cung cấp ngôn ngữ Volmit nào khả dụng."
-numeric-page = "Nhập số trang bằng chữ số."
-personal-player-only = "Bạn phải chọn ngôn ngữ cá nhân trong trò chơi."
+numeric-page = "Hãy dùng số cho trang ngôn ngữ."
+personal-player-only = "Ngôn ngữ cá nhân của người chơi phải được chọn trong trò chơi."
 personal-permission = "Bạn không có quyền chọn ngôn ngữ của mình."
-plugin-personal-permission = "Bạn không có quyền chọn ngôn ngữ cá nhân cho {plugin}."
+plugin-personal-permission = "Bạn không có quyền chọn ngôn ngữ của mình cho {plugin}."
 plugin-server-permission = "Bạn không có quyền thay đổi ngôn ngữ máy chủ cho {plugin}."
-server-locale-required = "Chọn mã ngôn ngữ như en_US làm ngôn ngữ mặc định của máy chủ."
+server-locale-required = "Hãy chọn một mã ngôn ngữ như en_US làm mặc định của máy chủ."
 unavailable-for-all = "Ngôn ngữ {locale} không khả dụng cho tất cả plugin đã chọn."
 
 [language.usage]
 editor = "Cách dùng: /{command} language server edit [locale]"
-selection = "Cách dùng: /{command} language self [locale|reset] or server [locale]"
+selection = "Cách dùng: /{command} language self [locale|reset] hoặc server [locale]"
 volmit-selection = "Cách dùng: /volmit plugins languages [locale]"
+update = "Cách dùng: /{command} language update"
 
 [language.selection]
 preparing = "Đang chuẩn bị ngôn ngữ {locale} cho {target}..."
 save-failed = "{plugin}: không thể lưu lựa chọn ngôn ngữ; hãy kiểm tra bảng điều khiển máy chủ."
-english-fallback = "{plugin}: {locale} không khả dụng; sẽ dùng tiếng Anh (en_US)."
+english-fallback = "{plugin}: {locale} không khả dụng; đang dùng tiếng Anh (en_US)."
 personal-selected = "{plugin}: ngôn ngữ của bạn hiện là {locale}."
 server-selected = "{plugin}: ngôn ngữ máy chủ hiện là {locale}."
-server-default-selected = "{plugin}: ngôn ngữ của bạn hiện theo ngôn ngữ mặc định của máy chủ."
+server-default-selected = "{plugin}: ngôn ngữ của bạn hiện theo mặc định của máy chủ."
+
+[language.update]
+checking = "{plugin}: đang kiểm tra thay đổi trong kho ngôn ngữ..."
+unchanged = "{plugin}: các ngôn ngữ đã cài đã khớp với kho."
+applied = "{plugin}: đã cập nhật {locale} (thêm {added}, thay đổi {updated}, giữ lại {kept} chỉnh sửa cục bộ)."
+cooldown = "{plugin}: kho ngôn ngữ vừa được kiểm tra; hãy thử lại sau {remaining}."
+locale-failed = "{plugin}: {locale} chưa được cập nhật: {reason}"
+failed = "{plugin}: cập nhật ngôn ngữ thất bại: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
-loading = "Đang tải tin nhắn cho {locale}..."
+loading = "Đang tải thông báo {locale}..."
 
 [language.editor.section]
 languages = "Ngôn ngữ"
@@ -299,7 +310,7 @@ search-title = "{locale} / Tìm kiếm"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Tìm khóa hoặc nội dung tin nhắn. Nhập cancel để quay lại."
+search = "Tìm theo khóa hoặc nội dung thông báo. Nhập cancel để quay lại."
 value = "Nhập giá trị mới cho {key} trong trò chuyện."
 current = "Giá trị hiện tại: {value}"
 variables = "Biến: {variables}"
@@ -307,33 +318,33 @@ guidance = "Dùng \\n để xuống dòng, \\\\ để nhập dấu gạch chéo 
 
 [language.editor.input]
 expired = "Đã hết thời gian nhập trong trình chỉnh sửa ngôn ngữ."
-too-long = "Nội dung nhập chỉ được có tối đa {maximum} ký tự."
+too-long = "Nội dung nhập trong trình chỉnh sửa tối đa {maximum} ký tự."
 unable-to-save = "Không thể lưu: {reason}"
 
 [language.editor.navigation]
 back = "&eQuay lại&r"
 close = "&cĐóng&r"
 previous-page = "&eTrang trước&r"
-next-page = "&eTrang kế&r"
+next-page = "&eTrang sau&r"
 
 [language.editor.search]
-messages = "Tìm tin nhắn"
-messages-lore = "Nhấn vào để tìm kiếm mọi tin nhắn."
+messages = "Tìm thông báo"
+messages-lore = "Nhấp để tìm trong mọi thông báo."
 clear = "Xóa tìm kiếm"
 
 [language.editor.message]
-current-value = "&7Giá trị hiện có:&r"
+current-value = "&7Giá trị hiện tại:&r"
 variables = "&8{variables}&r"
 edit-plural = "&7Nhấp để chỉnh sửa một dạng số nhiều.&r"
 edit-lines = "&7Nhấp để chỉnh sửa từng dòng.&r"
 edit-chat = "&7Nhấp để chỉnh sửa trong trò chuyện.&r"
 
 [language.editor.locale]
-open = "&8Nhấn vào để mở ngôn ngữ này.&r"
+open = "&8Nhấp để mở ngôn ngữ này.&r"
 
 [language.editor.category]
-message-count = "&7{count} tin nhắn&r"
-open = "&8Nhấn vào để mở phân loại này.&r"
+message-count = "&7{count} thông báo&r"
+open = "&8Nhấp để mở danh mục này.&r"
 
 [language.editor.error]
 no-permission = "Bạn không có quyền chỉnh sửa ngôn ngữ của {plugin}."
@@ -351,7 +362,7 @@ none = "Không có"
 empty = "(trống)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: hoạt động={enabled}, khôi phục={recovery}, phối hợp={cooperative}, phụ thuộc={dependents}, gỡ tải={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: bật={enabled}, khôi phục={recovery}, phối hợp={cooperative}, phụ thuộc=[{dependents}], dọn dẹp={capability}"
 
 [gui.setting]
 update-notifications = "&aThông báo cập nhật"

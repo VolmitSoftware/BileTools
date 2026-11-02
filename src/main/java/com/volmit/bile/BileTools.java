@@ -372,7 +372,7 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
         languageSwitcher = BukkitLanguageSwitcher.register(this, localization.languageService(),
                 new BukkitLanguageSwitcher.Options(ROOT_COMMAND, "biletools.config",
                         BileFancyMenu.theme(), localization.directorResolver(), localization.editorOptions(),
-                        this::renderLanguageEditFeedback));
+                        this::renderLanguageEditFeedback, localization.updateAction(), localization.displayNames()));
         updates = BukkitUpdateService.register(this, new BukkitUpdateService.Options(
                 "VolmitSoftware", "BileTools", "biletools.update", () -> cfg.isUpdateNotifications()));
         debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(
@@ -441,6 +441,29 @@ public class BileTools extends JavaPlugin implements Listener, CommandExecutor, 
 
         setupMetrics();
         applyRestoredAutomaticBatchDelay();
+        localization.startUpstreamCheck();
+        requestConfiguredLanguage();
+    }
+
+    private void requestConfiguredLanguage() {
+        String locale = cfg.getLanguage();
+        if (localization.languageFile(locale).isFile() || !localization.isRepositoryLocale(locale)) {
+            return;
+        }
+        localization.requestInstall(locale).whenComplete((content, failure) -> {
+            if (failure != null) {
+                getLogger().log(Level.WARNING, "Unable to install language " + locale
+                        + "; code-owned English remains active", failure);
+                return;
+            }
+            if (!isEnabled() || !locale.equalsIgnoreCase(cfg.getLanguage())) {
+                return;
+            }
+            if (!PlatformTasks.runGlobal(this, localization::reload)) {
+                getLogger().warning("Installed locale " + locale
+                        + " will activate on the next reload or restart because scheduling was unavailable.");
+            }
+        });
     }
 
     private File runtimeArchive() {

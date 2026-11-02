@@ -2,135 +2,137 @@
 #
 # === Bestand bewerken ===
 # plugins/BileTools/languages/nl_NL.toml
-# Je kunt dit bestand rechtstreeks bewerken. Lokale wijzigingen blijven behouden; ontbrekende of ongeldige vermeldingen gebruiken het ingebouwde Engels.
+# Bewerk dit bestand rechtstreeks. Lokale wijzigingen blijven behouden; ontbrekende of ongeldige vermeldingen gebruiken het ingebouwde Engels.
 # /biletools language server edit nl_NL
 #
 # === Voorvoegsel ===
-# Het voorvoegsel &a[&8Bile&a]: staat rechtstreeks in elk bericht; bewerk het in de betreffende berichten.
+# Het voorvoegsel &a[&8Bile&a]: maakt deel uit van elk chatbericht; bewerk het daar.
+# Er is geen aparte instelling en geen tijdelijke aanduiding voor het voorvoegsel.
 #
 # === Opmaak ===
-# Kleuren: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B en [RRGGBB]. MiniMessage blijft beschikbaar voor eigen opmaak.
+# Kleuren en stijlen: &0-&f, &k-&r.
+# RGB-kleuren: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage ondersteunt aangepaste opmaak. Zet een backslash vóór & of [ om het teken letterlijk weer te geven.
 #
 # === Variabelen ===
-# Behoud de namen van variabelen en gebruik alleen de variabelen die bij het bericht horen.
-#   {after}  Waarde na de wijziging
-#   {argument}  onverwacht argument
-#   {before}  Waarde vóór de wijziging
-#   {category}  categorie
-#   {command}  opdrachtpad
-#   {context}  Reden voor het herladen van de plugin
-#   {count}  Aantal externe doelen en keuze van de meervoudsvorm; Aantal berichten
-#   {file}  Naam van het JAR-bestand van de plugin
-#   {group}  categorie
-#   {host}  IP-adres van de afzender
+# Wijzig de namen van variabelen niet en gebruik alleen de variabelen die bij elk bericht horen.
+#   {added}  Berichten toegevoegd door een taalupdate
+#   {after}  Berichtwaarde na de bewerking
+#   {argument}  Onverwacht opdrachtargument
+#   {before}  Berichtwaarde vóór de bewerking
+#   {capability}  Beschikbaarheid van de vereiste afbraakfuncties
+#   {category}  Categorie van de configuratie-editor
+#   {command}  Opdrachtpad of ingevoerde opdracht
+#   {context}  Reden of aanleiding voor het herladen van een plugin
+#   {cooperative}  Of de plugin coöperatief herladen implementeert
+#   {count}  Aantal geconfigureerde doelen voor externe uitrol en keuze van de meervoudsvorm
+#   {dependents}  Plugins in de herlaadgroep
+#   {enabled}  Of de geïnspecteerde plugin is ingeschakeld
+#   {file}  Bestandsnaam van de plugin-JAR
+#   {group}  Berichtengroep van de taaleditor
+#   {host}  IP-adres van de inkomende afzender
 #   {installedVersion}  Momenteel geïnstalleerde pluginversie
-#   {key}  Bericht- of parametersleutel
-#   {latestVersion}  Nieuwste beschikbare versie in de bibliotheek
-#   {line}  Bronregel of regelnummer
-#   {locale}  landinstelling
-#   {maximum}  Maximaal toegestane waarde
+#   {kept}  Lokale bewerkingen behouden door een taalupdate
+#   {key}  Sleutel van de opdrachtparameter of het bericht
+#   {latestVersion}  Nieuwste beschikbare bibliotheekversie
+#   {line}  Regelnummer binnen een lijstbericht
+#   {locale}  Taalcode
+#   {maximum}  Maximale invoerlengte in de editor
 #   {milliseconds}  Duur van laden, ontladen of herladen in milliseconden
-#   {new}  nieuwe waarde
-#   {old}  vorige waarde
-#   {parameter}  parameternaam
-#   {permission}  Vereiste toestemming
-#   {personal}  persoonlijke landinstelling
+#   {new}  Nieuwe waarde van de instelling of het bericht
+#   {old}  Vorige waarde van de instelling of het bericht
+#   {parameter}  Naam van de opdrachtparameter
+#   {permission}  Vereiste permissienode
+#   {personal}  Persoonlijke taalcode als die afwijkt van de serverstandaard
 #   {plugin}  Pluginnaam
-#   {reason}  foutreden
+#   {reason}  Reden van de fout
+#   {recovery}  Of er een herstel-JAR van de actieve versie beschikbaar is
+#   {remaining}  Tijd tot de volgende taalcontrole is toegestaan
 #   {section}  Onderdeel van de taaleditor
-#   {setting}  instellingsnaam
-#   {target}  Pluginnaam
-#   {type}  type
-#   {value}  huidige, standaard- of ruwe waarde
-#   {variables}  geldige tijdelijke aanduidingen
-#   {version}  Aangevraagde of getoonde versie van de bibliotheekplugin
-
-#   {enabled}  actief
-#   {recovery}  herstel
-#   {cooperative}  samenwerking
-#   {dependents}  afhankelijke plugins
-#   {capability}  ontladen
+#   {setting}  Naam van de instelling of sleutel van het bericht
+#   {target}  Doel van de taalkeuze
+#   {type}  Type van de opdrachtparameter
+#   {updated}  Berichten gewijzigd door een taalupdate
+#   {value}  Huidige, standaard- of ingevoerde waarde
+#   {variables}  Namen van de vereiste berichtvariabelen
+#   {version}  Aangevraagde of vermelde versie van de bibliotheekplugin
 
 [command]
-inspect = "Inspecteer of een plugin opnieuw kan worden geladen"
-version = "Toon de geïnstalleerde pluginversie"
-root = "BileTools-opdrachtgroep"
-load = "Een plugin-JAR uit de pluginsmap laden"
-unload = "Een geïnstalleerde plugin uit het geheugen verwijderen"
-reload = "Een geïnstalleerde plugin opnieuw laden"
-uninstall = "Een plugin-JAR uit de pluginsmap verwijderen"
+inspect = "Controleren of een plugin klaar is om te herladen"
+version = "De geïnstalleerde pluginversie tonen"
+root = "Hoofdopdracht van BileTools"
+load = "Een plugin-JAR uit de pluginmap laden"
+unload = "Een geïnstalleerde plugin ontladen"
+reload = "Een geïnstalleerde plugin herladen"
+uninstall = "Een plugin-JAR uit de pluginmap verwijderen"
 install = "Een plugin uit de Bile-bibliotheek installeren"
-library = "Bibliotheekplugins of versies van één plugin weergeven"
-debug_dump = "Maak een diagnostisch rapport en upload het desgewenst"
+library = "Bibliotheekplugins of de versies van één plugin weergeven"
+debug_dump = "Een uitgebreid diagnoserapport van BileTools maken"
 debug = "Diagnosehulpmiddelen van BileTools"
 config = "De volledige configuratie-editor in het spel openen"
 language = "Je eigen taal of de servertaal kiezen"
 
 [parameter]
-installed_plugin = "Naam van geïnstalleerde plugin"
-library_plugin = "Naam van bibliotheekplugin"
-version = "Versie van bibliotheekplugin"
-sender = "Opdrachtzender"
-debug_upload = "Upload het rapport naar mclo.gs"
+installed_plugin = "Naam van de geïnstalleerde plugin"
+library_plugin = "Naam van de bibliotheekplugin"
+version = "Versie van de bibliotheekplugin"
+sender = "Afzender van de opdracht"
+debug_upload = "Het rapport uploaden naar mclo.gs"
 
 [error]
 plugin_name_required = "Pluginnaam mag niet leeg zijn"
-library_plugin_name_required = "Naam van bibliotheekplugin mag niet leeg zijn"
+library_plugin_name_required = "Naam van de bibliotheekplugin mag niet leeg zijn"
 version_required = "Versie mag niet leeg zijn"
 
 [message]
 permission_denied = "&a[&8Bile&a]: &7Je hebt &f{permission}&7 of OP nodig."
 unknown_command = "&a[&8Bile&a]: &7Onbekende opdracht \"&f{command}&7\"."
-restart_required = "&a[&8Bile&a]: &e{plugin}&7 vereist een volledige serverherstart."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 is na een levenscyclusfout als defect gemarkeerd. Automatisch opnieuw laden is voor deze plugin gepauzeerd."
-reloading_context = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7Plugin niet gevonden: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7Opnieuw laden: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cAlleen een speler kan dit commando gebruiken."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 vereist een volledige herstart van de server."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 is na een levenscyclusfout als defect gemarkeerd. Automatisch herladen is voor deze plugin gepauzeerd."
+reloading_context = "&a[&8Bile&a]: &7Bezig met herladen van &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet vinden."
+reloading = "&a[&8Bile&a]: &7Bezig met herladen van &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cAlleen een speler kan deze opdracht gebruiken."
 
 [message.remote]
-receiving = "&a[&8Bile&a]: &7Ontvangt &f{file}&7 van &f{host}&7."
+receiving = "&a[&8Bile&a]: &7Bezig met ontvangen van &f{file}&7 vanaf &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7 uitgerold naar &f{count}&7 externe servers."
-one = "&a[&8Bile&a]: &7&f{plugin}&7 uitgerold naar &f{count}&7 externe server."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Hotdeployment voltooid: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Hotdeployment mislukt: &c{file}&7."
+other = "&a[&8Bile&a]: &7&f{plugin}&7 is uitgerold naar &f{count}&7 externe servers."
+one = "&a[&8Bile&a]: &7&f{plugin}&7 is uitgerold naar &f{count}&7 externe server."
 
 [message.reload]
-success = "&a[&8Bile&a]: &7Opnieuw geladen: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Opnieuw laden mislukt: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Opnieuw laden in wachtrij: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Opnieuw geladen: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Opnieuw laden mislukt: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 is herladen (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Herladen van &c{plugin}&7 is mislukt."
+queued = "&a[&8Bile&a]: &7Herladen van &f{plugin}&7 staat in de wachtrij."
+command_success = "&a[&8Bile&a]: &7&f{plugin}&7 is herladen (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet herladen."
 
 [message.unload]
-success = "&a[&8Bile&a]: &7Uit geheugen verwijderd: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Verwijderen uit geheugen mislukt: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Verwijderen uit geheugen in wachtrij: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Uit geheugen verwijderd: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Verwijderen uit geheugen mislukt: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 is ontladen (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Ontladen van &c{plugin}&7 is mislukt."
+queued = "&a[&8Bile&a]: &7Ontladen van &f{plugin}&7 staat in de wachtrij."
+command_success = "&a[&8Bile&a]: &7&f{plugin}&7 is ontladen (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet ontladen."
 
 [message.load]
-queued = "&a[&8Bile&a]: &7Laden in wachtrij: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Geladen: &f{plugin}&7 uit &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Laden mislukt: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Laden van &f{plugin}&7 staat in de wachtrij."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 is geladen uit &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet laden."
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7Verwijderen in wachtrij: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7&f{plugin}&7 verwijderd uit &f{file}&7."
-delete_failed = "&a[&8Bile&a]: &7De plugin is uit het geheugen verwijderd, maar &c{file}&7 kon niet worden verwijderd. Verwijder het bestand voordat je de plugin opnieuw installeert."
-failed = "&a[&8Bile&a]: &7Verwijderen mislukt: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7De-installatie van &f{plugin}&7 staat in de wachtrij."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 is gedeïnstalleerd uit &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7De plugin is ontladen, maar &c{file}&7 kon niet worden verwijderd. Verwijder het bestand voordat je de plugin opnieuw installeert."
+failed = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet de-installeren."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7Plugin niet gevonden in de bibliotheek: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7Versie \"&f{version}&7\" niet gevonden voor \"&f{plugin}&7\"."
-install_queued = "&a[&8Bile&a]: &7Bibliotheekinstallatie in wachtrij: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7Geïnstalleerd uit de bibliotheek: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 is geïnstalleerd en vereist een volledige serverherstart."
-install_failed = "&a[&8Bile&a]: &7Installatie mislukt: \"&f{plugin}&7\"."
+plugin_not_found = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet vinden in de bibliotheek."
+version_not_found = "&a[&8Bile&a]: &7Kan versie \"&f{version}&7\" van \"&f{plugin}&7\" niet vinden."
+install_queued = "&a[&8Bile&a]: &7Installatie van &f{plugin}&7 uit de bibliotheek staat in de wachtrij."
+install_success = "&a[&8Bile&a]: &7&f{file}&7 is geïnstalleerd uit de bibliotheek."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 is geïnstalleerd en vereist een volledige herstart van de server."
+install_failed = "&a[&8Bile&a]: &7Kan \"&f{plugin}&7\" niet installeren."
 empty = "&a[&8Bile&a]: &7De bibliotheek is leeg."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} geïnstalleerd) &f{latestVersion}&7 (nieuwste)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (nieuwste)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (nieuwste)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aDe volledige configuratie-editor in het spel is geopend.&r"
-save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c kon niet worden toegepast: {reason}&r"
+opened = "&a[&8Bile&a]: &7De volledige configuratie-editor in het spel is geopend."
+save_failed = "&a[&8Bile&a]: &cKan &f{setting}&c niet toepassen: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 is gewijzigd naar &f{new}&7; voorheen &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 is gewijzigd van &f{old}&7 naar &f{new}&7."
 
 [gui.title]
 root = "&2BileTools-configuratie"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dAlgemeen&r"
+general = "&aAlgemeen"
 metrics = "&aStatistieken"
 remote_slave = "&aExterne ontvanger"
 remote_master = "&aExterne uitrol"
 network = "&aNetwerklimieten"
 watcher = "&aPluginbewaking"
 lifecycle = "&aLevenscyclus"
-languages = "&dTalen&r"
+languages = "&aTalen"
 
 [gui.navigation]
-back = "&eTerug&r"
-close = "&cSluiten&r"
+back = "&eTerug"
+close = "&cSluiten"
 
 [gui.lore]
-state = "&7Huidig:&r {value}"
-toggle = "&8Klik om te wisselen.&r"
-number = "&8Links +1, rechts -1, shift ×10, laat vallen om te typen.&r"
-text = "&8Klik om een nieuwe waarde in de chat te typen.&r"
-language = "&8Klik om een beschikbare taal te kiezen of typ een landinstelling.&r"
-category = "&8Klik om elke instelling in deze categorie te bewerken.&r"
+state = "&7Huidig: {value}"
+toggle = "&8Klik om aan of uit te zetten."
+number = "&8Linksklik +1, rechtsklik -1, shift ×10, laten vallen om te typen."
+text = "&8Klik om een nieuwe waarde in de chat te typen."
+language = "&8Klik om een beschikbare taal te kiezen of typ een taalcode."
+category = "&8Klik om alle instellingen in deze categorie te bewerken."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eTyp een nieuwe waarde voor &f{setting}&r&e in de chat.&r"
-list = "&a[&8Bile&a]: &7Scheid lijstitems met komma's. Typ &fnone&r&7 voor een lege lijst.&r"
-cancel = "&a[&8Bile&a]: &7Typ &fcancel&r&7 om te stoppen. Deze invoer verloopt na 60 seconden.&r"
-cancelled = "&a[&8Bile&a]: &eConfiguratiebewerking geannuleerd.&r"
-timeout = "&a[&8Bile&a]: &eDe configuratiebewerking is verlopen zonder iets te wijzigen.&r"
+request = "&a[&8Bile&a]: &eTyp in de chat een nieuwe waarde voor &f{setting}&e."
+list = "&a[&8Bile&a]: &7Scheid lijstitems met komma's. Typ &fnone&7 voor een lege lijst."
+cancel = "&a[&8Bile&a]: &7Typ &fcancel&7 om te stoppen. Deze invoer verloopt over 60 seconden."
+cancelled = "&a[&8Bile&a]: &eConfiguratiebewerking geannuleerd."
+timeout = "&a[&8Bile&a]: &eDe configuratiebewerking is verlopen zonder iets te wijzigen."
 
 [gui.setting.general]
-language = "&dActieve landinstelling&r"
-archive_plugins = "&aPlugin-JAR’s archiveren vóór vervanging"
+language = "&aActieve taalcode"
+archive_plugins = "&aPlugin-JAR's archiveren vóór vervanging"
 
 [gui.setting.metrics]
-enabled = "&dAnonieme bStats-statistieken&r"
+enabled = "&aAnonieme bStats-statistieken"
 
 [gui.setting.remote_slave]
 enabled = "&aExterne ontvanger"
@@ -193,25 +195,25 @@ enabled = "&aExterne uitrol"
 signatures = "&aPluginnamen voor externe uitrol"
 
 [gui.setting.network]
-socket_timeout = "&aTime-out van externe verbindingen in milliseconden"
+socket_timeout = "&aTime-out van externe sockets in milliseconden"
 max_transfer = "&aMaximale overdrachtsgrootte in bytes"
 
 [gui.setting.watcher]
 idle = "&aControle-interval bij inactiviteit in ticks"
 active = "&aControle-interval bij activiteit in ticks"
-debounce = "&aWachttijd voor stabiele bestandsvingerafdrukken in ticks"
+debounce = "&aWachttijd voor stabiele vingerafdrukken in ticks"
 ignore = "&aGenegeerde pluginnamen"
 only = "&aToegestane pluginnamen"
 
 [gui.setting.lifecycle]
-log_timings = "&aLogboeken met levenscyclustijden"
+log_timings = "&aTijdmetingen van de levenscyclus loggen"
 health_check = "&aWerkingscontroles na het laden"
 
 [director.help]
 no_subcommands = "Geen subopdrachten op deze pagina."
 no_description = "Geen beschrijving opgegeven"
 command_group = "Opdrachtgroep. Klik om te openen."
-category = "Commandocategorie"
+category = "Opdrachtcategorie"
 no_parameters = "Geen parameters. Klik om de opdracht vooraf in te vullen."
 parameters_hover = "Beweeg de muis over de parameters voor meer informatie."
 
@@ -231,7 +233,7 @@ hover = "Volgende pagina"
 [director.help.parameter]
 required = "Deze parameter is verplicht."
 optional = "Deze parameter is optioneel."
-default = "Standaard \"{value}\" indien niet opgegeven."
+default = "Standaard \"{value}\" als niets is opgegeven."
 type = "Deze parameter is van het type {type}."
 
 [director.runtime.error]
@@ -246,51 +248,60 @@ execution_failed = "Opdracht {command} kon niet worden uitgevoerd: {reason}"
 
 [language.menu]
 your_language = "Jouw taal"
-reset_your_language = "Jouw taalkeuze herstellen"
-server_default = "Standaardtaal van de server"
+reset_your_language = "Jouw taal herstellen"
+server_default = "Serverstandaard"
 edit_messages = "Taalberichten bewerken"
-use_server_default = "Standaardtaal van de server gebruiken"
+use_server_default = "Serverstandaard gebruiken"
 current = "Huidig: {locale}"
-current_with_personal = "Huidig: {locale} (Jouw keuze: {personal})"
+current_with_personal = "Huidig: {locale} (Jouw taal: {personal})"
 your_description = "Wijzig alleen de berichten die jij ziet."
 reset_description = "Gebruik de standaardtaal van de server."
-server_description = "Wijzig de standaardtaal van de server."
-edit_description = "Open de berichteneditor voor elke taal."
+server_description = "Wijzig de standaardtaal van de server"
+edit_description = "Open de berichteneditor per taal."
 select_description = "Klik om deze taal te selecteren."
-remove_personal_description = "Verwijder jouw persoonlijke taalkeuze."
-no_controls = "Je hebt geen toegang tot taalinstellingen."
-command = "Commando: {command}"
+remove_personal_description = "Verwijder je persoonlijke taalkeuze."
+no_controls = "Er zijn geen taalinstellingen voor jou beschikbaar."
+command = "Opdracht: {command}"
 selected = "geselecteerd"
-all-volmit-plugins = "Alle Volmit-plugins"
+all-volmit-plugins = "alle Volmit-plugins"
 
 [language.error]
-stopping = "Taalselectie is niet beschikbaar terwijl de plugin stopt."
-editor-player-only = "Open de taalbewerker in het spel."
+stopping = "Taalkeuze is niet beschikbaar terwijl de plugin stopt."
+editor-player-only = "Open de taaleditor in het spel."
 no-providers = "Er zijn geen Volmit-taalaanbieders beschikbaar."
-numeric-page = "Voer een paginanummer in."
-personal-player-only = "Spelertaalvoorkeuren moeten in het spel worden geselecteerd."
-personal-permission = "U hebt geen toestemming om uw taal te selecteren."
+numeric-page = "Gebruik een numeriek paginanummer voor de talen."
+personal-player-only = "Taalvoorkeuren van spelers moeten in het spel worden gekozen."
+personal-permission = "Je hebt geen toestemming om je taal te kiezen."
 plugin-personal-permission = "Je hebt geen toestemming om je taal voor {plugin} te kiezen."
 plugin-server-permission = "Je hebt geen toestemming om de servertaal voor {plugin} te wijzigen."
-server-locale-required = "Kies een taalcode zoals en_US voor de standaardtaal van de server."
+server-locale-required = "Kies een taalcode zoals en_US voor de serverstandaard."
 unavailable-for-all = "De taal {locale} is niet voor alle geselecteerde plugins beschikbaar."
 
 [language.usage]
 editor = "Gebruik: /{command} language server edit [locale]"
-selection = "Gebruik: /{command} language self [locale|reset] or server [locale]"
+selection = "Gebruik: /{command} language self [locale|reset] of server [locale]"
 volmit-selection = "Gebruik: /volmit plugins languages [locale]"
+update = "Gebruik: /{command} language update"
 
 [language.selection]
 preparing = "Taal {locale} wordt voorbereid voor {target}..."
 save-failed = "{plugin}: de taalkeuze kon niet worden opgeslagen; controleer de serverconsole."
 english-fallback = "{plugin}: {locale} is niet beschikbaar; Engels (en_US) wordt gebruikt."
-personal-selected = "{plugin}: uw taal is nu {locale}."
-server-selected = "{plugin}: servertaal is nu {locale}."
-server-default-selected = "{plugin}: je taal volgt nu de standaardtaal van de server."
+personal-selected = "{plugin}: je taal is nu {locale}."
+server-selected = "{plugin}: de servertaal is nu {locale}."
+server-default-selected = "{plugin}: je taal volgt nu de serverstandaard."
+
+[language.update]
+checking = "{plugin}: de taalrepository wordt gecontroleerd op wijzigingen..."
+unchanged = "{plugin}: de geïnstalleerde talen komen al overeen met de repository."
+applied = "{plugin}: {locale} bijgewerkt ({added} toegevoegd, {updated} gewijzigd, {kept} lokale bewerkingen behouden)."
+cooldown = "{plugin}: de taalrepository is onlangs gecontroleerd; probeer het over {remaining} opnieuw."
+locale-failed = "{plugin}: {locale} is niet bijgewerkt: {reason}"
+failed = "{plugin}: taalupdate mislukt: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
-loading = "Berichten voor {locale} laden..."
+loading = "Berichten voor {locale} worden geladen..."
 
 [language.editor.section]
 languages = "Talen"
@@ -299,16 +310,16 @@ search-title = "{locale} / Zoeken"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Zoek op berichtsleutel of tekst. Typ cancel om terug te gaan."
+search = "Zoek in berichtsleutels of tekst. Typ cancel om terug te gaan."
 value = "Typ in de chat een nieuwe waarde voor {key}."
 current = "Huidige waarde: {value}"
 variables = "Variabelen: {variables}"
 guidance = "Gebruik \\n voor een nieuwe regel, \\\\ voor een backslash, of typ cancel om terug te gaan."
 
 [language.editor.input]
-expired = "De invoer voor de taalbewerker is verlopen."
-too-long = "De invoer mag maximaal {maximum} tekens bevatten."
-unable-to-save = "Opslaan mislukt: {reason}"
+expired = "De invoer voor de taaleditor is verlopen."
+too-long = "De invoer in de editor mag maximaal {maximum} tekens lang zijn."
+unable-to-save = "Kan niet opslaan: {reason}"
 
 [language.editor.navigation]
 back = "&eTerug&r"
@@ -337,10 +348,10 @@ open = "&8Klik om deze categorie te openen.&r"
 
 [language.editor.error]
 no-permission = "Je hebt geen toestemming om de talen van {plugin} te bewerken."
-unable-to-edit = "Bewerken mislukt: {reason}"
+unable-to-edit = "Kan niet bewerken: {reason}"
 
 [language.editor.saved]
-summary = "{locale} opgeslagen. De taalkeuzes blijven ongewijzigd."
+summary = "{locale} opgeslagen. De taalkeuzes zijn niet gewijzigd."
 change = "{key}: “{before}” is gewijzigd in “{after}”."
 
 [language.editor.part]
@@ -351,7 +362,7 @@ none = "Geen"
 empty = "(leeg)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: actief={enabled}, herstel={recovery}, samenwerking={cooperative}, afhankelijke plugins={dependents}, ontladen={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: ingeschakeld={enabled}, herstel={recovery}, coöperatief={cooperative}, afhankelijk=[{dependents}], afbraak={capability}"
 
 [gui.setting]
 update-notifications = "&aUpdatemeldingen"

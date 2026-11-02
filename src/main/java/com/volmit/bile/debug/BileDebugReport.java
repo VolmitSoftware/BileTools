@@ -18,8 +18,8 @@ final class BileDebugReport {
         value(report, "Scheduler", snapshot.scheduler());
         value(report, "Active locale", snapshot.activeLocale());
         value(report, "Available locales", String.join(", ", snapshot.availableLocales()));
-        value(report, "Language catalog", snapshot.languageCatalogState());
-        value(report, "Language source reference", snapshot.languageCatalogReference());
+        value(report, "Language source", snapshot.languageSource());
+        value(report, "Language source state", snapshot.languageSourceState());
         value(report, "Plugin watcher", snapshot.watcherActive() ? "active" : "inactive");
         value(report, "Watched jars", snapshot.watchedJars());
         value(report, "Dirty plugins", snapshot.dirtyPlugins());
@@ -33,6 +33,7 @@ final class BileDebugReport {
                 Path.of("biletools.yml"),
                 Path.of("languages", snapshot.activeLocale() + ".toml"),
                 Path.of("languages", "language-preferences.properties"),
+                Path.of("languages", ".upstream", "upstream.properties"),
                 Path.of("watcher-handoff.bin"),
                 Path.of("watcher-handoff-completion.lock")
         )));

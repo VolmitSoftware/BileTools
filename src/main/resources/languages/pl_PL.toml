@@ -2,135 +2,137 @@
 #
 # === Edycja pliku ===
 # plugins/BileTools/languages/pl_PL.toml
-# Ten plik można edytować bezpośrednio. Lokalne zmiany są zachowywane; brakujące lub nieprawidłowe wpisy korzystają z wbudowanego angielskiego tekstu.
+# Edytuj ten plik bezpośrednio. Lokalne zmiany są zachowywane; brakujące lub nieprawidłowe wpisy korzystają z wbudowanego tekstu angielskiego.
 # /biletools language server edit pl_PL
 #
 # === Prefiks ===
-# Prefiks &a[&8Bile&a]: jest zapisany bezpośrednio w każdej wiadomości; zmień go w odpowiednich wiadomościach.
+# Prefiks &a[&8Bile&a]: jest częścią każdego komunikatu na czacie; edytuj go tam.
+# Nie ma osobnego ustawienia prefiksu ani zmiennej prefiksu.
 #
 # === Formatowanie ===
-# Kolory: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B i [RRGGBB]. MiniMessage pozostaje dostępny dla własnego formatowania.
+# Kolory i style: &0-&f, &k-&r.
+# Kolory RGB: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage obsługuje własne formatowanie. Poprzedź & lub [ ukośnikiem odwrotnym, aby wyświetlić znak dosłownie.
 #
 # === Zmienne ===
-# Zachowaj nazwy zmiennych i używaj tylko tych, które występują w danej wiadomości.
-#   {after}  Wartość po zmianie
-#   {argument}  nieoczekiwany argument
-#   {before}  Wartość przed zmianą
-#   {category}  kategoria
-#   {command}  ścieżka polecenia
-#   {context}  Powód przeładowania pluginu
-#   {count}  Liczba zdalnych celów i wybór formy liczby mnogiej; Liczba wiadomości
-#   {file}  Nazwa pliku JAR pluginu
-#   {group}  kategoria
-#   {host}  Adres IP nadawcy
-#   {installedVersion}  Obecnie zainstalowana wersja pluginu
-#   {key}  Klucz wiadomości lub parametru
+# Nie zmieniaj nazw zmiennych i używaj tylko zmiennych należących do danego komunikatu.
+#   {added}  Komunikaty dodane przez aktualizację języka
+#   {after}  Wartość komunikatu po edycji
+#   {argument}  Nieoczekiwany argument polecenia
+#   {before}  Wartość komunikatu przed edycją
+#   {capability}  Dostępność wymaganych mechanizmów demontażu
+#   {category}  Kategoria edytora konfiguracji
+#   {command}  Ścieżka polecenia lub wysłane polecenie
+#   {context}  Powód lub wyzwalacz przeładowania wtyczki
+#   {cooperative}  Czy wtyczka implementuje kooperacyjne przeładowanie
+#   {count}  Liczba skonfigurowanych celów zdalnego wdrażania i wybór formy liczby mnogiej
+#   {dependents}  Wtyczki należące do grupy przeładowania
+#   {enabled}  Czy sprawdzana wtyczka jest włączona
+#   {file}  Nazwa pliku JAR wtyczki
+#   {group}  Grupa komunikatów w edytorze języków
+#   {host}  Adres IP nadawcy połączenia przychodzącego
+#   {installedVersion}  Obecnie zainstalowana wersja wtyczki
+#   {kept}  Lokalne edycje zachowane przez aktualizację języka
+#   {key}  Klucz parametru polecenia lub komunikatu
 #   {latestVersion}  Najnowsza wersja dostępna w bibliotece
-#   {line}  Numer linii źródłowej lub linii
-#   {locale}  ustawienia regionalne
-#   {maximum}  Maksymalna dopuszczalna wartość
-#   {milliseconds}  Czas ładowania, wyładowania lub przeładowania w milisekundach
-#   {new}  nowa wartość
-#   {old}  poprzednia wartość
-#   {parameter}  nazwa parametru
-#   {permission}  Wymagane uprawnienie
-#   {personal}  osobiste ustawienie regionalne
+#   {line}  Numer wiersza w komunikacie z listą
+#   {locale}  Kod języka
+#   {maximum}  Maksymalna długość tekstu w edytorze
+#   {milliseconds}  Czas wczytywania, wyładowania lub przeładowania w milisekundach
+#   {new}  Nowa wartość ustawienia lub komunikatu
+#   {old}  Poprzednia wartość ustawienia lub komunikatu
+#   {parameter}  Nazwa parametru polecenia
+#   {permission}  Wymagany węzeł uprawnień
+#   {personal}  Osobisty kod języka, jeśli różni się od domyślnego języka serwera
 #   {plugin}  Nazwa wtyczki
-#   {reason}  powód błędu
+#   {reason}  Przyczyna błędu
+#   {recovery}  Czy dostępny jest plik JAR do odzyskania uruchomionej wersji
+#   {remaining}  Czas do następnego dozwolonego sprawdzenia języków
 #   {section}  Sekcja edytora języków
-#   {setting}  nazwa ustawienia
-#   {target}  Nazwa wtyczki
-#   {type}  typ
-#   {value}  wartość bieżąca, domyślna lub surowa
-#   {variables}  dozwolone symbole zastępcze
-#   {version}  Żądana lub wyświetlana wersja pluginu z biblioteki
-
-#   {enabled}  aktywna
-#   {recovery}  odzyskiwanie
-#   {cooperative}  współpraca
-#   {dependents}  zależne
-#   {capability}  wyładowanie
+#   {setting}  Nazwa ustawienia lub klucz komunikatu
+#   {target}  Cel wyboru języka
+#   {type}  Typ parametru polecenia
+#   {updated}  Komunikaty zmienione przez aktualizację języka
+#   {value}  Bieżąca, domyślna lub wpisana wartość
+#   {variables}  Nazwy wymaganych zmiennych komunikatu
+#   {version}  Żądana lub wyświetlana wersja wtyczki z biblioteki
 
 [command]
 inspect = "Sprawdź gotowość wtyczki do przeładowania"
-version = "Pokaż wersję zainstalowanej wtyczki"
-root = "Grupa komend BileTools"
+version = "Pokaż zainstalowaną wersję wtyczki"
+root = "Główne polecenie BileTools"
 load = "Wczytaj plik JAR wtyczki z katalogu plugins"
 unload = "Wyładuj zainstalowaną wtyczkę"
 reload = "Przeładuj zainstalowaną wtyczkę"
 uninstall = "Usuń plik JAR wtyczki z katalogu plugins"
 install = "Zainstaluj wtyczkę z biblioteki Bile"
-library = "Wyświetl wtyczki biblioteki lub wersje wybranej wtyczki"
-debug_dump = "Utwórz raport diagnostyczny i opcjonalnie go prześlij"
+library = "Wyświetl wtyczki z biblioteki lub wersje jednej wtyczki"
+debug_dump = "Utwórz pełny raport diagnostyczny BileTools"
 debug = "Narzędzia diagnostyczne BileTools"
 config = "Otwórz pełny edytor konfiguracji w grze"
 language = "Wybierz swój język lub język serwera"
 
 [parameter]
 installed_plugin = "Nazwa zainstalowanej wtyczki"
-library_plugin = "Nazwa wtyczki biblioteki"
-version = "Wersja wtyczki biblioteki"
-sender = "Nadawca komendy"
+library_plugin = "Nazwa wtyczki z biblioteki"
+version = "Wersja wtyczki z biblioteki"
+sender = "Nadawca polecenia"
 debug_upload = "Prześlij raport do mclo.gs"
 
 [error]
 plugin_name_required = "Nazwa wtyczki nie może być pusta"
-library_plugin_name_required = "Nazwa wtyczki biblioteki nie może być pusta"
+library_plugin_name_required = "Nazwa wtyczki z biblioteki nie może być pusta"
 version_required = "Wersja nie może być pusta"
 
 [message]
 permission_denied = "&a[&8Bile&a]: &7Potrzebujesz &f{permission}&7 lub uprawnień OP."
-unknown_command = "&a[&8Bile&a]: &7Nieznana komenda \"&f{command}&7\"."
+unknown_command = "&a[&8Bile&a]: &7Nieznane polecenie \"&f{command}&7\"."
 restart_required = "&a[&8Bile&a]: &e{plugin}&7 wymaga pełnego ponownego uruchomienia serwera."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 oznaczono jako uszkodzoną po błędzie cyklu życia. Automatyczne przeładowania tej wtyczki są wstrzymane."
-reloading_context = "&a[&8Bile&a]: &7Przeładowywanie: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7Nie znaleziono wtyczki: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7Przeładowywanie: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cTylko gracz może użyć tego polecenia."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7: po błędzie cyklu życia wtyczkę oznaczono jako niesprawną. Automatyczne przeładowania tej wtyczki są wstrzymane."
+reloading_context = "&a[&8Bile&a]: &7Przeładowywanie &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Nie znaleziono \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7Przeładowywanie &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cTego polecenia może użyć tylko gracz."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7Odbieranie &f{file}&7 z &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7 wdrożono na &f{count}&7 zdalnych serwerach."
-one = "&a[&8Bile&a]: &7&f{plugin}&7 wdrożono na &f{count}&7 zdalnym serwerze."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Wdrożenie na gorąco zakończone: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Wdrożenie na gorąco nie powiodło się: &c{file}&7."
+other = "&a[&8Bile&a]: &7Wdrożono &f{plugin}&7 na &f{count}&7 zdalnych serwerach."
+one = "&a[&8Bile&a]: &7Wdrożono &f{plugin}&7 na &f{count}&7 zdalnym serwerze."
 
 [message.reload]
-success = "&a[&8Bile&a]: &7Przeładowano: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Przeładowanie nie powiodło się: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Przeładowanie w kolejce: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Przeładowano: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Przeładowanie nie powiodło się: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7Przeładowano &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nie udało się przeładować &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Dodano do kolejki przeładowanie &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Przeładowano &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7Nie można przeładować \"&f{plugin}&7\"."
 
 [message.unload]
-success = "&a[&8Bile&a]: &7Wyładowano: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Wyładowanie nie powiodło się: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Wyładowanie w kolejce: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Wyładowano: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Wyładowanie nie powiodło się: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7Wyładowano &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nie udało się wyładować &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Dodano do kolejki wyładowanie &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7Wyładowano &f{plugin}&7 (&f{file}&7)."
+command_failed = "&a[&8Bile&a]: &7Nie można wyładować \"&f{plugin}&7\"."
 
 [message.load]
-queued = "&a[&8Bile&a]: &7Wczytanie w kolejce: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Wczytano: &f{plugin}&7 z &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Wczytanie nie powiodło się: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Dodano do kolejki wczytanie &f{plugin}&7."
+success = "&a[&8Bile&a]: &7Wczytano &f{plugin}&7 z &f{file}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7Nie można wczytać \"&f{plugin}&7\"."
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7Odinstalowanie w kolejce: &f{plugin}&7."
+queued = "&a[&8Bile&a]: &7Dodano do kolejki odinstalowanie &f{plugin}&7."
 success = "&a[&8Bile&a]: &7Odinstalowano &f{plugin}&7 z &f{file}&7."
 delete_failed = "&a[&8Bile&a]: &7Wtyczka została wyładowana, ale nie udało się usunąć &c{file}&7. Usuń plik przed ponowną instalacją wtyczki."
-failed = "&a[&8Bile&a]: &7Odinstalowanie nie powiodło się: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7Nie można odinstalować \"&f{plugin}&7\"."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7Nie znaleziono wtyczki w bibliotece: \"&f{plugin}&7\"."
+plugin_not_found = "&a[&8Bile&a]: &7Nie znaleziono \"&f{plugin}&7\" w bibliotece."
 version_not_found = "&a[&8Bile&a]: &7Nie znaleziono wersji \"&f{version}&7\" dla \"&f{plugin}&7\"."
-install_queued = "&a[&8Bile&a]: &7Instalacja z biblioteki w kolejce: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7Zainstalowano z biblioteki: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 została zainstalowana i wymaga pełnego ponownego uruchomienia serwera."
-install_failed = "&a[&8Bile&a]: &7Instalacja nie powiodła się: \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Dodano do kolejki instalację &f{plugin}&7 z biblioteki."
+install_success = "&a[&8Bile&a]: &7Zainstalowano &f{file}&7 z biblioteki."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7: zainstalowano; wymagane jest pełne ponowne uruchomienie serwera."
+install_failed = "&a[&8Bile&a]: &7Nie można zainstalować \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7Biblioteka jest pusta."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} zainstalowana) &f{latestVersion}&7 (najnowsza)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (najnowsza)"
@@ -138,74 +140,74 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (najnowsza)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aOtwarto pełny edytor konfiguracji w grze.&r"
-save_failed = "&a[&8Bile&a]: &cNie udało się zastosować ustawienia &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7Otwarto pełny edytor konfiguracji w grze."
+save_failed = "&a[&8Bile&a]: &cNie udało się zastosować ustawienia &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 zmieniono na &f{new}&7; wcześniej &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7: zmieniono z &f{old}&7 na &f{new}&7."
 
 [gui.title]
 root = "&2Konfiguracja BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dOgólne&r"
+general = "&aOgólne"
 metrics = "&aStatystyki"
-remote_slave = "&aOdbiornik zdalny"
-remote_master = "&aWdrażanie zdalne"
+remote_slave = "&aZdalny odbiornik"
+remote_master = "&aZdalne wdrażanie"
 network = "&aLimity sieci"
-watcher = "&aMonitorowanie pluginów"
+watcher = "&aMonitorowanie wtyczek"
 lifecycle = "&aCykl życia"
-languages = "&dJęzyki&r"
+languages = "&aJęzyki"
 
 [gui.navigation]
-back = "&eWstecz&r"
-close = "&cZamknij&r"
+back = "&eWstecz"
+close = "&cZamknij"
 
 [gui.lore]
-state = "&7Obecna wartość:&r {value}"
-toggle = "&8Kliknij, aby przełączyć.&r"
-number = "&8Lewy +1, prawy -1, Shift ×10, upuść, aby wpisać.&r"
-text = "&8Kliknij, aby wpisać nową wartość na czacie.&r"
-language = "&8Kliknij, aby wybrać dostępny język, lub wpisz ustawienia regionalne.&r"
-category = "&8Kliknij, aby edytować wszystkie ustawienia w tej kategorii.&r"
+state = "&7Obecnie: {value}"
+toggle = "&8Kliknij, aby przełączyć."
+number = "&8Lewy klik +1, prawy klik -1, Shift ×10, wyrzuć, aby wpisać."
+text = "&8Kliknij, aby wpisać nową wartość na czacie."
+language = "&8Kliknij, aby wybrać dostępny język, lub wpisz kod języka."
+category = "&8Kliknij, aby edytować wszystkie ustawienia w tej kategorii."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eWpisz na czacie nową wartość ustawienia &f{setting}&r&e.&r"
-list = "&a[&8Bile&a]: &7Oddziel elementy listy przecinkami. Wpisz &fnone&r&7, aby utworzyć pustą listę.&r"
-cancel = "&a[&8Bile&a]: &7Wpisz &fcancel&r&7, aby zatrzymać. To zapytanie wygaśnie po 60 sekundach.&r"
-cancelled = "&a[&8Bile&a]: &eAnulowano edycję konfiguracji.&r"
-timeout = "&a[&8Bile&a]: &eEdycja konfiguracji wygasła bez wprowadzenia zmian.&r"
+request = "&a[&8Bile&a]: &eWpisz na czacie nową wartość ustawienia &f{setting}&e."
+list = "&a[&8Bile&a]: &7Oddziel elementy listy przecinkami. Wpisz &fnone&7, aby ustawić pustą listę."
+cancel = "&a[&8Bile&a]: &7Wpisz &fcancel&7, aby przerwać. To zapytanie wygaśnie za 60 sekund."
+cancelled = "&a[&8Bile&a]: &eAnulowano edycję konfiguracji."
+timeout = "&a[&8Bile&a]: &eEdycja konfiguracji wygasła bez wprowadzenia zmian."
 
 [gui.setting.general]
-language = "&dAktywne ustawienia regionalne&r"
-archive_plugins = "&aArchiwizuj pliki JAR pluginów przed zastąpieniem"
+language = "&aAktywny kod języka"
+archive_plugins = "&aArchiwizuj pliki JAR wtyczek przed zastąpieniem"
 
 [gui.setting.metrics]
-enabled = "&dAnonimowe statystyki bStats&r"
+enabled = "&aAnonimowe statystyki bStats"
 
 [gui.setting.remote_slave]
-enabled = "&aOdbiornik zdalny"
-port = "&aPort odbiornika zdalnego"
+enabled = "&aZdalny odbiornik"
+port = "&aPort zdalnego odbiornika"
 
 [gui.setting.remote_master]
-enabled = "&aWdrażanie zdalne"
-signatures = "&aNazwy pluginów do zdalnego wdrożenia"
+enabled = "&aZdalne wdrażanie"
+signatures = "&aNazwy wtyczek do zdalnego wdrażania"
 
 [gui.setting.network]
-socket_timeout = "&aLimit czasu połączeń zdalnych w milisekundach"
+socket_timeout = "&aLimit czasu zdalnego gniazda w milisekundach"
 max_transfer = "&aMaksymalny rozmiar transferu w bajtach"
 
 [gui.setting.watcher]
 idle = "&aOdstęp sprawdzania w bezczynności w tickach"
 active = "&aOdstęp sprawdzania podczas aktywności w tickach"
 debounce = "&aCzas stabilizacji odcisków plików w tickach"
-ignore = "&aNazwy ignorowanych pluginów"
-only = "&aNazwy dozwolonych pluginów"
+ignore = "&aNazwy ignorowanych wtyczek"
+only = "&aNazwy dozwolonych wtyczek"
 
 [gui.setting.lifecycle]
 log_timings = "&aDzienniki czasów cyklu życia"
-health_check = "&aKontrole działania po załadowaniu"
+health_check = "&aKontrole działania po wczytaniu"
 
 [director.help]
 no_subcommands = "Na tej stronie nie ma podpoleceń."
@@ -231,7 +233,7 @@ hover = "Następna strona"
 [director.help.parameter]
 required = "Ten parametr jest wymagany."
 optional = "Ten parametr jest opcjonalny."
-default = "Domyślnie \"{value}\", jeśli nie określono."
+default = "Domyślnie \"{value}\", jeśli nie podano."
 type = "Ten parametr jest typu {type}."
 
 [director.runtime.error]
@@ -254,22 +256,22 @@ current = "Bieżący: {locale}"
 current_with_personal = "Bieżący: {locale} (Twój: {personal})"
 your_description = "Zmień tylko komunikaty, które widzisz."
 reset_description = "Użyj domyślnego języka serwera."
-server_description = "Zmień domyślny język serwera."
-edit_description = "Otwórz edytor komunikatów dla każdego języka."
+server_description = "Zmień domyślny język serwera"
+edit_description = "Otwórz edytor komunikatów dla poszczególnych języków."
 select_description = "Kliknij, aby wybrać ten język."
 remove_personal_description = "Usuń swój osobisty wybór języka."
-no_controls = "Nie masz dostępu do ustawień języka."
+no_controls = "Nie masz dostępu do żadnych ustawień języka."
 command = "Polecenie: {command}"
 selected = "wybrany"
-all-volmit-plugins = "Wszystkie wtyczki Volmit"
+all-volmit-plugins = "wszystkie wtyczki Volmit"
 
 [language.error]
 stopping = "Wybór języka jest niedostępny podczas zatrzymywania wtyczki."
-editor-player-only = "Otwórz edytor języka w grze."
+editor-player-only = "Otwórz edytor języków w grze."
 no-providers = "Brak dostępnych dostawców języków Volmit."
-numeric-page = "Podaj numer strony."
-personal-player-only = "Preferencje językowe gracza muszą być wybrane w grze."
-personal-permission = "Nie masz pozwolenia na wybranie języka."
+numeric-page = "Podaj numer strony języków jako liczbę."
+personal-player-only = "Preferencje językowe gracza można wybrać tylko w grze."
+personal-permission = "Nie masz uprawnienia do wyboru swojego języka."
 plugin-personal-permission = "Nie masz uprawnienia do wyboru swojego języka we wtyczce {plugin}."
 plugin-server-permission = "Nie masz uprawnienia do zmiany języka serwera we wtyczce {plugin}."
 server-locale-required = "Wybierz kod języka, np. en_US, jako domyślny język serwera."
@@ -277,20 +279,29 @@ unavailable-for-all = "Język {locale} nie jest dostępny we wszystkich wybranyc
 
 [language.usage]
 editor = "Użycie: /{command} language server edit [locale]"
-selection = "Użycie: /{command} language self [locale|reset] or server [locale]"
+selection = "Użycie: /{command} language self [locale|reset] lub server [locale]"
 volmit-selection = "Użycie: /volmit plugins languages [locale]"
+update = "Użycie: /{command} language update"
 
 [language.selection]
-preparing = "Przygotowywanie języka {locale} dla {target}..."
+preparing = "Przygotowywanie języka {locale}, cel: {target}..."
 save-failed = "{plugin}: nie udało się zapisać wyboru języka; sprawdź konsolę serwera."
-english-fallback = "{plugin}: {locale} jest niedostępny; używany będzie angielski (en_US)."
-personal-selected = "{plugin}: Twój język jest teraz {locale}."
-server-selected = "{plugin}: język serwera jest teraz {locale}."
+english-fallback = "{plugin}: {locale} jest niedostępny; używany jest angielski (en_US)."
+personal-selected = "{plugin}: twój język to teraz {locale}."
+server-selected = "{plugin}: język serwera to teraz {locale}."
 server-default-selected = "{plugin}: twój język jest teraz zgodny z domyślnym językiem serwera."
+
+[language.update]
+checking = "{plugin}: sprawdzanie zmian w repozytorium języków..."
+unchanged = "{plugin}: zainstalowane języki są już zgodne z repozytorium."
+applied = "{plugin}: zaktualizowano {locale} (dodane: {added}, zmienione: {updated}, zachowane lokalne edycje: {kept})."
+cooldown = "{plugin}: repozytorium języków było niedawno sprawdzane; spróbuj ponownie za {remaining}."
+locale-failed = "{plugin}: nie zaktualizowano {locale}: {reason}"
+failed = "{plugin}: aktualizacja języków nie powiodła się: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
-loading = "Wczytywanie wiadomości w języku {locale}..."
+loading = "Wczytywanie komunikatów dla {locale}..."
 
 [language.editor.section]
 languages = "Języki"
@@ -299,15 +310,15 @@ search-title = "{locale} / Szukaj"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Wyszukaj klucz lub tekst wiadomości. Wpisz cancel, aby wrócić."
+search = "Wyszukaj klucz lub tekst komunikatu. Wpisz cancel, aby wrócić."
 value = "Wpisz na czacie nową wartość dla {key}."
 current = "Bieżąca wartość: {value}"
 variables = "Zmienne: {variables}"
-guidance = "Użyj \\n dla nowej linii, \\\\ dla odwrotnego ukośnika lub wpisz cancel, aby wrócić."
+guidance = "Użyj \\n, aby wstawić nowy wiersz, \\\\, aby wstawić ukośnik odwrotny, lub wpisz cancel, aby wrócić."
 
 [language.editor.input]
-expired = "Czas na wpisanie tekstu w edytorze języka minął."
-too-long = "Wpisany tekst może mieć najwyżej {maximum} znaków."
+expired = "Czas na wpisanie tekstu w edytorze języków minął."
+too-long = "Tekst w edytorze jest za długi (limit znaków: {maximum})."
 unable-to-save = "Nie udało się zapisać: {reason}"
 
 [language.editor.navigation]
@@ -317,22 +328,22 @@ previous-page = "&ePoprzednia strona&r"
 next-page = "&eNastępna strona&r"
 
 [language.editor.search]
-messages = "Wyszukaj wiadomości"
-messages-lore = "Kliknij, aby przeszukać wszystkie wiadomości."
+messages = "Wyszukaj komunikaty"
+messages-lore = "Kliknij, aby przeszukać wszystkie komunikaty."
 clear = "Wyczyść wyszukiwanie"
 
 [language.editor.message]
 current-value = "&7Bieżąca wartość:&r"
 variables = "&8{variables}&r"
 edit-plural = "&7Kliknij, aby edytować formę liczby mnogiej.&r"
-edit-lines = "&7Kliknij, aby edytować poszczególne linie.&r"
+edit-lines = "&7Kliknij, aby edytować poszczególne wiersze.&r"
 edit-chat = "&7Kliknij, aby edytować na czacie.&r"
 
 [language.editor.locale]
 open = "&8Kliknij, aby otworzyć ten język.&r"
 
 [language.editor.category]
-message-count = "&7{count} wiadomości&r"
+message-count = "&7Komunikaty: {count}&r"
 open = "&8Kliknij, aby otworzyć tę kategorię.&r"
 
 [language.editor.error]
@@ -340,18 +351,18 @@ no-permission = "Nie masz uprawnienia do edycji języków wtyczki {plugin}."
 unable-to-edit = "Nie udało się edytować: {reason}"
 
 [language.editor.saved]
-summary = "Zapisano {locale}. Wybory języka pozostały bez zmian."
+summary = "Zapisano {locale}. Wybór języka pozostał bez zmian."
 change = "{key}: „{before}” zmieniono na „{after}”."
 
 [language.editor.part]
-line = "Linia {line}"
+line = "Wiersz {line}"
 
 [language.editor.value]
 none = "Brak"
-empty = "(pusty)"
+empty = "(puste)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: aktywna={enabled}, odzyskiwanie={recovery}, współpraca={cooperative}, zależne={dependents}, wyładowanie={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: włączona={enabled}, odzyskiwanie={recovery}, kooperacyjna={cooperative}, zależne=[{dependents}], demontaż={capability}"
 
 [gui.setting]
 update-notifications = "&aPowiadomienia o aktualizacjach"

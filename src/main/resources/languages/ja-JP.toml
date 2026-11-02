@@ -2,69 +2,75 @@
 #
 # === ファイルの編集 ===
 # plugins/BileTools/languages/ja-JP.toml
-# このファイルを直接編集できます。ローカルの変更は保持され、不足または無効な項目には内蔵の英語を使用します。
+# このファイルを直接編集してください。ローカルの変更は保持され、不足または無効な項目には内蔵の英語が使われます。
 # /biletools language server edit ja-JP
 #
 # === 接頭辞 ===
-# 接頭辞 &a[&8Bile&a]: は各メッセージに直接記述されています。変更する場合は該当するメッセージを編集してください。
+# 接頭辞 &a[&8Bile&a]: は各チャットメッセージの一部です。変更する場合は各メッセージ内で編集してください。
+# 接頭辞専用の設定や接頭辞用の変数はありません。
 #
 # === 書式 ===
-# 色: &0-&f、&k-&r、&#RRGGBB、&xRRGGBB、&x&R&R&G&G&B&B、[RRGGBB]。独自書式には MiniMessage も使用できます。
+# 色とスタイル: &0-&f、&k-&r。
+# RGBカラー: &#RRGGBB、&xRRGGBB、&x&R&R&G&G&B&B、[RRGGBB]。
+# MiniMessage で独自の書式を使用できます。& や [ をそのまま表示するには、前にバックスラッシュを付けてください。
 #
 # === 変数 ===
-# 変数名を変更せず、各メッセージに元からある変数だけを使用してください。
-#   {after}  変更後の値
-#   {argument}  予期しない引数
-#   {before}  変更前の値
-#   {category}  カテゴリ
-#   {command}  コマンド経路
-#   {context}  プラグインを再読み込みする理由
-#   {count}  リモート配信先の数と複数形の選択値; メッセージ数
+# 変数名は変更せず、各メッセージに属する変数だけを使用してください。
+#   {added}  言語更新で追加されたメッセージ
+#   {after}  編集後のメッセージの値
+#   {argument}  予期しないコマンド引数
+#   {before}  編集前のメッセージの値
+#   {capability}  必要な終了処理機能の利用可否
+#   {category}  設定エディターのカテゴリ
+#   {command}  コマンドのパスまたは送信されたコマンド
+#   {context}  プラグインを再読み込みする理由またはきっかけ
+#   {cooperative}  プラグインが協調再読み込みを実装しているかどうか
+#   {count}  設定されたリモート配信先の数と複数形の選択値
+#   {dependents}  再読み込みグループに含まれるプラグイン
+#   {enabled}  確認対象のプラグインが有効かどうか
 #   {file}  プラグインのJARファイル名
-#   {group}  カテゴリ
-#   {host}  送信元のIPアドレス
+#   {group}  言語エディターのメッセージグループ
+#   {host}  受信した送信元のIPアドレス
 #   {installedVersion}  現在インストールされているプラグインのバージョン
-#   {key}  メッセージまたはパラメーターのキー
+#   {kept}  言語更新で保持されたローカル編集
+#   {key}  コマンドパラメーターまたはメッセージのキー
 #   {latestVersion}  ライブラリで利用可能な最新バージョン
-#   {line}  ラインまたはライン番号
-#   {locale}  ロケール
-#   {maximum}  最大許容値
-#   {milliseconds}  読み込み、解除、再読み込みの所要時間（ミリ秒）
-#   {new}  変更後の値
-#   {old}  変更前の値
-#   {parameter}  パラメーター名
-#   {permission}  必要な権限
-#   {personal}  個人設定のロケール
+#   {line}  リストメッセージ内の行番号
+#   {locale}  ロケールID
+#   {maximum}  エディター入力の最大文字数
+#   {milliseconds}  読み込み、アンロード、再読み込みの所要時間（ミリ秒）
+#   {new}  設定またはメッセージの新しい値
+#   {old}  設定またはメッセージの以前の値
+#   {parameter}  コマンドパラメーター名
+#   {permission}  必要な権限ノード
+#   {personal}  サーバーのデフォルトと異なる場合の個人ロケール
 #   {plugin}  プラグイン名
-#   {reason}  失敗理由
+#   {reason}  失敗の理由
+#   {recovery}  実行中バージョンの復元用JARがあるかどうか
+#   {remaining}  次の言語確認が可能になるまでの時間
 #   {section}  言語エディターのセクション
-#   {setting}  設定名
-#   {target}  プラグイン名
-#   {type}  型
-#   {value}  現在値、既定値、または入力値
-#   {variables}  使用可能なプレースホルダー
-#   {version}  要求または表示されたライブラリプラグインのバージョン
-
-#   {enabled}  有効
-#   {recovery}  復元
-#   {cooperative}  協調対応
-#   {dependents}  依存プラグイン
-#   {capability}  アンロード
+#   {setting}  設定名またはメッセージのキー
+#   {target}  言語選択の対象
+#   {type}  コマンドパラメーターの型
+#   {updated}  言語更新で変更されたメッセージ
+#   {value}  現在の値、デフォルト値、または入力された値
+#   {variables}  必要なメッセージ変数名
+#   {version}  要求された、または一覧表示されたライブラリプラグインのバージョン
 
 [command]
-inspect = "プラグインの再読み込み準備状態を確認"
+inspect = "プラグインの再読み込み準備状況を確認"
 version = "インストールされているプラグインのバージョンを表示"
-root = "BileToolsコマンドグループ"
+root = "BileToolsのルートコマンド"
 load = "pluginsディレクトリからプラグインJARを読み込む"
 unload = "インストール済みプラグインをアンロードする"
 reload = "インストール済みプラグインを再読み込みする"
 uninstall = "pluginsディレクトリからプラグインJARを削除する"
 install = "Bileライブラリからプラグインをインストールする"
-library = "ライブラリのプラグインまたはプラグインのバージョンを一覧表示する"
-debug_dump = "診断レポートを作成し、必要に応じてアップロードする"
+library = "ライブラリのプラグイン、または1つのプラグインのバージョンを一覧表示する"
+debug_dump = "BileToolsの総合的な診断レポートを作成する"
 debug = "BileToolsの診断ツール"
 config = "ゲーム内の完全な設定エディターを開く"
-language = "自分またはサーバーの言語を選択"
+language = "自分の言語またはサーバーの言語を選択する"
 
 [parameter]
 installed_plugin = "インストール済みプラグイン名"
@@ -79,141 +85,137 @@ library_plugin_name_required = "ライブラリのプラグイン名は空にで
 version_required = "バージョンは空にできません"
 
 [message]
-permission_denied = "&a[&8Bile&a]: &7&f{permission}&7権限またはOPが必要です."
-unknown_command = "&a[&8Bile&a]: &7不明なコマンド \"&f{command}&7\"."
-restart_required = "&a[&8Bile&a]: &e{plugin}&7にはサーバーの完全な再起動が必要です."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7はライフサイクル障害後に異常と判定されました。このプラグインの自動再読み込みは一時停止されています."
-reloading_context = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7プラグインが見つかりません: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7."
+permission_denied = "&a[&8Bile&a]: &7権限 &f{permission}&7 またはOPが必要です。"
+unknown_command = "&a[&8Bile&a]: &7不明なコマンドです: \"&f{command}&7\"。"
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 にはサーバーの完全な再起動が必要です。"
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 はライフサイクル処理の失敗後に異常状態としてマークされました。このプラグインの自動再読み込みは一時停止されています。"
+reloading_context = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7 (&f{context}&7)。"
+plugin_not_found = "&a[&8Bile&a]: &7プラグインが見つかりません: \"&f{plugin}&7\"。"
+reloading = "&a[&8Bile&a]: &7再読み込み中: &f{plugin}&7。"
 player_only = "&a[&8Bile&a]: &cこのコマンドはプレイヤーのみ使用できます。"
 
 [message.remote]
-receiving = "&a[&8Bile&a]: &7&f{host}&7から&f{file}&7を受信中."
+receiving = "&a[&8Bile&a]: &7受信中: &f{file}&7 (送信元: &f{host}&7)。"
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7を&f{count}&7台のリモートサーバーへデプロイしました."
-one = "&a[&8Bile&a]: &7&f{plugin}&7を&f{count}&7台のリモートサーバーへデプロイしました."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7ホットデプロイ完了: &f{file}&7."
-failed = "&a[&8Bile&a]: &7ホットデプロイ失敗: &c{file}&7."
+other = "&a[&8Bile&a]: &7配信完了: &f{plugin}&7 (リモートサーバー &f{count}&7 台)。"
+one = "&a[&8Bile&a]: &7配信完了: &f{plugin}&7 (リモートサーバー &f{count}&7 台)。"
 
 [message.reload]
-success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7再読み込み失敗: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7再読み込み待ち: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7再読み込み失敗: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7再読み込みに失敗しました: &c{plugin}&7。"
+queued = "&a[&8Bile&a]: &7再読み込みを予約しました: &f{plugin}&7。"
+command_success = "&a[&8Bile&a]: &7再読み込み完了: &f{plugin}&7 (&f{file}&7、&f{milliseconds}&7ms)。"
+command_failed = "&a[&8Bile&a]: &7再読み込みできませんでした: \"&f{plugin}&7\"。"
 
 [message.unload]
-success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7アンロード失敗: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7アンロード待ち: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7アンロード失敗: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7アンロードに失敗しました: &c{plugin}&7。"
+queued = "&a[&8Bile&a]: &7アンロードを予約しました: &f{plugin}&7。"
+command_success = "&a[&8Bile&a]: &7アンロード完了: &f{plugin}&7 (&f{file}&7)。"
+command_failed = "&a[&8Bile&a]: &7アンロードできませんでした: \"&f{plugin}&7\"。"
 
 [message.load]
-queued = "&a[&8Bile&a]: &7読み込み待ち: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7読み込み完了: &f{plugin}&7、&f{file}&7から (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7読み込み失敗: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7読み込みを予約しました: &f{plugin}&7。"
+success = "&a[&8Bile&a]: &7読み込み完了: &f{plugin}&7 (&f{file}&7 から、&f{milliseconds}&7ms)。"
+failed = "&a[&8Bile&a]: &7読み込めませんでした: \"&f{plugin}&7\"。"
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7アンインストール待ち: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7&f{file}&7から&f{plugin}&7をアンインストールしました."
-delete_failed = "&a[&8Bile&a]: &7プラグインをアンロードしましたが、&c{file}&7を削除できませんでした。再インストール前にファイルを削除してください."
-failed = "&a[&8Bile&a]: &7アンインストール失敗: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7アンインストールを予約しました: &f{plugin}&7。"
+success = "&a[&8Bile&a]: &7アンインストール完了: &f{plugin}&7 (&f{file}&7 を削除)。"
+delete_failed = "&a[&8Bile&a]: &7プラグインはアンロードされましたが、&c{file}&7 を削除できませんでした。プラグインを再インストールする前に削除してください。"
+failed = "&a[&8Bile&a]: &7アンインストールできませんでした: \"&f{plugin}&7\"。"
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7ライブラリにプラグインがありません: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7\"&f{plugin}&7\"のバージョン\"&f{version}&7\"が見つかりません."
-install_queued = "&a[&8Bile&a]: &7ライブラリからのインストール待ち: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7ライブラリからインストールしました: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7をインストールしました。サーバーの完全な再起動が必要です."
-install_failed = "&a[&8Bile&a]: &7インストール失敗: \"&f{plugin}&7\"."
-empty = "&a[&8Bile&a]: &7ライブラリは空です."
+plugin_not_found = "&a[&8Bile&a]: &7ライブラリに見つかりません: \"&f{plugin}&7\"。"
+version_not_found = "&a[&8Bile&a]: &7バージョン \"&f{version}&7\" が \"&f{plugin}&7\" に見つかりません。"
+install_queued = "&a[&8Bile&a]: &7ライブラリからのインストールを予約しました: &f{plugin}&7。"
+install_success = "&a[&8Bile&a]: &7ライブラリからインストールしました: &f{file}&7。"
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 をインストールしました。サーバーの完全な再起動が必要です。"
+install_failed = "&a[&8Bile&a]: &7インストールできませんでした: \"&f{plugin}&7\"。"
+empty = "&a[&8Bile&a]: &7ライブラリは空です。"
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} インストール済み) &f{latestVersion}&7 (最新)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (最新)"
 version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (最新)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aゲーム内の完全な設定エディターを開きました。&r"
-save_failed = "&a[&8Bile&a]: &c&f{setting}&r&cを適用できませんでした:{reason}&r"
+opened = "&a[&8Bile&a]: &7ゲーム内の完全な設定エディターを開きました。"
+save_failed = "&a[&8Bile&a]: &c設定 &f{setting}&c を適用できませんでした: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 を &f{new}&7 に変更しました（変更前: &f{old}&7）。"
+saved = "&a[&8Bile&a]: &f{setting}&7 を &f{new}&7 に変更しました (変更前: &f{old}&7)。"
 
 [gui.title]
 root = "&2BileToolsの設定"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&d一般&r"
+general = "&a一般"
 metrics = "&a統計"
-remote_slave = "&aリモート受信"
+remote_slave = "&aリモート受信側"
 remote_master = "&aリモート配信"
 network = "&aネットワーク制限"
 watcher = "&aプラグイン監視"
 lifecycle = "&aライフサイクル"
-languages = "&d言語&r"
+languages = "&a言語"
 
 [gui.navigation]
-back = "&e戻る&r"
-close = "&c閉じる&r"
+back = "&e戻る"
+close = "&c閉じる"
 
 [gui.lore]
-state = "&7現在:&r{value}"
-toggle = "&8切り替えるにはクリック.&r"
-number = "&8左 +1、右 -1、Shift ×10、タイプにドロップ.&r"
-text = "&8チャットで新しい値を入力するにはクリックしてください。&r"
-language = "&8利用可能な言語を選択するか、ロケールを入力するにはクリックしてください。&r"
-category = "&8このカテゴリのすべての設定を編集するにはクリックしてください。&r"
+state = "&7現在: {value}"
+toggle = "&8クリックして切り替えます。"
+number = "&8左クリック +1、右クリック -1、Shift ×10、ドロップで直接入力。"
+text = "&8クリックしてチャットに新しい値を入力します。"
+language = "&8クリックして利用可能な言語を選ぶか、ロケールを入力します。"
+category = "&8クリックしてこのカテゴリのすべての設定を編集します。"
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eチャットで&f{setting}&r&eの新しい値を入力してください。&r"
-list = "&a[&8Bile&a]: &7リストの項目をカンマで区切ってください。空のリストには&fnone&r&7と入力してください。&r"
-cancel = "&a[&8Bile&a]: &7停止するには&fcancel&r&7と入力してください。このプロンプトは60秒で期限切れになります。&r"
-cancelled = "&a[&8Bile&a]: &e設定の編集をキャンセルしました。&r"
-timeout = "&a[&8Bile&a]: &e設定編集は何も変更せずに期限切れになりました。&r"
+request = "&a[&8Bile&a]: &eチャットに &f{setting}&e の新しい値を入力してください。"
+list = "&a[&8Bile&a]: &7リストの項目はカンマで区切ってください。空のリストにするには &fnone&7 と入力してください。"
+cancel = "&a[&8Bile&a]: &7中止するには &fcancel&7 と入力してください。この入力待ちは60秒で期限切れになります。"
+cancelled = "&a[&8Bile&a]: &e設定の編集をキャンセルしました。"
+timeout = "&a[&8Bile&a]: &e設定の編集は何も変更されずに期限切れになりました。"
 
 [gui.setting.general]
-language = "&dアクティブな言語ロケール&r"
-archive_plugins = "&a置き換える前にプラグインのJARを保存"
+language = "&a使用する言語のロケール"
+archive_plugins = "&a置き換え前にプラグインJARをアーカイブ"
 
 [gui.setting.metrics]
-enabled = "&d匿名のbStats統計&r"
+enabled = "&a匿名のbStats統計"
 
 [gui.setting.remote_slave]
-enabled = "&aリモート受信"
-port = "&aリモート受信ポート"
+enabled = "&aリモート受信側"
+port = "&aリモート受信側のポート"
 
 [gui.setting.remote_master]
 enabled = "&aリモート配信"
 signatures = "&aリモート配信するプラグイン名"
 
 [gui.setting.network]
-socket_timeout = "&aリモート接続のタイムアウト（ミリ秒）"
+socket_timeout = "&aリモートソケットのタイムアウト（ミリ秒）"
 max_transfer = "&a最大転送サイズ（バイト）"
 
 [gui.setting.watcher]
-idle = "&a待機中の確認間隔（ティック）"
-active = "&a動作中の確認間隔（ティック）"
-debounce = "&aファイル指紋の安定待ち時間（ティック）"
+idle = "&a待機時のポーリング間隔（ティック）"
+active = "&a動作時のポーリング間隔（ティック）"
+debounce = "&aフィンガープリントのデバウンス（ティック）"
 ignore = "&a無視するプラグイン名"
 only = "&a許可するプラグイン名"
 
 [gui.setting.lifecycle]
 log_timings = "&aライフサイクルの所要時間ログ"
-health_check = "&a読み込み後の正常性チェック"
+health_check = "&a読み込み後のヘルスチェック"
 
 [director.help]
 no_subcommands = "このページにサブコマンドはありません。"
 no_description = "説明はありません"
-command_group = "コマンドグループ。クリックして開きます。"
-category = "コマンド分類"
-no_parameters = "パラメーターはありません。クリックしてコマンドを入力します。"
-parameters_hover = "パラメータにカーソルを合わせると詳細が表示されます。"
+command_group = "コマンドグループです。クリックして開きます。"
+category = "コマンドのカテゴリ"
+no_parameters = "パラメーターはありません。クリックしてコマンドを入力欄に挿入します。"
+parameters_hover = "パラメーターにカーソルを合わせると詳細が表示されます。"
 
 [director.help.navigation]
 back = "戻る"
@@ -229,68 +231,77 @@ hover = "前のページ"
 hover = "次のページ"
 
 [director.help.parameter]
-required = "このパラメータは必須です。"
-optional = "このパラメータは任意です。"
+required = "このパラメーターは必須です。"
+optional = "このパラメーターは任意です。"
 default = "未指定の場合は \"{value}\" になります。"
-type = "このパラメータの型は {type} です。"
+type = "このパラメーターの型は {type} です。"
 
 [director.runtime.error]
-invalid_origin = "この実行元からはコマンドを実行できません。"
+invalid_origin = "この実行元からはこのコマンドを実行できません。"
 unknown_parameter = "不明なパラメーターキー: {key}"
-unexpected_argument = "予期しない引数 \"{argument}\"。オプションのパラメーターはキー付きで指定してください。例: seed=123"
-unclosed_group = "パラメータ {key} の閉じかっこ \"]\" がありません"
-conversion_failed = "\"{value}\" を {parameter} 用の {type} に変換できません"
+unexpected_argument = "予期しない引数 \"{argument}\"。任意のパラメーターはキーを付けて指定してください (例: seed=123)"
+unclosed_group = "パラメーター {key} の閉じ括弧 \"]\" がありません"
+conversion_failed = "{parameter} の \"{value}\" を {type} に変換できません"
 default_parse_failed = "パラメーター {parameter} のデフォルト値を解析できません"
-missing_argument = "引数 \"{parameter}\" ({type}) が必要です"
+missing_argument = "引数 \"{parameter}\" ({type}) がありません"
 execution_failed = "コマンド {command} の実行に失敗しました: {reason}"
 
 [language.menu]
-your_language = "あなたの言語"
+your_language = "自分の言語"
 reset_your_language = "自分の言語をリセット"
 server_default = "サーバーのデフォルト"
 edit_messages = "言語メッセージを編集"
 use_server_default = "サーバーのデフォルトを使用"
 current = "現在: {locale}"
-current_with_personal = "現在: {locale} (あなた: {personal})"
-your_description = "表示されるメッセージだけを変更します。"
+current_with_personal = "現在: {locale} (自分: {personal})"
+your_description = "自分に表示されるメッセージだけを変更します。"
 reset_description = "サーバーのデフォルト言語を使用します。"
-server_description = "サーバーのデフォルト言語を変更します。"
+server_description = "サーバーのデフォルト言語を変更します"
 edit_description = "言語ごとのメッセージエディターを開きます。"
 select_description = "クリックしてこの言語を選択します。"
 remove_personal_description = "個人の言語選択を削除します。"
-no_controls = "利用できる言語設定はありません。"
+no_controls = "使用できる言語の操作はありません。"
 command = "コマンド: {command}"
-selected = "選択済み"
+selected = "選択中"
 all-volmit-plugins = "すべてのVolmitプラグイン"
 
 [language.error]
-stopping = "プラグインを停止している間は言語を選択できません。"
-editor-player-only = "ゲーム内で言語エディターを開いてください。"
+stopping = "プラグインの停止中は言語を選択できません。"
+editor-player-only = "言語エディターはゲーム内で開いてください。"
 no-providers = "利用できるVolmit言語プロバイダーがありません。"
-numeric-page = "ページ番号を数字で入力してください。"
-personal-player-only = "プレイヤーの個人言語はゲーム内で選択してください。"
-personal-permission = "個人言語を選択する権限がありません。"
-plugin-personal-permission = "{plugin}の個人言語を選択する権限がありません。"
-plugin-server-permission = "{plugin}のサーバー言語を変更する権限がありません。"
-server-locale-required = "サーバーの既定の言語としてen_USなどの言語コードを選択してください。"
-unavailable-for-all = "選択したすべてのプラグインで言語{locale}を利用できるわけではありません。"
+numeric-page = "言語ページは数字で指定してください。"
+personal-player-only = "プレイヤーの言語設定はゲーム内で選択してください。"
+personal-permission = "自分の言語を選択する権限がありません。"
+plugin-personal-permission = "{plugin} で自分の言語を選択する権限がありません。"
+plugin-server-permission = "{plugin} のサーバー言語を変更する権限がありません。"
+server-locale-required = "サーバーのデフォルトには en_US などのロケールを選択してください。"
+unavailable-for-all = "言語 {locale} は、選択したすべてのプラグインで利用できるわけではありません。"
 
 [language.usage]
 editor = "使い方: /{command} language server edit [locale]"
-selection = "使い方: /{command} language self [locale|reset] or server [locale]"
+selection = "使い方: /{command} language self [locale|reset] または server [locale]"
 volmit-selection = "使い方: /volmit plugins languages [locale]"
+update = "使い方: /{command} language update"
 
 [language.selection]
-preparing = "{target}の言語{locale}を準備しています..."
+preparing = "{target} の言語 {locale} を準備しています..."
 save-failed = "{plugin}: 言語の選択を保存できませんでした。サーバーコンソールを確認してください。"
-english-fallback = "{plugin}: {locale}は利用できないため、英語（en_US）を使用します。"
-personal-selected = "{plugin}: 個人言語を{locale}に変更しました。"
-server-selected = "{plugin}: サーバー言語を{locale}に変更しました。"
-server-default-selected = "{plugin}: 個人言語はサーバーの既定の言語に従うようになりました。"
+english-fallback = "{plugin}: {locale} は利用できないため、英語 (en_US) を使用します。"
+personal-selected = "{plugin}: 自分の言語を {locale} に変更しました。"
+server-selected = "{plugin}: サーバー言語を {locale} に変更しました。"
+server-default-selected = "{plugin}: 自分の言語はサーバーのデフォルトに従うようになりました。"
+
+[language.update]
+checking = "{plugin}: 言語リポジトリの変更を確認しています..."
+unchanged = "{plugin}: インストール済みの言語はすでにリポジトリと一致しています。"
+applied = "{plugin}: {locale} を更新しました (追加 {added}、変更 {updated}、保持したローカル編集 {kept})。"
+cooldown = "{plugin}: 言語リポジトリは最近確認されたばかりです。{remaining} 後にもう一度お試しください。"
+locale-failed = "{plugin}: {locale} は更新されませんでした: {reason}"
+failed = "{plugin}: 言語の更新に失敗しました: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
-loading = "{locale}のメッセージを読み込んでいます..."
+loading = "{locale} のメッセージを読み込んでいます..."
 
 [language.editor.section]
 languages = "言語"
@@ -299,15 +310,15 @@ search-title = "{locale} / 検索"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "メッセージキーまたは本文を検索してください。cancelと入力すると戻ります。"
-value = "{key}の新しい値をチャットに入力してください。"
+search = "メッセージのキーまたはテキストを検索します。戻るには cancel と入力してください。"
+value = "チャットに {key} の新しい値を入力してください。"
 current = "現在の値: {value}"
 variables = "変数: {variables}"
-guidance = "改行には\\n、バックスラッシュには\\\\を使ってください。cancelと入力すると戻ります。"
+guidance = "改行には \\n、バックスラッシュには \\\\ を使用します。戻るには cancel と入力してください。"
 
 [language.editor.input]
-expired = "言語エディターの入力時間が切れました。"
-too-long = "入力は{maximum}文字以内にしてください。"
+expired = "言語エディターの入力が期限切れになりました。"
+too-long = "エディターへの入力は {maximum} 文字以内にしてください。"
 unable-to-save = "保存できませんでした: {reason}"
 
 [language.editor.navigation]
@@ -332,26 +343,26 @@ edit-chat = "&7クリックしてチャットで編集します。&r"
 open = "&8クリックしてこの言語を開きます。&r"
 
 [language.editor.category]
-message-count = "&7{count}件のメッセージ&r"
-open = "&8クリックしてこのグループを開きます。&r"
+message-count = "&7{count} 件のメッセージ&r"
+open = "&8クリックしてこのカテゴリを開きます。&r"
 
 [language.editor.error]
-no-permission = "{plugin}の言語を編集する権限がありません。"
+no-permission = "{plugin} の言語を編集する権限がありません。"
 unable-to-edit = "編集できませんでした: {reason}"
 
 [language.editor.saved]
-summary = "{locale}を保存しました。言語の選択は変更されていません。"
+summary = "{locale} を保存しました。言語の選択は変更されていません。"
 change = "{key}: 「{before}」を「{after}」に変更しました。"
 
 [language.editor.part]
-line = "行{line}"
+line = "{line} 行目"
 
 [language.editor.value]
 none = "なし"
 empty = "(空)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: 有効={enabled}, 復元={recovery}, 協調対応={cooperative}, 依存プラグイン={dependents}, アンロード={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: 有効={enabled}, 復元={recovery}, 協調={cooperative}, 依存=[{dependents}], 終了処理={capability}"
 
 [gui.setting]
 update-notifications = "&a更新通知"

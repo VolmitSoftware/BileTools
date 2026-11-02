@@ -29,7 +29,7 @@ public class BileDebugReportTest {
                 .build();
         BileDebugSnapshot snapshot = new BileDebugSnapshot(
                 "Folia global and entity schedulers", "en_US", List.of("de_DE", "en_US"),
-                "ready", "main", config, 4, 1, 9L, 12L,
+                "VolmitSoftware/BileTools@master", "revision 1111111", config, 4, 1, 9L, 12L,
                 true, true, true, temporaryFolder.getRoot().toPath());
 
         String report = BileDebugReport.create(snapshot);

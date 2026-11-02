@@ -1,67 +1,73 @@
 # BileTools — pt_PT
 #
-# === Editar o ficheiro ===
+# === Edição do ficheiro ===
 # plugins/BileTools/languages/pt_PT.toml
-# Pode editar este ficheiro diretamente. As alterações locais são preservadas; as entradas em falta ou inválidas usam o inglês incorporado.
+# Edita este ficheiro diretamente. As alterações locais são mantidas; as entradas em falta ou inválidas usam o inglês incorporado.
 # /biletools language server edit pt_PT
 #
 # === Prefixo ===
-# O prefixo &a[&8Bile&a]: está escrito diretamente em cada mensagem; edita-o nas mensagens correspondentes.
+# O prefixo &a[&8Bile&a]: faz parte de cada mensagem do chat; edita-o aí.
+# Não existe uma definição de prefixo separada nem uma variável de prefixo.
 #
 # === Formatação ===
-# Cores: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B e [RRGGBB]. O MiniMessage continua disponível para formatação personalizada.
+# Cores e estilos: &0-&f, &k-&r.
+# Cores RGB: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# O MiniMessage suporta formatação personalizada. Coloca uma barra invertida antes de & ou [ para os mostrar literalmente.
 #
 # === Variáveis ===
-# Mantenha os nomes das variáveis e use apenas as que pertencem a cada mensagem.
-#   {after}  Valor após a alteração
-#   {argument}  argumento inesperado
-#   {before}  Valor antes da alteração
-#   {category}  categoria
-#   {command}  caminho do comando
-#   {context}  Motivo do recarregamento do plugin
-#   {count}  Número de destinos remotos e seletor do plural; Número de mensagens
+# Mantém os nomes das variáveis inalterados e usa apenas as variáveis de cada mensagem.
+#   {added}  Mensagens adicionadas por uma atualização de idioma
+#   {after}  Valor da mensagem após a edição
+#   {argument}  Argumento de comando inesperado
+#   {before}  Valor da mensagem antes da edição
+#   {capability}  Disponibilidade das capacidades de desmontagem necessárias
+#   {category}  Categoria do editor de configuração
+#   {command}  Caminho do comando ou comando enviado
+#   {context}  Motivo ou causa do recarregamento de um plugin
+#   {cooperative}  Se o plugin implementa o recarregamento cooperativo
+#   {count}  Número de destinos de implementação remota configurados e seletor do plural
+#   {dependents}  Plugins incluídos no grupo de recarregamento
+#   {enabled}  Se o plugin inspecionado está ativado
 #   {file}  Nome do ficheiro JAR do plugin
-#   {group}  categoria
-#   {host}  Endereço IP do remetente
+#   {group}  Grupo de mensagens do editor de idiomas
+#   {host}  Endereço IP do emissor da ligação recebida
 #   {installedVersion}  Versão do plugin atualmente instalada
-#   {key}  Chave da mensagem ou do parâmetro
+#   {kept}  Edições locais mantidas por uma atualização de idioma
+#   {key}  Chave do parâmetro do comando ou da mensagem
 #   {latestVersion}  Última versão disponível na biblioteca
-#   {line}  Linha de origem ou número de linha
-#   {locale}  região
-#   {maximum}  Valor máximo autorizado
+#   {line}  Número de linha numa mensagem de lista
+#   {locale}  Identificador do código de idioma
+#   {maximum}  Comprimento máximo do texto introduzido no editor
 #   {milliseconds}  Duração do carregamento, descarregamento ou recarregamento em milissegundos
-#   {new}  valor novo
-#   {old}  valor anterior
-#   {parameter}  nome do parâmetro
-#   {permission}  Permissão necessária
-#   {personal}  região pessoal
-#   {plugin}  Nome do plug-in
-#   {reason}  motivo da falha
+#   {new}  Novo valor da definição ou da mensagem
+#   {old}  Valor anterior da definição ou da mensagem
+#   {parameter}  Nome do parâmetro do comando
+#   {permission}  Nó de permissão necessário
+#   {personal}  Código de idioma pessoal, quando difere do predefinido do servidor
+#   {plugin}  Nome do plugin
+#   {reason}  Motivo da falha
+#   {recovery}  Se existe um JAR de recuperação da versão em execução
+#   {remaining}  Tempo até ser permitida a próxima verificação de idiomas
 #   {section}  Secção do editor de idiomas
-#   {setting}  nome da definição
-#   {target}  Nome do plug-in
-#   {type}  tipo
-#   {value}  valor atual, predefinido ou bruto
-#   {variables}  marcadores válidos
-#   {version}  Versão pedida ou apresentada do plugin da biblioteca
-
-#   {enabled}  ativo
-#   {recovery}  recuperação
-#   {cooperative}  cooperativo
-#   {dependents}  dependentes
-#   {capability}  descarregamento
+#   {setting}  Nome da definição ou chave da mensagem
+#   {target}  Destino da escolha de idioma
+#   {type}  Tipo do parâmetro do comando
+#   {updated}  Mensagens alteradas por uma atualização de idioma
+#   {value}  Valor atual, predefinido ou enviado
+#   {variables}  Nomes das variáveis necessárias da mensagem
+#   {version}  Versão pedida ou listada do plugin da biblioteca
 
 [command]
-inspect = "Inspecionar a preparação de um plugin para recarregar"
-version = "Mostrar a versão do plugin instalado"
-root = "Grupo de comandos BileTools"
-load = "Carregar um ficheiro JAR de plugin da pasta de plugins"
+inspect = "Verificar se um plugin está pronto para recarregar"
+version = "Mostrar a versão instalada do plugin"
+root = "Comando raiz do BileTools"
+load = "Carregar um JAR de plugin da pasta de plugins"
 unload = "Descarregar da memória um plugin instalado"
 reload = "Recarregar um plugin instalado"
-uninstall = "Eliminar um ficheiro JAR de plugin da pasta de plugins"
-install = "Instalar um plugin da biblioteca Bile"
-library = "Listar plugins da biblioteca ou versões de um plugin"
-debug_dump = "Criar um relatório de diagnóstico e carregá-lo opcionalmente"
+uninstall = "Eliminar um JAR de plugin da pasta de plugins"
+install = "Instalar um plugin da biblioteca do Bile"
+library = "Listar os plugins da biblioteca ou as versões de um plugin"
+debug_dump = "Criar um relatório de diagnóstico completo do BileTools"
 debug = "Ferramentas de diagnóstico do BileTools"
 config = "Abrir o editor completo de configuração no jogo"
 language = "Escolher o teu idioma ou o idioma do servidor"
@@ -79,58 +85,54 @@ library_plugin_name_required = "O nome do plugin da biblioteca não pode estar v
 version_required = "A versão não pode estar vazia"
 
 [message]
-permission_denied = "&a[&8Bile&a]: &7Precisas de &f{permission}&7 ou OP."
+permission_denied = "&a[&8Bile&a]: &7Precisas de &f{permission}&7 ou de OP."
 unknown_command = "&a[&8Bile&a]: &7Comando desconhecido \"&f{command}&7\"."
 restart_required = "&a[&8Bile&a]: &e{plugin}&7 requer um reinício completo do servidor."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 foi marcado como defeituoso após uma falha do ciclo de vida. Os recarregamentos automáticos estão em pausa."
-reloading_context = "&a[&8Bile&a]: &7A recarregar: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7Plugin não encontrado: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7A recarregar: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &cApenas um jogador pode usar este comando."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 foi marcado como inconsistente após uma falha do ciclo de vida. Os recarregamentos automáticos deste plugin estão em pausa."
+reloading_context = "&a[&8Bile&a]: &7A recarregar &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7Não foi possível encontrar \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7A recarregar &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &cEste comando só pode ser usado por um jogador."
 
 [message.remote]
 receiving = "&a[&8Bile&a]: &7A receber &f{file}&7 de &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7 implementado em &f{count}&7 servidores remotos."
-one = "&a[&8Bile&a]: &7&f{plugin}&7 implementado em &f{count}&7 servidor remoto."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Implementação em tempo real concluída: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Falha na implementação em tempo real: &c{file}&7."
+other = "&a[&8Bile&a]: &7Foi implementado &f{plugin}&7 em &f{count}&7 servidores remotos."
+one = "&a[&8Bile&a]: &7Foi implementado &f{plugin}&7 em &f{count}&7 servidor remoto."
 
 [message.reload]
 success = "&a[&8Bile&a]: &7Recarregado: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Falha ao recarregar: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Recarregamento em fila: &f{plugin}&7."
+failed = "&a[&8Bile&a]: &7Falha ao recarregar &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Recarregamento de &f{plugin}&7 em fila."
 command_success = "&a[&8Bile&a]: &7Recarregado: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Falha ao recarregar: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7Não foi possível recarregar \"&f{plugin}&7\"."
 
 [message.unload]
 success = "&a[&8Bile&a]: &7Descarregado da memória: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Falha ao descarregar da memória: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Descarga da memória em fila: &f{plugin}&7."
+failed = "&a[&8Bile&a]: &7Falha ao descarregar da memória &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7Descarregamento de &f{plugin}&7 em fila."
 command_success = "&a[&8Bile&a]: &7Descarregado da memória: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Falha ao descarregar da memória: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7Não foi possível descarregar da memória \"&f{plugin}&7\"."
 
 [message.load]
-queued = "&a[&8Bile&a]: &7Carregamento em fila: &f{plugin}&7."
+queued = "&a[&8Bile&a]: &7Carregamento de &f{plugin}&7 em fila."
 success = "&a[&8Bile&a]: &7Carregado: &f{plugin}&7 de &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Falha ao carregar: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7Não foi possível carregar \"&f{plugin}&7\"."
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7Desinstalação em fila: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Desinstalado &f{plugin}&7 de &f{file}&7."
-delete_failed = "&a[&8Bile&a]: &7O plugin foi descarregado da memória, mas não foi possível eliminar &c{file}&7. Elimina o ficheiro antes de instalar novamente o plugin."
-failed = "&a[&8Bile&a]: &7Falha ao desinstalar: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7Desinstalação de &f{plugin}&7 em fila."
+success = "&a[&8Bile&a]: &7Desinstalado: &f{plugin}&7 de &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7O plugin foi descarregado da memória, mas não foi possível eliminar &c{file}&7. Elimina-o antes de voltares a instalar o plugin."
+failed = "&a[&8Bile&a]: &7Não foi possível desinstalar \"&f{plugin}&7\"."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7Plugin não encontrado na biblioteca: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7Versão \"&f{version}&7\" não encontrada para \"&f{plugin}&7\"."
-install_queued = "&a[&8Bile&a]: &7Instalação da biblioteca em fila: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7Instalado da biblioteca: &f{file}&7."
+plugin_not_found = "&a[&8Bile&a]: &7Não foi possível encontrar \"&f{plugin}&7\" na biblioteca."
+version_not_found = "&a[&8Bile&a]: &7Não foi possível encontrar a versão \"&f{version}&7\" de \"&f{plugin}&7\"."
+install_queued = "&a[&8Bile&a]: &7Instalação de &f{plugin}&7 a partir da biblioteca em fila."
+install_success = "&a[&8Bile&a]: &7Instalado a partir da biblioteca: &f{file}&7."
 install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 foi instalado e requer um reinício completo do servidor."
-install_failed = "&a[&8Bile&a]: &7Falha ao instalar: \"&f{plugin}&7\"."
+install_failed = "&a[&8Bile&a]: &7Não foi possível instalar \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7A biblioteca está vazia."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} instalada) &f{latestVersion}&7 (mais recente)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (mais recente)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (mais recente)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aO editor completo de configuração no jogo foi aberto.&r"
-save_failed = "&a[&8Bile&a]: &cNão foi possível aplicar &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7Foi aberto o editor completo de configuração no jogo."
+save_failed = "&a[&8Bile&a]: &cNão foi possível aplicar &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 foi alterado para &f{new}&7; antes &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 foi alterado de &f{old}&7 para &f{new}&7."
 
 [gui.title]
 root = "&2Configuração do BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dGeral&r"
-metrics = "&aEstatísticas"
+general = "&aGeral"
+metrics = "&aMétricas"
 remote_slave = "&aRecetor remoto"
 remote_master = "&aImplementação remota"
 network = "&aLimites de rede"
 watcher = "&aMonitorização de plugins"
 lifecycle = "&aCiclo de vida"
-languages = "&dIdiomas&r"
+languages = "&aIdiomas"
 
 [gui.navigation]
-back = "&eVoltar&r"
-close = "&cFechar&r"
+back = "&eVoltar"
+close = "&cFechar"
 
 [gui.lore]
-state = "&7Atual:&r {value}"
-toggle = "&8Clica para alternar.&r"
-number = "&8Esquerdo +1, direito -1, Shift ×10, larga para escrever.&r"
-text = "&8Clica para escrever um novo valor no chat.&r"
-language = "&8Clica para escolher um idioma disponível ou escreve uma região.&r"
-category = "&8Clica para editar todas as definições desta categoria.&r"
+state = "&7Atual: {value}"
+toggle = "&8Clica para ativar ou desativar."
+number = "&8Clique esquerdo +1, direito -1, Shift ×10, largar para escrever."
+text = "&8Clica para escrever um novo valor no chat."
+language = "&8Clica para escolher um idioma disponível ou escreve um código de idioma."
+category = "&8Clica para editar todas as definições desta categoria."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eEscreve um novo valor para &f{setting}&r&e no chat.&r"
-list = "&a[&8Bile&a]: &7Separa os itens da lista com vírgulas. Escreve &fnone&r&7 para uma lista vazia.&r"
-cancel = "&a[&8Bile&a]: &7Escreve &fcancel&r&7 para parar. Este pedido expira em 60 segundos.&r"
-cancelled = "&a[&8Bile&a]: &eEdição da configuração cancelada.&r"
-timeout = "&a[&8Bile&a]: &eA edição da configuração expirou sem alterar nada.&r"
+request = "&a[&8Bile&a]: &eEscreve um novo valor para &f{setting}&e no chat."
+list = "&a[&8Bile&a]: &7Separa os itens da lista com vírgulas. Escreve &fnone&7 para uma lista vazia."
+cancel = "&a[&8Bile&a]: &7Escreve &fcancel&7 para cancelar. Este pedido expira em 60 segundos."
+cancelled = "&a[&8Bile&a]: &eEdição da configuração cancelada."
+timeout = "&a[&8Bile&a]: &eA edição da configuração expirou sem alterar nada."
 
 [gui.setting.general]
-language = "&dRegião de idioma ativa&r"
-archive_plugins = "&aArquivar os JAR dos plugins antes da substituição"
+language = "&aCódigo de idioma ativo"
+archive_plugins = "&aArquivar os JAR dos plugins antes de os substituir"
 
 [gui.setting.metrics]
-enabled = "&dMétricas anónimas do bStats&r"
+enabled = "&aMétricas anónimas do bStats"
 
 [gui.setting.remote_slave]
 enabled = "&aRecetor remoto"
@@ -193,34 +195,34 @@ enabled = "&aImplementação remota"
 signatures = "&aNomes dos plugins para implementação remota"
 
 [gui.setting.network]
-socket_timeout = "&aTempo limite das ligações remotas em milissegundos"
+socket_timeout = "&aTempo limite do socket remoto em milissegundos"
 max_transfer = "&aTamanho máximo de transferência em bytes"
 
 [gui.setting.watcher]
-idle = "&aIntervalo de verificação em repouso em ticks"
-active = "&aIntervalo de verificação ativa em ticks"
-debounce = "&aEspera para estabilização das assinaturas em ticks"
+idle = "&aTicks de verificação em repouso"
+active = "&aTicks de verificação ativa"
+debounce = "&aTicks de espera para estabilizar a impressão digital"
 ignore = "&aNomes de plugins ignorados"
 only = "&aNomes de plugins permitidos"
 
 [gui.setting.lifecycle]
-log_timings = "&aRegistos dos tempos do ciclo de vida"
-health_check = "&aVerificações de funcionamento após o carregamento"
+log_timings = "&aRegisto dos tempos do ciclo de vida"
+health_check = "&aVerificações de estado após o carregamento"
 
 [director.help]
 no_subcommands = "Não existem subcomandos nesta página."
 no_description = "Nenhuma descrição fornecida"
-command_group = "Grupo de comandos. Clique para abrir."
+command_group = "Grupo de comandos. Clica para abrir."
 category = "Categoria de comandos"
-no_parameters = "Sem parâmetros. Clique para preencher previamente o comando."
-parameters_hover = "Passe o cursor sobre os parâmetros para saber mais."
+no_parameters = "Sem parâmetros. Clica para preencher o comando."
+parameters_hover = "Passa o cursor sobre os parâmetros para saberes mais."
 
 [director.help.navigation]
 back = "Voltar"
 page = "Página"
 
 [director.help.navigation.parent]
-hover = "Voltar ao grupo de comandos principal"
+hover = "Voltar ao grupo de comandos superior"
 
 [director.help.navigation.previous]
 hover = "Página anterior"
@@ -231,14 +233,14 @@ hover = "Página seguinte"
 [director.help.parameter]
 required = "Este parâmetro é obrigatório."
 optional = "Este parâmetro é opcional."
-default = "Predefinição \"{value}\" se não for definido."
+default = "Se não for definido, usa \"{value}\"."
 type = "Este parâmetro é do tipo {type}."
 
 [director.runtime.error]
 invalid_origin = "Este comando não pode ser executado a partir desta origem."
 unknown_parameter = "Chave de parâmetro desconhecida: {key}"
-unexpected_argument = "Argumento inesperado \"{argument}\". Os parâmetros opcionais devem ser indicados por chave, por ex. seed=123"
-unclosed_group = "Falta o \"]\" de fecho para o parâmetro {key}"
+unexpected_argument = "Argumento inesperado \"{argument}\". Os parâmetros opcionais têm de ser indicados com chave, p. ex. seed=123"
+unclosed_group = "Falta o \"]\" de fecho do parâmetro {key}"
 conversion_failed = "Não foi possível converter \"{value}\" em {type} para {parameter}"
 default_parse_failed = "Não foi possível interpretar o valor predefinido do parâmetro {parameter}"
 missing_argument = "Falta o argumento \"{parameter}\" ({type})"
@@ -247,46 +249,55 @@ execution_failed = "Falha ao executar o comando {command}: {reason}"
 [language.menu]
 your_language = "O teu idioma"
 reset_your_language = "Repor o teu idioma"
-server_default = "Idioma predefinido do servidor"
+server_default = "Predefinido do servidor"
 edit_messages = "Editar mensagens do idioma"
-use_server_default = "Usar o idioma predefinido do servidor"
+use_server_default = "Usar o predefinido do servidor"
 current = "Atual: {locale}"
 current_with_personal = "Atual: {locale} (O teu: {personal})"
-your_description = "Altera apenas as mensagens que vês."
+your_description = "Altera apenas as mensagens que tu vês."
 reset_description = "Usa o idioma predefinido do servidor."
-server_description = "Altera o idioma predefinido do servidor."
+server_description = "Altera o idioma predefinido do servidor"
 edit_description = "Abre o editor de mensagens de cada idioma."
 select_description = "Clica para selecionar este idioma."
 remove_personal_description = "Remove a tua escolha pessoal de idioma."
-no_controls = "Não tens acesso às opções de idioma."
+no_controls = "Não tens nenhuma opção de idioma disponível."
 command = "Comando: {command}"
 selected = "selecionado"
-all-volmit-plugins = "Todos os plugins Volmit"
+all-volmit-plugins = "todos os plugins Volmit"
 
 [language.error]
 stopping = "A escolha de idioma não está disponível enquanto o plugin está a parar."
-editor-player-only = "Abra o editor de idiomas dentro do jogo."
+editor-player-only = "Abre o editor de idiomas no jogo."
 no-providers = "Não há fornecedores de idiomas Volmit disponíveis."
-numeric-page = "Introduza um número de página."
-personal-player-only = "As preferências do idioma do jogador devem ser selecionadas no jogo."
-personal-permission = "Você não tem permissão para selecionar seu idioma."
-plugin-personal-permission = "Não tem permissão para escolher o seu idioma em {plugin}."
-plugin-server-permission = "Não tem permissão para alterar o idioma do servidor em {plugin}."
-server-locale-required = "Escolha um código como en_US para o idioma predefinido do servidor."
+numeric-page = "Usa um número de página."
+personal-player-only = "As preferências de idioma do jogador têm de ser selecionadas no jogo."
+personal-permission = "Não tens permissão para selecionar o teu idioma."
+plugin-personal-permission = "Não tens permissão para selecionar o teu idioma em {plugin}."
+plugin-server-permission = "Não tens permissão para alterar o idioma do servidor em {plugin}."
+server-locale-required = "Seleciona um código de idioma como en_US para o idioma predefinido do servidor."
 unavailable-for-all = "O idioma {locale} não está disponível para todos os plugins selecionados."
 
 [language.usage]
-editor = "Uso: /{command} language server edit [locale]"
-selection = "Uso: /{command} language self [locale|reset] or server [locale]"
-volmit-selection = "Uso: /volmit plugins languages [locale]"
+editor = "Utilização: /{command} language server edit [locale]"
+selection = "Utilização: /{command} language self [locale|reset] ou server [locale]"
+volmit-selection = "Utilização: /volmit plugins languages [locale]"
+update = "Utilização: /{command} language update"
 
 [language.selection]
 preparing = "A preparar o idioma {locale} para {target}..."
-save-failed = "{plugin}: não foi possível guardar a escolha de idioma; consulte a consola do servidor."
-english-fallback = "{plugin}: {locale} não está disponível; será usado inglês (en_US)."
-personal-selected = "{plugin}: o seu idioma agora é {locale}."
-server-selected = "{plugin}: o idioma do servidor agora é {locale}."
-server-default-selected = "{plugin}: o seu idioma segue agora o idioma predefinido do servidor."
+save-failed = "{plugin}: não foi possível guardar a escolha de idioma; consulta a consola do servidor."
+english-fallback = "{plugin}: {locale} não está disponível; será usado o inglês (en_US)."
+personal-selected = "{plugin}: o teu idioma é agora {locale}."
+server-selected = "{plugin}: o idioma do servidor é agora {locale}."
+server-default-selected = "{plugin}: o teu idioma usa agora o predefinido do servidor."
+
+[language.update]
+checking = "{plugin}: a verificar alterações no repositório de idiomas..."
+unchanged = "{plugin}: os idiomas instalados já correspondem ao repositório."
+applied = "{plugin}: {locale} atualizado ({added} adicionadas, {updated} alteradas, {kept} edições locais mantidas)."
+cooldown = "{plugin}: o repositório de idiomas foi verificado recentemente; tenta novamente dentro de {remaining}."
+locale-failed = "{plugin}: {locale} não foi atualizado: {reason}"
+failed = "{plugin}: a atualização de idiomas falhou: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -294,20 +305,20 @@ loading = "A carregar as mensagens de {locale}..."
 
 [language.editor.section]
 languages = "Idiomas"
-search = "Procurar"
-search-title = "{locale} / Procurar"
+search = "Pesquisa"
+search-title = "{locale} / Pesquisa"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Pesquise uma chave de mensagem ou texto. Escreva cancel para voltar."
-value = "Escreva um novo valor para {key} no chat."
+search = "Pesquisa chaves ou texto de mensagens. Escreve cancel para voltar."
+value = "Escreve um novo valor para {key} no chat."
 current = "Valor atual: {value}"
 variables = "Variáveis: {variables}"
-guidance = "Use \\n para mudar de linha, \\\\ para uma barra invertida, ou escreva cancel para voltar."
+guidance = "Usa \\n para uma nova linha, \\\\ para uma barra invertida, ou escreve cancel para voltar."
 
 [language.editor.input]
-expired = "O prazo de introdução de texto no editor de idiomas expirou."
-too-long = "O texto pode ter no máximo {maximum} caracteres."
+expired = "O texto introduzido no editor de idiomas expirou."
+too-long = "O texto introduzido no editor pode ter no máximo {maximum} caracteres."
 unable-to-save = "Não foi possível guardar: {reason}"
 
 [language.editor.navigation]
@@ -318,25 +329,25 @@ next-page = "&ePágina seguinte&r"
 
 [language.editor.search]
 messages = "Pesquisar mensagens"
-messages-lore = "Clique para pesquisar todas as mensagens."
+messages-lore = "Clica para pesquisar em todas as mensagens."
 clear = "Limpar a pesquisa"
 
 [language.editor.message]
 current-value = "&7Valor atual:&r"
 variables = "&8{variables}&r"
-edit-plural = "&7Clique para editar uma forma plural.&r"
-edit-lines = "&7Clique para editar linhas individuais.&r"
-edit-chat = "&7Clique para editar no chat.&r"
+edit-plural = "&7Clica para editar uma forma plural.&r"
+edit-lines = "&7Clica para editar linhas individuais.&r"
+edit-chat = "&7Clica para editar no chat.&r"
 
 [language.editor.locale]
-open = "&8Clique para abrir este idioma.&r"
+open = "&8Clica para abrir este idioma.&r"
 
 [language.editor.category]
 message-count = "&7{count} mensagens&r"
-open = "&8Clique para abrir esta categoria.&r"
+open = "&8Clica para abrir esta categoria.&r"
 
 [language.editor.error]
-no-permission = "Não tem permissão para editar os idiomas de {plugin}."
+no-permission = "Não tens permissão para editar os idiomas de {plugin}."
 unable-to-edit = "Não foi possível editar: {reason}"
 
 [language.editor.saved]
@@ -351,7 +362,7 @@ none = "Nenhum"
 empty = "(vazio)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: ativo={enabled}, recuperação={recovery}, cooperativo={cooperative}, dependentes={dependents}, descarregamento={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: ativado={enabled}, recuperação={recovery}, cooperativo={cooperative}, dependentes=[{dependents}], desmontagem={capability}"
 
 [gui.setting]
 update-notifications = "&aNotificações de atualização"

@@ -31,8 +31,29 @@ ext.bukkitMinecraftRange = providers.gradleProperty('bukkitMinecraftRange').getO
 def apiVersion = '1.20'
 def main = 'com.volmit.bile.BileTools'
 def volmLibCoordinate = providers.gradleProperty("volmLibCoordinate").orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT").get()
-String languageSourceReference = 'master'
-List<File> languageSourceFiles = fileTree('src/main/resources/languages') {
+String languageSourceRepository = providers.gradleProperty('languageSourceRepository').orElse('VolmitSoftware/BileTools').get()
+String languageSourceBranch = providers.gradleProperty('languageSourceBranch').orElse(providers.provider {
+    try {
+        Process process = new ProcessBuilder('git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD')
+                .directory(projectDir)
+                .redirectErrorStream(true)
+                .start()
+        String output = process.inputStream.text.trim()
+        if (process.waitFor() == 0 && output.startsWith('origin/')) {
+            return output.substring('origin/'.length())
+        }
+    } catch (IOException | InterruptedException ignored) {
+    }
+    return 'master'
+}).get()
+if (!(languageSourceRepository ==~ /[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
+    throw new GradleException('languageSourceRepository must be a GitHub owner/repository')
+}
+if (!(languageSourceBranch ==~ /[A-Za-z0-9][A-Za-z0-9._\/-]{0,127}/) || languageSourceBranch.contains('..')) {
+    throw new GradleException('languageSourceBranch must be a Git branch name')
+}
+String languageSourcePath = 'src/main/resources/languages'
+List<File> languageSourceFiles = fileTree(languageSourcePath) {
     include('*.toml')
 }.files.toList().sort { File left, File right -> left.name <=> right.name }
 List<String> languageSourceLocales = new ArrayList<>(languageSourceFiles.size())
@@ -42,7 +63,10 @@ for (File languageSourceFile : languageSourceFiles) {
 }
 def languageSourceManifestTask = tasks.register('generateLanguageSourceManifest', WriteProperties) {
     destinationFile.set(layout.buildDirectory.file('generated/language-source/biletools-language-source.properties'))
-    property('revision', languageSourceReference)
+    property('repository', languageSourceRepository)
+    property('branch', languageSourceBranch)
+    property('path', languageSourcePath)
+    property('extension', '.toml')
     property('locales', languageSourceLocales.join(','))
 }
 
@@ -303,10 +327,20 @@ tasks.register('verifyCompatibilityArtifact') {
             if (!bundledLanguages.isEmpty()) {
                 throw new GradleException("Runtime artifact contains language resources: ${bundledLanguages}")
             }
-            if (languageManifest == null
-                    || languageManifest.getProperty('revision') != languageSourceReference
+            if (languageManifest == null) {
+                throw new GradleException('Runtime artifact is missing biletools-language-source.properties')
+            }
+            if (languageManifest.getProperty('repository') != languageSourceRepository
+                    || languageManifest.getProperty('branch') != languageSourceBranch
+                    || languageManifest.getProperty('path') != languageSourcePath
+                    || languageManifest.getProperty('extension') != '.toml'
                     || languageManifest.getProperty('locales') != languageSourceLocales.join(',')) {
                 throw new GradleException('Runtime language source manifest does not match the build source set')
+            }
+            if (languageManifest.stringPropertyNames().any { String key ->
+                key == 'revision' || key == 'mode' || key.startsWith('sha256.')
+            }) {
+                throw new GradleException('Runtime language source manifest must track the repository branch, not a pinned revision')
             }
         } finally {
             archive.close()

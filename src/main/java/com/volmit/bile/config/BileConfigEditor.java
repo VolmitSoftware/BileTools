@@ -281,7 +281,8 @@ public final class BileConfigEditor implements Listener {
     }
 
     private ItemStack settingItem(Player player, Setting setting, BileConfig config) {
-        String value = display(setting.reader.apply(config));
+        String value = setting.kind == SettingKind.LOCALE
+                ? localeLabel(setting.reader.apply(config)) : display(setting.reader.apply(config));
         MessageArgs arguments = setting.kind == SettingKind.BOOLEAN
                 ? MessageArgs.builder().trusted("value", Boolean.parseBoolean(value) ? "&aenabled" : "&cdisabled").build()
                 : MessageArgs.builder().untrusted("value", value).build();
@@ -293,6 +294,11 @@ public final class BileConfigEditor implements Listener {
         };
         return item(setting.material, legacy(player, setting.name), List.of(
                 legacy(player, BileMessages.GUI_STATE, arguments), legacy(player, instruction)));
+    }
+
+    private String localeLabel(String locale) {
+        String name = plugin.getLocalization().localeDisplayName(locale);
+        return name.equals(locale) ? locale : name + " (" + locale + ")";
     }
 
     private void navigation(Player player, Inventory inventory, boolean back) {

@@ -36,8 +36,6 @@ public final class BileMessages {
     public static final TextKey PERMISSION_DENIED = TextKey.of("message.permission_denied", "&a[&8Bile&a]: &7You need &f{permission}&7 or OP.");
     public static final TextKey UNKNOWN_COMMAND = TextKey.of("message.unknown_command", "&a[&8Bile&a]: &7Unknown command \"&f{command}&7\".");
     public static final TextKey REMOTE_RECEIVING = TextKey.of("message.remote.receiving", "&a[&8Bile&a]: &7Receiving &f{file}&7 from &f{host}&7.");
-    public static final TextKey HOT_DROP_SUCCESS = TextKey.of("message.hot_drop.success", "&a[&8Bile&a]: &7Hot dropped &f{file}&7.");
-    public static final TextKey HOT_DROP_FAILED = TextKey.of("message.hot_drop.failed", "&a[&8Bile&a]: &7Failed to hot drop &c{file}&7.");
     public static final TextKey RESTART_REQUIRED = TextKey.of("message.restart_required", "&a[&8Bile&a]: &e{plugin}&7 requires a full server restart.");
     public static final TextKey RELOAD_SUCCESS = TextKey.of("message.reload.success", "&a[&8Bile&a]: &7Reloaded &f{plugin}&7 (&f{milliseconds}&7ms).");
     public static final TextKey RELOAD_FAILED = TextKey.of("message.reload.failed", "&a[&8Bile&a]: &7Failed to reload &c{plugin}&7.");
@@ -146,7 +144,7 @@ public final class BileMessages {
         builder.addAll(List.of(
                 ERROR_PLUGIN_NAME_REQUIRED, ERROR_LIBRARY_PLUGIN_NAME_REQUIRED, ERROR_VERSION_REQUIRED));
         builder.addAll(List.of(
-                PERMISSION_DENIED, UNKNOWN_COMMAND, REMOTE_RECEIVING, HOT_DROP_SUCCESS, HOT_DROP_FAILED,
+                PERMISSION_DENIED, UNKNOWN_COMMAND, REMOTE_RECEIVING,
                 RESTART_REQUIRED, RELOAD_SUCCESS, RELOAD_FAILED, UNLOAD_SUCCESS, UNLOAD_FAILED));
         builder.add(REMOTE_DEPLOYED);
         builder.addAll(List.of(

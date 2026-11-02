@@ -2,66 +2,72 @@
 #
 # === Редактирование файла ===
 # plugins/BileTools/languages/ru_RU.toml
-# Этот файл можно редактировать напрямую. Локальные изменения сохраняются; для отсутствующих или неверных записей используется встроенный английский текст.
+# Редактируйте этот файл напрямую. Локальные изменения сохраняются; для отсутствующих или неверных записей используется встроенный английский текст.
 # /biletools language server edit ru_RU
 #
 # === Префикс ===
-# Префикс &a[&8Bile&a]: записан непосредственно в каждом сообщении; меняйте его в нужных сообщениях.
+# Префикс &a[&8Bile&a]: входит в каждое сообщение чата; меняйте его там.
+# Отдельной настройки префикса или переменной префикса нет.
 #
 # === Форматирование ===
-# Цвета: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B и [RRGGBB]. Для своего оформления также доступен MiniMessage.
+# Цвета и стили: &0-&f, &k-&r.
+# RGB-цвета: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage поддерживает собственное форматирование. Чтобы вывести & или [ как обычный символ, поставьте перед ним обратную косую черту.
 #
 # === Переменные ===
-# Не меняйте имена переменных и используйте только переменные исходного сообщения.
-#   {after}  Ценность после изменения
-#   {argument}  неожиданный аргумент
-#   {before}  Ценность перед изменением
-#   {category}  категория
-#   {command}  путь команды
-#   {context}  Причина перезагрузки плагина
-#   {count}  Количество удалённых целей и выбор формы множественного числа; Количество сообщений
+# Не меняйте имена переменных и используйте только переменные, относящиеся к каждому сообщению.
+#   {added}  Сообщения, добавленные обновлением языка
+#   {after}  Значение сообщения после изменения
+#   {argument}  Неожиданный аргумент команды
+#   {before}  Значение сообщения до изменения
+#   {capability}  Доступность необходимых средств очистки при выгрузке
+#   {category}  Категория редактора настроек
+#   {command}  Путь команды или отправленная команда
+#   {context}  Причина или источник перезагрузки плагина
+#   {cooperative}  Поддерживает ли плагин кооперативную перезагрузку
+#   {count}  Число целевых серверов удалённого развёртывания и выбор формы множественного числа
+#   {dependents}  Плагины, входящие в группу перезагрузки
+#   {enabled}  Включён ли проверяемый плагин
 #   {file}  Имя JAR-файла плагина
-#   {group}  категория
-#   {host}  IP-адрес отправителя
+#   {group}  Группа сообщений в редакторе языков
+#   {host}  IP-адрес входящего отправителя
 #   {installedVersion}  Установленная сейчас версия плагина
-#   {key}  Ключ сообщения или параметра
+#   {kept}  Локальные правки, сохранённые при обновлении языка
+#   {key}  Ключ параметра команды или сообщения
 #   {latestVersion}  Последняя доступная версия в библиотеке
-#   {line}  Источник строки или номер строки
-#   {locale}  локаль
-#   {maximum}  Максимально допустимая стоимость
+#   {line}  Номер строки в сообщении-списке
+#   {locale}  Идентификатор локали
+#   {maximum}  Максимальная длина ввода в редакторе
 #   {milliseconds}  Длительность загрузки, выгрузки или перезагрузки в миллисекундах
-#   {new}  новое значение
-#   {old}  предыдущее значение
-#   {parameter}  имя параметра
+#   {new}  Новое значение настройки или сообщения
+#   {old}  Предыдущее значение настройки или сообщения
+#   {parameter}  Имя параметра команды
 #   {permission}  Необходимое право доступа
-#   {personal}  личная локаль
-#   {plugin}  Название плагина
-#   {reason}  причина ошибки
+#   {personal}  Личная локаль, если она отличается от локали сервера по умолчанию
+#   {plugin}  Имя плагина
+#   {reason}  Причина ошибки
+#   {recovery}  Доступен ли JAR-файл для восстановления работающей версии
+#   {remaining}  Время до следующей разрешённой проверки языков
 #   {section}  Раздел редактора языков
-#   {setting}  название настройки
-#   {target}  Название плагина
-#   {type}  тип
-#   {value}  текущее, стандартное или исходное значение
-#   {variables}  допустимые заполнители
+#   {setting}  Название настройки или ключ сообщения
+#   {target}  Цель выбора языка
+#   {type}  Тип параметра команды
+#   {updated}  Сообщения, изменённые обновлением языка
+#   {value}  Текущее, стандартное или введённое значение
+#   {variables}  Имена переменных, необходимых сообщению
 #   {version}  Запрошенная или указанная версия плагина из библиотеки
-
-#   {enabled}  включён
-#   {recovery}  восстановление
-#   {cooperative}  совместная подготовка
-#   {dependents}  зависимые
-#   {capability}  выгрузка
 
 [command]
 inspect = "Проверить готовность плагина к перезагрузке"
 version = "Показать установленную версию плагина"
-root = "Группа команд BileTools"
+root = "Корневая команда BileTools"
 load = "Загрузить JAR-файл плагина из каталога plugins"
 unload = "Выгрузить установленный плагин"
 reload = "Перезагрузить установленный плагин"
 uninstall = "Удалить JAR-файл плагина из каталога plugins"
 install = "Установить плагин из библиотеки Bile"
 library = "Показать плагины библиотеки или версии одного плагина"
-debug_dump = "Создать диагностический отчёт и при желании загрузить его"
+debug_dump = "Создать полный диагностический отчёт BileTools"
 debug = "Средства диагностики BileTools"
 config = "Открыть полный редактор настроек в игре"
 language = "Выбрать свой язык или язык сервера"
@@ -82,7 +88,7 @@ version_required = "Версия не может быть пустой"
 permission_denied = "&a[&8Bile&a]: &7Требуется &f{permission}&7 или OP."
 unknown_command = "&a[&8Bile&a]: &7Неизвестная команда \"&f{command}&7\"."
 restart_required = "&a[&8Bile&a]: &e{plugin}&7 требует полного перезапуска сервера."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 помечен как повреждённый после сбоя жизненного цикла. Автоматическая перезагрузка этого плагина приостановлена."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 помечен как нестабильный после сбоя жизненного цикла. Автоматическая перезагрузка этого плагина приостановлена."
 reloading_context = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7Плагин не найден: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Перезагрузка: &f{plugin}&7."
@@ -92,37 +98,33 @@ player_only = "&a[&8Bile&a]: &cЭту команду может использо
 receiving = "&a[&8Bile&a]: &7Получение &f{file}&7 от &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7 развёрнут на &f{count}&7 удалённых серверах."
-one = "&a[&8Bile&a]: &7&f{plugin}&7 развёрнут на &f{count}&7 удалённом сервере."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Горячее развёртывание завершено: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Горячее развёртывание не удалось: &c{file}&7."
+other = "&a[&8Bile&a]: &7Плагин &f{plugin}&7 развёрнут на удалённых серверах: &f{count}&7."
+one = "&a[&8Bile&a]: &7Плагин &f{plugin}&7 развёрнут на &f{count}&7 удалённом сервере."
 
 [message.reload]
-success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Ошибка перезагрузки: &c{plugin}&7."
+success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{milliseconds}&7 мс)."
+failed = "&a[&8Bile&a]: &7Не удалось перезагрузить &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7Перезагрузка поставлена в очередь: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7Ошибка перезагрузки: \"&f{plugin}&7\"."
+command_success = "&a[&8Bile&a]: &7Перезагружен: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7 мс)."
+command_failed = "&a[&8Bile&a]: &7Не удалось перезагрузить \"&f{plugin}&7\"."
 
 [message.unload]
-success = "&a[&8Bile&a]: &7Выгружен: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Ошибка выгрузки: &c{plugin}&7."
+success = "&a[&8Bile&a]: &7Выгружен: &f{plugin}&7 (&f{milliseconds}&7 мс)."
+failed = "&a[&8Bile&a]: &7Не удалось выгрузить &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7Выгрузка поставлена в очередь: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7Выгружен: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7Ошибка выгрузки: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7Не удалось выгрузить \"&f{plugin}&7\"."
 
 [message.load]
 queued = "&a[&8Bile&a]: &7Загрузка поставлена в очередь: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Загружен: &f{plugin}&7 из &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7Ошибка загрузки: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7Загружен: &f{plugin}&7 из &f{file}&7 (&f{milliseconds}&7 мс)."
+failed = "&a[&8Bile&a]: &7Не удалось загрузить \"&f{plugin}&7\"."
 
 [message.uninstall]
 queued = "&a[&8Bile&a]: &7Удаление поставлено в очередь: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7Удалён &f{plugin}&7 из &f{file}&7."
+success = "&a[&8Bile&a]: &7Удалён плагин &f{plugin}&7 (файл &f{file}&7)."
 delete_failed = "&a[&8Bile&a]: &7Плагин выгружен, но не удалось удалить &c{file}&7. Удалите файл перед повторной установкой плагина."
-failed = "&a[&8Bile&a]: &7Ошибка удаления: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7Не удалось удалить \"&f{plugin}&7\"."
 
 [message.library]
 plugin_not_found = "&a[&8Bile&a]: &7Плагин не найден в библиотеке: \"&f{plugin}&7\"."
@@ -130,59 +132,59 @@ version_not_found = "&a[&8Bile&a]: &7Версия \"&f{version}&7\" не най�
 install_queued = "&a[&8Bile&a]: &7Установка из библиотеки поставлена в очередь: &f{plugin}&7."
 install_success = "&a[&8Bile&a]: &7Установлен из библиотеки: &f{file}&7."
 install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 установлен и требует полного перезапуска сервера."
-install_failed = "&a[&8Bile&a]: &7Ошибка установки: \"&f{plugin}&7\"."
+install_failed = "&a[&8Bile&a]: &7Не удалось установить \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7Библиотека пуста."
-installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} установлена) &f{latestVersion}&7 (новейшая)"
-entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (новейшая)"
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} установлена) &f{latestVersion}&7 (последняя)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (последняя)"
 version_entry = "&a[&8Bile&a]: &7{version}"
-latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (новейшая)"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (последняя)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aОткрыт полный внутриигровой редактор конфигурации.&r"
-save_failed = "&a[&8Bile&a]: &cНе удалось применить &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7Открыт полный редактор настроек в игре."
+save_failed = "&a[&8Bile&a]: &cНе удалось применить &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 изменено на &f{new}&7; ранее &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7: значение изменено с &f{old}&7 на &f{new}&7."
 
 [gui.title]
 root = "&2Настройки BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dОбщие&r"
+general = "&aОбщие"
 metrics = "&aСтатистика"
 remote_slave = "&aУдалённый приёмник"
 remote_master = "&aУдалённое развёртывание"
 network = "&aСетевые ограничения"
 watcher = "&aНаблюдение за плагинами"
 lifecycle = "&aЖизненный цикл"
-languages = "&dЯзыки&r"
+languages = "&aЯзыки"
 
 [gui.navigation]
-back = "&eНазад&r"
-close = "&cЗакрыть&r"
+back = "&eНазад"
+close = "&cЗакрыть"
 
 [gui.lore]
-state = "&7Текущее значение:&r {value}"
-toggle = "&8Нажмите, чтобы переключить.&r"
-number = "&8ЛКМ +1, ПКМ -1, Shift ×10, выбросить для ввода.&r"
-text = "&8Нажмите, чтобы ввести новое значение в чат.&r"
-language = "&8Нажмите, чтобы выбрать доступный язык или ввести локаль.&r"
-category = "&8Нажмите, чтобы изменить все параметры этой категории.&r"
+state = "&7Текущее значение: {value}"
+toggle = "&8Нажмите, чтобы переключить."
+number = "&8ЛКМ +1, ПКМ -1, Shift ×10, выбросить для ввода."
+text = "&8Нажмите, чтобы ввести новое значение в чат."
+language = "&8Нажмите, чтобы выбрать доступный язык или ввести локаль."
+category = "&8Нажмите, чтобы изменить все настройки этой категории."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eВведите в чат новое значение для &f{setting}&r&e.&r"
-list = "&a[&8Bile&a]: &7Разделяйте элементы списка запятыми. Введите &fnone&r&7, чтобы очистить список.&r"
-cancel = "&a[&8Bile&a]: &7Введите &fcancel&r&7 для отмены. Запрос истечёт через 60 секунд.&r"
-cancelled = "&a[&8Bile&a]: &eИзменение конфигурации отменено.&r"
-timeout = "&a[&8Bile&a]: &eВремя изменения конфигурации истекло, ничего не изменено.&r"
+request = "&a[&8Bile&a]: &eВведите в чат новое значение для &f{setting}&e."
+list = "&a[&8Bile&a]: &7Разделяйте элементы списка запятыми. Введите &fnone&7, чтобы очистить список."
+cancel = "&a[&8Bile&a]: &7Введите &fcancel&7 для отмены. Запрос действует 60 секунд."
+cancelled = "&a[&8Bile&a]: &eИзменение настроек отменено."
+timeout = "&a[&8Bile&a]: &eВремя на изменение настроек истекло, ничего не изменено."
 
 [gui.setting.general]
-language = "&dАктивная языковая локаль&r"
-archive_plugins = "&aАрхивировать JAR плагинов перед заменой"
+language = "&aЛокаль активного языка"
+archive_plugins = "&aАрхивировать JAR-файлы плагинов перед заменой"
 
 [gui.setting.metrics]
-enabled = "&dАнонимная статистика bStats&r"
+enabled = "&aАнонимная статистика bStats"
 
 [gui.setting.remote_slave]
 enabled = "&aУдалённый приёмник"
@@ -190,7 +192,7 @@ port = "&aПорт удалённого приёмника"
 
 [gui.setting.remote_master]
 enabled = "&aУдалённое развёртывание"
-signatures = "&aНазвания плагинов для удалённого развёртывания"
+signatures = "&aИмена плагинов для удалённого развёртывания"
 
 [gui.setting.network]
 socket_timeout = "&aТайм-аут удалённых соединений в миллисекундах"
@@ -200,8 +202,8 @@ max_transfer = "&aМаксимальный размер передачи в ба
 idle = "&aИнтервал проверки при простое в тиках"
 active = "&aИнтервал проверки при активности в тиках"
 debounce = "&aЗадержка стабилизации отпечатков файлов в тиках"
-ignore = "&aНазвания игнорируемых плагинов"
-only = "&aНазвания разрешённых плагинов"
+ignore = "&aИмена игнорируемых плагинов"
+only = "&aИмена разрешённых плагинов"
 
 [gui.setting.lifecycle]
 log_timings = "&aЖурналы времени операций жизненного цикла"
@@ -229,8 +231,8 @@ hover = "Предыдущая страница"
 hover = "Следующая страница"
 
 [director.help.parameter]
-required = "Этот параметр является обязательным."
-optional = "Этот параметр является необязательным."
+required = "Этот параметр обязателен."
+optional = "Этот параметр необязателен."
 default = "Если не задан, используется значение \"{value}\"."
 type = "Этот параметр имеет тип {type}."
 
@@ -240,53 +242,62 @@ unknown_parameter = "Неизвестный ключ параметра: {key}"
 unexpected_argument = "Неожиданный аргумент \"{argument}\". Необязательные параметры должны задаваться с ключом, например seed=123"
 unclosed_group = "Отсутствует закрывающая скобка \"]\" для параметра {key}"
 conversion_failed = "Невозможно преобразовать \"{value}\" в {type} для {parameter}"
-default_parse_failed = "Невозможно разобрать значение по умолчанию параметра {parameter}"
+default_parse_failed = "Не удалось разобрать значение по умолчанию для параметра {parameter}"
 missing_argument = "Отсутствует аргумент \"{parameter}\" ({type})"
 execution_failed = "Не удалось выполнить команду {command}: {reason}"
 
 [language.menu]
 your_language = "Ваш язык"
-reset_your_language = "Сбросить выбор языка"
+reset_your_language = "Сбросить ваш язык"
 server_default = "Язык сервера по умолчанию"
-edit_messages = "Изменить языковые сообщения"
+edit_messages = "Изменить сообщения языка"
 use_server_default = "Использовать язык сервера по умолчанию"
 current = "Текущий: {locale}"
-current_with_personal = "Текущий: {locale} (Ваш: {personal})"
+current_with_personal = "Текущий: {locale} (ваш: {personal})"
 your_description = "Изменить только сообщения, которые видите вы."
 reset_description = "Использовать язык сервера по умолчанию."
-server_description = "Изменить язык сервера по умолчанию."
+server_description = "Изменить язык сервера по умолчанию"
 edit_description = "Открыть редактор сообщений для каждого языка."
 select_description = "Нажмите, чтобы выбрать этот язык."
 remove_personal_description = "Удалить ваш личный выбор языка."
 no_controls = "У вас нет доступа к настройкам языка."
 command = "Команда: {command}"
-selected = "выбранный"
-all-volmit-plugins = "Все плагины Volmit"
+selected = "выбран"
+all-volmit-plugins = "все плагины Volmit"
 
 [language.error]
 stopping = "Выбор языка недоступен, пока плагин останавливается."
-editor-player-only = "Откройте редактор языка в игре."
+editor-player-only = "Откройте редактор языков в игре."
 no-providers = "Нет доступных языковых провайдеров Volmit."
 numeric-page = "Введите номер страницы числом."
 personal-player-only = "Личный язык игрока нужно выбрать в игре."
 personal-permission = "У вас нет разрешения на выбор языка."
 plugin-personal-permission = "У вас нет разрешения выбирать свой язык для {plugin}."
 plugin-server-permission = "У вас нет разрешения менять язык сервера для {plugin}."
-server-locale-required = "Выберите код языка, например en_US, для языка сервера по умолчанию."
+server-locale-required = "Выберите локаль, например en_US, для языка сервера по умолчанию."
 unavailable-for-all = "Язык {locale} доступен не для всех выбранных плагинов."
 
 [language.usage]
 editor = "Использование: /{command} language server edit [locale]"
-selection = "Использование: /{command} language self [locale|reset] or server [locale]"
+selection = "Использование: /{command} language self [locale|reset] или server [locale]"
 volmit-selection = "Использование: /volmit plugins languages [locale]"
+update = "Использование: /{command} language update"
 
 [language.selection]
-preparing = "Подготовка языка {locale} для {target}..."
+preparing = "Подготовка языка {locale} (цель: {target})..."
 save-failed = "{plugin}: не удалось сохранить выбор языка; проверьте консоль сервера."
 english-fallback = "{plugin}: {locale} недоступен; используется английский (en_US)."
-personal-selected = "{plugin}: Ваш язык сейчас {locale}."
-server-selected = "{plugin}: Язык сервера теперь {locale}."
+personal-selected = "{plugin}: ваш язык теперь {locale}."
+server-selected = "{plugin}: язык сервера теперь {locale}."
 server-default-selected = "{plugin}: теперь ваш язык соответствует языку сервера по умолчанию."
+
+[language.update]
+checking = "{plugin}: проверка изменений в репозитории языков..."
+unchanged = "{plugin}: установленные языки уже соответствуют репозиторию."
+applied = "{plugin}: язык {locale} обновлён (добавлено: {added}, изменено: {updated}, сохранено локальных правок: {kept})."
+cooldown = "{plugin}: репозиторий языков проверялся недавно; повторите попытку через {remaining}."
+locale-failed = "{plugin}: язык {locale} не обновлён: {reason}"
+failed = "{plugin}: не удалось обновить языки: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -299,14 +310,14 @@ search-title = "{locale} / Поиск"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Найдите ключ или текст сообщения. Введите cancel, чтобы вернуться."
+search = "Поиск по ключам и тексту сообщений. Введите cancel, чтобы вернуться."
 value = "Введите в чат новое значение для {key}."
 current = "Текущее значение: {value}"
 variables = "Переменные: {variables}"
 guidance = "Используйте \\n для новой строки, \\\\ для обратной косой черты или введите cancel, чтобы вернуться."
 
 [language.editor.input]
-expired = "Время ввода в редакторе языка истекло."
+expired = "Время ввода в редакторе языков истекло."
 too-long = "Ввод должен содержать не более {maximum} символов."
 unable-to-save = "Не удалось сохранить: {reason}"
 
@@ -332,7 +343,7 @@ edit-chat = "&7Нажмите, чтобы изменить текст в чат�
 open = "&8Нажмите, чтобы открыть этот язык.&r"
 
 [language.editor.category]
-message-count = "&7{count} сообщения&r"
+message-count = "&7Сообщений: {count}&r"
 open = "&8Нажмите, чтобы открыть эту категорию.&r"
 
 [language.editor.error]
@@ -340,7 +351,7 @@ no-permission = "У вас нет разрешения редактироват�
 unable-to-edit = "Не удалось отредактировать: {reason}"
 
 [language.editor.saved]
-summary = "{locale} сохранён. Выбранные языки не изменились."
+summary = "Язык {locale} сохранён. Выбранные языки не изменились."
 change = "{key}: «{before}» заменено на «{after}»."
 
 [language.editor.part]
@@ -351,7 +362,7 @@ none = "Нет"
 empty = "(пусто)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: включён={enabled}, восстановление={recovery}, совместная подготовка={cooperative}, зависимые={dependents}, выгрузка={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: включён={enabled}, восстановление={recovery}, кооперативная перезагрузка={cooperative}, зависимые=[{dependents}], очистка={capability}"
 
 [gui.setting]
 update-notifications = "&aУведомления об обновлениях"

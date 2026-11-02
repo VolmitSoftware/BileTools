@@ -2,66 +2,72 @@
 #
 # === עריכת הקובץ ===
 # plugins/BileTools/languages/he_IL.toml
-# אפשר לערוך קובץ זה ישירות. שינויים מקומיים נשמרים; ערכים חסרים או לא תקינים משתמשים באנגלית המובנית.
+# ערכו קובץ זה ישירות. שינויים מקומיים נשמרים; עבור ערכים חסרים או לא תקינים נעשה שימוש באנגלית המובנית.
 # /biletools language server edit he_IL
 #
 # === קידומת ===
-# הקידומת &a[&8Bile&a]: כתובה ישירות בכל הודעה; יש לערוך אותה בהודעות המתאימות.
+# הקידומת &a[&8Bile&a]: היא חלק מכל הודעת צ׳אט; ערכו אותה שם.
+# אין הגדרה נפרדת לקידומת ואין משתנה לקידומת.
 #
 # === עיצוב ===
-# צבעים: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B וגם [RRGGBB]. ניתן להשתמש גם ב-MiniMessage לעיצוב מותאם.
+# צבעים וסגנונות: &0-&f, &k-&r.
+# צבעי RGB: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage תומך בעיצוב מותאם אישית. כדי להציג & או [ כפשוטם, הוסיפו לפניהם לוכסן הפוך.
 #
 # === משתנים ===
-# יש לשמור על שמות המשתנים ולהשתמש רק במשתנים הקיימים בכל הודעה.
-#   {after}  ערך לאחר השינוי
-#   {argument}  ארגומנט לא צפוי
-#   {before}  ערך לפני השינוי
-#   {category}  קטגוריה
-#   {command}  נתיב פקודה
-#   {context}  הסיבה לטעינה מחדש של התוסף
-#   {count}  מספר היעדים המרוחקים ובורר צורת הרבים; מספר ההודעות
+# אל תשנו את שמות המשתנים, והשתמשו רק במשתנים השייכים לכל הודעה.
+#   {added}  הודעות שנוספו בעדכון שפה
+#   {after}  ערך ההודעה לאחר העריכה
+#   {argument}  ארגומנט פקודה לא צפוי
+#   {before}  ערך ההודעה לפני העריכה
+#   {capability}  זמינות יכולות הפירוק הנדרשות
+#   {category}  קטגוריה בעורך ההגדרות
+#   {command}  נתיב הפקודה או הפקודה שנשלחה
+#   {context}  הסיבה או הגורם לטעינה מחדש של התוסף
+#   {cooperative}  האם התוסף תומך בטעינה מחדש שיתופית
+#   {count}  מספר יעדי הפריסה המרוחקת שהוגדרו ובורר צורת הרבים
+#   {dependents}  התוספים הכלולים בקבוצת הטעינה מחדש
+#   {enabled}  האם התוסף הנבדק פעיל
 #   {file}  שם קובץ ה-JAR של התוסף
-#   {group}  קטגוריה
-#   {host}  כתובת ה-IP של השולח
+#   {group}  קבוצת הודעות בעורך השפות
+#   {host}  כתובת ה-IP של השולח הנכנס
 #   {installedVersion}  גרסת התוסף המותקנת כעת
-#   {key}  מפתח הודעה או פרמטר
+#   {kept}  עריכות מקומיות שנשמרו בעדכון שפה
+#   {key}  מפתח פרמטר הפקודה או מפתח ההודעה
 #   {latestVersion}  הגרסה האחרונה הזמינה בספרייה
-#   {line}  מקור או קו מספר
-#   {locale}  אזור שפה
-#   {maximum}  ערך מותר מקסימלי
+#   {line}  מספר שורה בתוך הודעת רשימה
+#   {locale}  מזהה קוד השפה
+#   {maximum}  אורך הקלט המרבי בעורך
 #   {milliseconds}  משך הטעינה, הפריקה או הטעינה מחדש במילישניות
-#   {new}  הערך החדש
-#   {old}  הערך הקודם
-#   {parameter}  שם פרמטר
+#   {new}  הערך החדש של ההגדרה או ההודעה
+#   {old}  הערך הקודם של ההגדרה או ההודעה
+#   {parameter}  שם פרמטר הפקודה
 #   {permission}  ההרשאה הנדרשת
-#   {personal}  אזור השפה האישי
-#   {plugin}  שם Plugin
-#   {reason}  סיבת כשל
+#   {personal}  קוד השפה האישי, אם הוא שונה מברירת המחדל של השרת
+#   {plugin}  שם התוסף
+#   {reason}  סיבת הכשל
+#   {recovery}  האם קיים קובץ JAR לשחזור הגרסה הפועלת
+#   {remaining}  הזמן שנותר עד שתותר בדיקת השפות הבאה
 #   {section}  מקטע בעורך השפות
-#   {setting}  שם הגדרה
-#   {target}  שם Plugin
-#   {type}  סוג
-#   {value}  ערך נוכחי, ברירת מחדל או גולמי
-#   {variables}  מצייני מקום תקינים
+#   {setting}  שם ההגדרה או מפתח ההודעה
+#   {target}  יעד בחירת השפה
+#   {type}  סוג פרמטר הפקודה
+#   {updated}  הודעות ששונו בעדכון שפה
+#   {value}  ערך נוכחי, ברירת מחדל או ערך שהוזן
+#   {variables}  שמות המשתנים הנדרשים להודעה
 #   {version}  גרסת תוסף הספרייה המבוקשת או המוצגת
-
-#   {enabled}  פעיל
-#   {recovery}  שחזור
-#   {cooperative}  שיתופי
-#   {dependents}  תלויים
-#   {capability}  פריקה
 
 [command]
 inspect = "בדיקת מוכנות תוסף לטעינה מחדש"
 version = "הצגת גרסת התוסף המותקן"
-root = "קבוצת הפקודות של BileTools"
+root = "פקודת השורש של BileTools"
 load = "טעינת קובץ JAR של תוסף מתיקיית התוספים"
 unload = "פריקת תוסף מותקן מהזיכרון"
 reload = "טעינה מחדש של תוסף מותקן"
 uninstall = "מחיקת קובץ JAR של תוסף מתיקיית התוספים"
 install = "התקנת תוסף מספריית Bile"
-library = "הצגת תוספי הספרייה או הגרסאות של תוסף"
-debug_dump = "יצירת דוח אבחון והעלאתו לפי בחירה"
+library = "הצגת תוספי הספרייה או הגרסאות של תוסף אחד"
+debug_dump = "יצירת דוח אבחון מקיף של BileTools"
 debug = "כלי אבחון של BileTools"
 config = "פתיחת עורך ההגדרות המלא בתוך המשחק"
 language = "בחירת השפה שלך או שפת השרת"
@@ -82,47 +88,43 @@ version_required = "הגרסה לא יכולה להיות ריקה"
 permission_denied = "&a[&8Bile&a]: &7נדרשת הרשאה &f{permission}&7 או OP."
 unknown_command = "&a[&8Bile&a]: &7פקודה לא ידועה \"&f{command}&7\"."
 restart_required = "&a[&8Bile&a]: &e{plugin}&7 דורש הפעלה מלאה מחדש של השרת."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 סומן כפגום לאחר כשל במחזור החיים. הטעינות האוטומטיות שלו הושהו."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 סומן כלא יציב לאחר כשל במחזור החיים. הטעינה מחדש האוטומטית שלו הושהתה."
 reloading_context = "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7 (&f{context}&7)."
 plugin_not_found = "&a[&8Bile&a]: &7התוסף לא נמצא: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7טוען מחדש: &f{plugin}&7."
 player_only = "&a[&8Bile&a]: &cרק שחקן יכול להשתמש בפקודה זו."
 
 [message.remote]
-receiving = "&a[&8Bile&a]: &7מקבל את &f{file}&7 מאת &f{host}&7."
+receiving = "&a[&8Bile&a]: &7מקבל את &f{file}&7 מהכתובת &f{host}&7."
 
 [message.remote.deployed]
 other = "&a[&8Bile&a]: &7התוסף &f{plugin}&7 נפרס אל &f{count}&7 שרתים מרוחקים."
 one = "&a[&8Bile&a]: &7התוסף &f{plugin}&7 נפרס אל &f{count}&7 שרת מרוחק."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7פריסה חמה הושלמה: &f{file}&7."
-failed = "&a[&8Bile&a]: &7הפריסה החמה נכשלה: &c{file}&7."
 
 [message.reload]
 success = "&a[&8Bile&a]: &7נטען מחדש: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7הטעינה מחדש נכשלה: &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7הטעינה מחדש נוספה לתור: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7נטען מחדש: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7הטעינה מחדש נכשלה: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7לא ניתן לטעון מחדש את \"&f{plugin}&7\"."
 
 [message.unload]
 success = "&a[&8Bile&a]: &7נפרק מהזיכרון: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7הפריקה מהזיכרון נכשלה: &c{plugin}&7."
 queued = "&a[&8Bile&a]: &7הפריקה מהזיכרון נוספה לתור: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7נפרק מהזיכרון: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7הפריקה מהזיכרון נכשלה: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7לא ניתן לפרוק את \"&f{plugin}&7\"."
 
 [message.load]
 queued = "&a[&8Bile&a]: &7הטעינה נוספה לתור: &f{plugin}&7."
 success = "&a[&8Bile&a]: &7נטען: &f{plugin}&7 מתוך &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7הטעינה נכשלה: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7לא ניתן לטעון את \"&f{plugin}&7\"."
 
 [message.uninstall]
 queued = "&a[&8Bile&a]: &7הסרת ההתקנה נוספה לתור: &f{plugin}&7."
 success = "&a[&8Bile&a]: &7הוסרה ההתקנה של &f{plugin}&7 מתוך &f{file}&7."
 delete_failed = "&a[&8Bile&a]: &7התוסף נפרק מהזיכרון, אך לא ניתן למחוק את &c{file}&7. יש למחוק את הקובץ לפני התקנת התוסף מחדש."
-failed = "&a[&8Bile&a]: &7הסרת ההתקנה נכשלה: \"&f{plugin}&7\"."
+failed = "&a[&8Bile&a]: &7לא ניתן להסיר את ההתקנה של \"&f{plugin}&7\"."
 
 [message.library]
 plugin_not_found = "&a[&8Bile&a]: &7התוסף לא נמצא בספרייה: \"&f{plugin}&7\"."
@@ -130,59 +132,59 @@ version_not_found = "&a[&8Bile&a]: &7הגרסה \"&f{version}&7\" לא נמצא�
 install_queued = "&a[&8Bile&a]: &7התקנה מהספרייה נוספה לתור: &f{plugin}&7."
 install_success = "&a[&8Bile&a]: &7הותקן מהספרייה: &f{file}&7."
 install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 הותקן ודורש הפעלה מלאה מחדש של השרת."
-install_failed = "&a[&8Bile&a]: &7ההתקנה נכשלה: \"&f{plugin}&7\"."
+install_failed = "&a[&8Bile&a]: &7לא ניתן להתקין את \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7הספרייה ריקה."
-installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} מותקנת) &f{latestVersion}&7 (העדכנית)"
-entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (העדכנית)"
+installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} מותקנת) &f{latestVersion}&7 (העדכנית ביותר)"
+entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (העדכנית ביותר)"
 version_entry = "&a[&8Bile&a]: &7{version}"
-latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (העדכנית)"
+latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (העדכנית ביותר)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aעורך התצורה המלא בתוך המשחק נפתח.&r"
-save_failed = "&a[&8Bile&a]: &cלא ניתן להחיל את &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7עורך ההגדרות המלא בתוך המשחק נפתח."
+save_failed = "&a[&8Bile&a]: &cלא ניתן להחיל את &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 שונה ל-&f{new}&7; קודם &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 שונה מ-&f{old}&7 ל-&f{new}&7."
 
 [gui.title]
 root = "&2הגדרות BileTools"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dכללי&r"
-metrics = "&aסטטיסטיקה"
+general = "&aכללי"
+metrics = "&aמדדים"
 remote_slave = "&aמקלט מרוחק"
 remote_master = "&aפריסה מרוחקת"
 network = "&aמגבלות רשת"
 watcher = "&aמעקב אחר תוספים"
 lifecycle = "&aמחזור חיים"
-languages = "&dשפות&r"
+languages = "&aשפות"
 
 [gui.navigation]
-back = "&eחזרה&r"
-close = "&cסגירה&r"
+back = "&eחזרה"
+close = "&cסגירה"
 
 [gui.lore]
-state = "&7נוכחי:&r {value}"
-toggle = "&8לחצו כדי להחליף מצב.&r"
-number = "&8שמאל +1, ימין -1, Shift ×10, השלכה כדי להקליד.&r"
-text = "&8לחצו כדי להקליד ערך חדש בצ׳אט.&r"
-language = "&8לחצו כדי לבחור שפה זמינה או להקליד אזור שפה.&r"
-category = "&8לחצו כדי לערוך כל הגדרה בקטגוריה זו.&r"
+state = "&7נוכחי: {value}"
+toggle = "&8לחצו כדי להחליף מצב."
+number = "&8לחיצה שמאלית +1, ימנית -1, Shift ×10, השלכה להקלדה."
+text = "&8לחצו כדי להקליד ערך חדש בצ׳אט."
+language = "&8לחצו כדי לבחור שפה זמינה או להקליד קוד שפה."
+category = "&8לחצו כדי לערוך כל הגדרה בקטגוריה זו."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &eהקלידו בצ׳אט ערך חדש עבור &f{setting}&r&e.&r"
-list = "&a[&8Bile&a]: &7הפרידו פריטי רשימה בפסיקים. הקלידו &fnone&r&7 עבור רשימה ריקה.&r"
-cancel = "&a[&8Bile&a]: &7הקלידו &fcancel&r&7 כדי לעצור. הבקשה תפוג בתוך 60 שניות.&r"
-cancelled = "&a[&8Bile&a]: &eעריכת התצורה בוטלה.&r"
-timeout = "&a[&8Bile&a]: &eזמן עריכת התצורה פג מבלי ששונה דבר.&r"
+request = "&a[&8Bile&a]: &eהקלידו בצ׳אט ערך חדש עבור &f{setting}&e."
+list = "&a[&8Bile&a]: &7הפרידו פריטי רשימה בפסיקים. הקלידו &fnone&7 עבור רשימה ריקה."
+cancel = "&a[&8Bile&a]: &7הקלידו &fcancel&7 כדי לבטל. תוקף הבקשה יפוג בעוד 60 שניות."
+cancelled = "&a[&8Bile&a]: &eעריכת ההגדרות בוטלה."
+timeout = "&a[&8Bile&a]: &eזמן עריכת ההגדרות פג, ולא שונה דבר."
 
 [gui.setting.general]
-language = "&dאזור השפה הפעיל&r"
+language = "&aקוד השפה הפעיל"
 archive_plugins = "&aשמירת קובצי JAR של תוספים בארכיון לפני החלפתם"
 
 [gui.setting.metrics]
-enabled = "&dמדדי bStats אנונימיים&r"
+enabled = "&aמדדי bStats אנונימיים"
 
 [gui.setting.remote_slave]
 enabled = "&aמקלט מרוחק"
@@ -252,24 +254,24 @@ edit_messages = "עריכת הודעות השפה"
 use_server_default = "שימוש בברירת המחדל של השרת"
 current = "נוכחית: {locale}"
 current_with_personal = "נוכחית: {locale} (שלך: {personal})"
-your_description = "שנה רק את ההודעות שאתה רואה."
-reset_description = "השתמש בשפת ברירת המחדל של השרת."
-server_description = "שנה את שפת ברירת המחדל של השרת."
-edit_description = "פתח את עורך ההודעות לכל שפה."
-select_description = "לחץ כדי לבחור בשפה זו."
-remove_personal_description = "הסר את בחירת השפה האישית שלך."
+your_description = "שינוי ההודעות שמוצגות לך בלבד."
+reset_description = "שימוש בשפת ברירת המחדל של השרת."
+server_description = "שינוי שפת ברירת המחדל של השרת"
+edit_description = "פתיחת עורך ההודעות לכל שפה."
+select_description = "לחצו כדי לבחור בשפה זו."
+remove_personal_description = "הסרת בחירת השפה האישית שלך."
 no_controls = "אין לך גישה להגדרות שפה."
 command = "פקודה: {command}"
 selected = "נבחר"
 all-volmit-plugins = "כל תוספי Volmit"
 
 [language.error]
-stopping = "בחירת שפה אינה זמינה בזמן שהתוסף מפסיק."
-editor-player-only = "פתח את עורך השפה במשחק."
+stopping = "בחירת שפה אינה זמינה בזמן שהתוסף נעצר."
+editor-player-only = "יש לפתוח את עורך השפות בתוך המשחק."
 no-providers = "אין ספקי שפה זמינים של Volmit."
 numeric-page = "יש להזין מספר עמוד."
 personal-player-only = "יש לבחור העדפות שפה של שחקן במשחק."
-personal-permission = "אין לך רשות לבחור את השפה שלך."
+personal-permission = "אין לך הרשאה לבחור את השפה שלך."
 plugin-personal-permission = "אין לך הרשאה לבחור שפה אישית עבור {plugin}."
 plugin-server-permission = "אין לך הרשאה לשנות את שפת השרת עבור {plugin}."
 server-locale-required = "יש לבחור קוד שפה כגון en_US כשפת ברירת המחדל של השרת."
@@ -277,16 +279,25 @@ unavailable-for-all = "השפה {locale} אינה זמינה לכל התוספי
 
 [language.usage]
 editor = "שימוש: /{command} language server edit [locale]"
-selection = "שימוש: /{command} language self [locale|reset] or server [locale]"
+selection = "שימוש: /{command} language self [locale|reset] או server [locale]"
 volmit-selection = "שימוש: /volmit plugins languages [locale]"
+update = "שימוש: /{command} language update"
 
 [language.selection]
-preparing = "מכין את השפה {locale} עבור {target}..."
+preparing = "מתבצעת הכנת השפה {locale} עבור {target}..."
 save-failed = "{plugin}: לא ניתן לשמור את בחירת השפה; יש לבדוק את מסוף השרת."
 english-fallback = "{plugin}: השפה {locale} אינה זמינה; נעשה שימוש באנגלית (en_US)."
-personal-selected = "{plugin}: השפה שלך עכשיו {locale}."
-server-selected = "{plugin}: שפת השרת עכשיו {locale}."
+personal-selected = "{plugin}: השפה שלך היא כעת {locale}."
+server-selected = "{plugin}: שפת השרת היא כעת {locale}."
 server-default-selected = "{plugin}: השפה שלך תואמת כעת לשפת ברירת המחדל של השרת."
+
+[language.update]
+checking = "{plugin}: מתבצעת בדיקת שינויים במאגר השפות..."
+unchanged = "{plugin}: השפות המותקנות כבר תואמות למאגר."
+applied = "{plugin}: השפה {locale} עודכנה (נוספו: {added}, שונו: {updated}, עריכות מקומיות שנשמרו: {kept})."
+cooldown = "{plugin}: מאגר השפות נבדק לאחרונה; נסו שוב בעוד {remaining}."
+locale-failed = "{plugin}: השפה {locale} לא עודכנה: {reason}"
+failed = "{plugin}: עדכון השפות נכשל: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -299,48 +310,48 @@ search-title = "{locale} / חיפוש"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "יש לחפש מפתח הודעה או טקסט. לחזרה, יש להקליד cancel."
-value = "יש להקליד בצ׳אט ערך חדש עבור {key}."
+search = "חפשו לפי מפתח הודעה או טקסט. כדי לחזור, הקלידו cancel."
+value = "הקלידו בצ׳אט ערך חדש עבור {key}."
 current = "ערך נוכחי: {value}"
 variables = "משתנים: {variables}"
-guidance = "יש להשתמש ב־\\n לשורה חדשה וב־\\\\ ללוכסן הפוך, או להקליד cancel כדי לחזור."
+guidance = "השתמשו ב־\\n לשורה חדשה וב־\\\\ ללוכסן הפוך, או הקלידו cancel כדי לחזור."
 
 [language.editor.input]
-expired = "זמן ההזנה בעורך השפה פג."
+expired = "זמן ההזנה בעורך השפות פג."
 too-long = "הקלט יכול להכיל לכל היותר {maximum} תווים."
 unable-to-save = "לא ניתן לשמור: {reason}"
 
 [language.editor.navigation]
 back = "&eחזרה&r"
-close = "&cסגור&r"
+close = "&cסגירה&r"
 previous-page = "&eהעמוד הקודם&r"
-next-page = "&eדף הבא&r"
+next-page = "&eהעמוד הבא&r"
 
 [language.editor.search]
 messages = "חיפוש הודעות"
-messages-lore = "לחיצה לחיפוש בכל ההודעות."
+messages-lore = "לחצו כדי לחפש בכל ההודעות."
 clear = "ניקוי החיפוש"
 
 [language.editor.message]
 current-value = "&7ערך נוכחי:&r"
 variables = "&8{variables}&r"
-edit-plural = "&7לחיצה לעריכת צורת רבים.&r"
-edit-lines = "&7לחיצה לעריכת שורות בודדות.&r"
-edit-chat = "&7לחיצה לעריכה בצ׳אט.&r"
+edit-plural = "&7לחצו כדי לערוך צורת רבים.&r"
+edit-lines = "&7לחצו כדי לערוך שורות בודדות.&r"
+edit-chat = "&7לחצו כדי לערוך בצ׳אט.&r"
 
 [language.editor.locale]
-open = "&8לחץ לפתוח את השפה.&r"
+open = "&8לחצו כדי לפתוח את השפה הזו.&r"
 
 [language.editor.category]
-message-count = "&7{count} הודעות&r"
-open = "&8לחץ לפתוח קטגוריה זו.&r"
+message-count = "&7הודעות: {count}&r"
+open = "&8לחצו כדי לפתוח קטגוריה זו.&r"
 
 [language.editor.error]
 no-permission = "אין לך הרשאה לערוך את השפות של {plugin}."
 unable-to-edit = "לא ניתן לערוך: {reason}"
 
 [language.editor.saved]
-summary = "{locale} נשמרה. בחירות השפה לא השתנו."
+summary = "השפה {locale} נשמרה. בחירות השפה לא השתנו."
 change = "{key}: הערך ״{before}״ הוחלף ב־״{after}״."
 
 [language.editor.part]
@@ -351,7 +362,7 @@ none = "אין"
 empty = "(ריק)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: פעיל={enabled}, שחזור={recovery}, שיתופי={cooperative}, תלויים={dependents}, פריקה={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: פעיל={enabled}, שחזור={recovery}, טעינה מחדש שיתופית={cooperative}, תלויים=[{dependents}], פירוק={capability}"
 
 [gui.setting]
 update-notifications = "&aהתראות עדכון"

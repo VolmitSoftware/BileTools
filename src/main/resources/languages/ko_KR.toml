@@ -2,69 +2,75 @@
 #
 # === 파일 편집 ===
 # plugins/BileTools/languages/ko_KR.toml
-# 이 파일을 직접 편집할 수 있습니다. 로컬 변경은 유지되며, 누락되거나 잘못된 항목에는 내장 영어를 사용합니다.
+# 이 파일을 직접 편집하세요. 로컬 변경 사항은 유지되며, 누락되거나 잘못된 항목에는 내장 영어가 사용됩니다.
 # /biletools language server edit ko_KR
 #
 # === 접두사 ===
-# 접두사 &a[&8Bile&a]: 는 각 메시지에 직접 적혀 있습니다. 변경하려면 해당 메시지를 수정하세요.
+# 접두사 &a[&8Bile&a]: 는 각 채팅 메시지의 일부입니다. 변경하려면 각 메시지에서 직접 편집하세요.
+# 접두사 전용 설정이나 접두사 변수는 없습니다.
 #
 # === 서식 ===
-# 색상: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB]. 사용자 지정 서식에는 MiniMessage도 사용할 수 있습니다.
+# 색상과 스타일: &0-&f, &k-&r.
+# RGB 색상: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage로 사용자 지정 서식을 사용할 수 있습니다. & 또는 [ 를 그대로 표시하려면 앞에 백슬래시를 붙이세요.
 #
 # === 변수 ===
-# 변수 이름을 변경하지 말고 각 메시지에 원래 있는 변수만 사용하세요.
-#   {after}  변경 후 가치
-#   {argument}  예상하지 못한 인수
-#   {before}  변경 전의 값
-#   {category}  편집기 범주
-#   {command}  명령 경로
-#   {context}  플러그인을 다시 불러오는 이유
-#   {count}  원격 대상 수와 복수형 선택 값; 메시지 수
+# 변수 이름은 바꾸지 말고 각 메시지에 속한 변수만 사용하세요.
+#   {added}  언어 업데이트로 추가된 메시지
+#   {after}  편집 후 메시지 값
+#   {argument}  예상하지 못한 명령어 인수
+#   {before}  편집 전 메시지 값
+#   {capability}  필요한 종료 처리 기능의 사용 가능 여부
+#   {category}  설정 편집기 카테고리
+#   {command}  명령어 경로 또는 입력된 명령어
+#   {context}  플러그인을 다시 로드하는 이유 또는 계기
+#   {cooperative}  플러그인이 협력형 다시 로드를 구현하는지 여부
+#   {count}  설정된 원격 배포 대상 수와 복수형 선택 값
+#   {dependents}  다시 로드 그룹에 포함된 플러그인
+#   {enabled}  검사한 플러그인의 활성화 여부
 #   {file}  플러그인 JAR 파일 이름
-#   {group}  편집기 범주
-#   {host}  발신자의 IP 주소
+#   {group}  언어 편집기 메시지 그룹
+#   {host}  수신된 발신자의 IP 주소
 #   {installedVersion}  현재 설치된 플러그인 버전
-#   {key}  메시지 또는 매개변수 키
+#   {kept}  언어 업데이트에서 유지된 로컬 편집
+#   {key}  명령어 매개변수 키 또는 메시지 키
 #   {latestVersion}  라이브러리에서 사용 가능한 최신 버전
-#   {line}  소스 라인 또는 라인 번호
-#   {locale}  로케일
-#   {maximum}  최대 허용 값
-#   {milliseconds}  불러오기, 해제 또는 다시 불러오기에 걸린 시간(밀리초)
-#   {new}  새 값
-#   {old}  이전 값
-#   {parameter}  매개변수 이름
-#   {permission}  필요한 권한
-#   {personal}  개인 로케일
-#   {plugin}  Plugin 이름
+#   {line}  목록 메시지 안의 줄 번호
+#   {locale}  로케일 ID
+#   {maximum}  편집기 입력의 최대 길이
+#   {milliseconds}  로드, 언로드 또는 다시 로드에 걸린 시간(밀리초)
+#   {new}  설정 또는 메시지의 새 값
+#   {old}  설정 또는 메시지의 이전 값
+#   {parameter}  명령어 매개변수 이름
+#   {permission}  필요한 권한 노드
+#   {personal}  서버 기본값과 다를 때의 개인 로케일
+#   {plugin}  플러그인 이름
 #   {reason}  실패 이유
+#   {recovery}  실행 중인 버전의 복구용 JAR가 있는지 여부
+#   {remaining}  다음 언어 확인이 가능해질 때까지 남은 시간
 #   {section}  언어 편집기 섹션
-#   {setting}  설정 이름
-#   {target}  Plugin 이름
-#   {type}  형식
-#   {value}  현재값, 기본값 또는 원시값
-#   {variables}  사용 가능한 자리표시자
-#   {version}  요청되거나 표시된 라이브러리 플러그인 버전
-
-#   {enabled}  활성
-#   {recovery}  복구
-#   {cooperative}  협력 지원
-#   {dependents}  종속 플러그인
-#   {capability}  언로드
+#   {setting}  설정 이름 또는 메시지 키
+#   {target}  언어 선택 대상
+#   {type}  명령어 매개변수 유형
+#   {updated}  언어 업데이트로 변경된 메시지
+#   {value}  현재 값, 기본값 또는 입력된 값
+#   {variables}  필요한 메시지 변수 이름
+#   {version}  요청되거나 목록에 표시된 라이브러리 플러그인 버전
 
 [command]
-inspect = "플러그인 다시 로드 준비 상태 확인"
+inspect = "플러그인 다시 로드 준비 상태 검사"
 version = "설치된 플러그인 버전 표시"
-root = "BileTools 명령어 그룹"
-load = "plugins 디렉터리에서 플러그인 JAR 불러오기"
+root = "BileTools 루트 명령어"
+load = "plugins 디렉터리에서 플러그인 JAR 로드"
 unload = "설치된 플러그인 언로드"
-reload = "설치된 플러그인 다시 불러오기"
+reload = "설치된 플러그인 다시 로드"
 uninstall = "plugins 디렉터리에서 플러그인 JAR 삭제"
 install = "Bile 라이브러리에서 플러그인 설치"
-library = "라이브러리 플러그인 또는 플러그인 버전 표시"
-debug_dump = "진단 보고서를 생성하고 선택적으로 업로드"
+library = "라이브러리 플러그인 또는 한 플러그인의 버전 목록 표시"
+debug_dump = "BileTools 종합 진단 보고서 생성"
 debug = "BileTools 진단 도구"
 config = "게임 내 전체 설정 편집기 열기"
-language = "개인 언어 또는 서버 언어 선택"
+language = "내 언어 또는 서버 언어 선택"
 
 [parameter]
 installed_plugin = "설치된 플러그인 이름"
@@ -79,58 +85,54 @@ library_plugin_name_required = "라이브러리 플러그인 이름은 비워 �
 version_required = "버전은 비워 둘 수 없습니다"
 
 [message]
-permission_denied = "&a[&8Bile&a]: &7&f{permission}&7 권한 또는 OP가 필요합니다."
-unknown_command = "&a[&8Bile&a]: &7알 수 없는 명령어 \"&f{command}&7\"."
-restart_required = "&a[&8Bile&a]: &e{plugin}&7은 서버를 완전히 다시 시작해야 합니다."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7은 수명 주기 실패 후 오류 상태로 표시되었습니다. 이 플러그인의 자동 다시 불러오기가 일시 중지되었습니다."
-reloading_context = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7플러그인을 찾을 수 없음: \"&f{plugin}&7\"."
-reloading = "&a[&8Bile&a]: &7다시 불러오는 중: &f{plugin}&7."
-player_only = "&a[&8Bile&a]: &c플레이어만 이 명령어를 사용할 수 있습니다."
+permission_denied = "&a[&8Bile&a]: &7권한 &f{permission}&7 또는 OP가 필요합니다."
+unknown_command = "&a[&8Bile&a]: &7알 수 없는 명령어입니다: \"&f{command}&7\"."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 플러그인은 서버를 완전히 다시 시작해야 합니다."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 플러그인이 수명 주기 오류 후 비정상 상태로 표시되었습니다. 이 플러그인의 자동 다시 로드가 일시 중지되었습니다."
+reloading_context = "&a[&8Bile&a]: &7다시 로드하는 중: &f{plugin}&7 (&f{context}&7)."
+plugin_not_found = "&a[&8Bile&a]: &7플러그인을 찾을 수 없습니다: \"&f{plugin}&7\"."
+reloading = "&a[&8Bile&a]: &7다시 로드하는 중: &f{plugin}&7."
+player_only = "&a[&8Bile&a]: &c이 명령어는 플레이어만 사용할 수 있습니다."
 
 [message.remote]
-receiving = "&a[&8Bile&a]: &7&f{host}&7에서 &f{file}&7 수신 중."
+receiving = "&a[&8Bile&a]: &7수신 중: &f{file}&7 (보낸 곳: &f{host}&7)."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7을 &f{count}&7개의 원격 서버에 배포했습니다."
-one = "&a[&8Bile&a]: &7&f{plugin}&7을 &f{count}&7개의 원격 서버에 배포했습니다."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7핫 배포 완료: &f{file}&7."
-failed = "&a[&8Bile&a]: &7핫 배포 실패: &c{file}&7."
+other = "&a[&8Bile&a]: &7배포 완료: &f{plugin}&7 (원격 서버 &f{count}&7대)."
+one = "&a[&8Bile&a]: &7배포 완료: &f{plugin}&7 (원격 서버 &f{count}&7대)."
 
 [message.reload]
-success = "&a[&8Bile&a]: &7다시 불러오기 완료: &f{plugin}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7다시 불러오기 실패: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7다시 불러오기 대기열 추가: &f{plugin}&7."
-command_success = "&a[&8Bile&a]: &7다시 불러오기 완료: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
-command_failed = "&a[&8Bile&a]: &7다시 불러오기 실패: \"&f{plugin}&7\"."
+success = "&a[&8Bile&a]: &7다시 로드 완료: &f{plugin}&7 (&f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7다시 로드 실패: &c{plugin}&7."
+queued = "&a[&8Bile&a]: &7다시 로드 대기열에 추가됨: &f{plugin}&7."
+command_success = "&a[&8Bile&a]: &7다시 로드 완료: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
+command_failed = "&a[&8Bile&a]: &7다시 로드할 수 없습니다: \"&f{plugin}&7\"."
 
 [message.unload]
 success = "&a[&8Bile&a]: &7언로드 완료: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7언로드 실패: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7언로드 대기열 추가: &f{plugin}&7."
+queued = "&a[&8Bile&a]: &7언로드 대기열에 추가됨: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7언로드 완료: &f{plugin}&7 (&f{file}&7)."
-command_failed = "&a[&8Bile&a]: &7언로드 실패: \"&f{plugin}&7\"."
+command_failed = "&a[&8Bile&a]: &7언로드할 수 없습니다: \"&f{plugin}&7\"."
 
 [message.load]
-queued = "&a[&8Bile&a]: &7로드 대기열 추가: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7로드 완료: &f{plugin}&7, &f{file}&7 (&f{milliseconds}&7ms)."
-failed = "&a[&8Bile&a]: &7로드 실패: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7로드 대기열에 추가됨: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7로드 완료: &f{plugin}&7 (&f{file}&7에서, &f{milliseconds}&7ms)."
+failed = "&a[&8Bile&a]: &7로드할 수 없습니다: \"&f{plugin}&7\"."
 
 [message.uninstall]
-queued = "&a[&8Bile&a]: &7제거 대기열 추가: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7&f{file}&7에서 &f{plugin}&7을 제거했습니다."
-delete_failed = "&a[&8Bile&a]: &7플러그인을 언로드했지만 &c{file}&7을 삭제하지 못했습니다. 다시 설치하기 전에 파일을 삭제하세요."
-failed = "&a[&8Bile&a]: &7제거 실패: \"&f{plugin}&7\"."
+queued = "&a[&8Bile&a]: &7제거 대기열에 추가됨: &f{plugin}&7."
+success = "&a[&8Bile&a]: &7제거 완료: &f{plugin}&7 (&f{file}&7 삭제됨)."
+delete_failed = "&a[&8Bile&a]: &7플러그인은 언로드했지만 &c{file}&7 파일을 삭제하지 못했습니다. 플러그인을 다시 설치하기 전에 이 파일을 삭제하세요."
+failed = "&a[&8Bile&a]: &7제거할 수 없습니다: \"&f{plugin}&7\"."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7라이브러리에서 플러그인을 찾을 수 없음: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7\"&f{plugin}&7\"의 버전 \"&f{version}&7\"을 찾을 수 없습니다."
-install_queued = "&a[&8Bile&a]: &7라이브러리 설치 대기열 추가: &f{plugin}&7."
-install_success = "&a[&8Bile&a]: &7라이브러리에서 설치됨: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7을 설치했습니다. 서버를 완전히 다시 시작해야 합니다."
-install_failed = "&a[&8Bile&a]: &7설치 실패: \"&f{plugin}&7\"."
+plugin_not_found = "&a[&8Bile&a]: &7라이브러리에서 찾을 수 없습니다: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7버전 \"&f{version}&7\"을(를) \"&f{plugin}&7\"에서 찾을 수 없습니다."
+install_queued = "&a[&8Bile&a]: &7라이브러리 설치 대기열에 추가됨: &f{plugin}&7."
+install_success = "&a[&8Bile&a]: &7라이브러리에서 설치함: &f{file}&7."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 플러그인을 설치했습니다. 서버를 완전히 다시 시작해야 합니다."
+install_failed = "&a[&8Bile&a]: &7설치할 수 없습니다: \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7라이브러리가 비어 있습니다."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} 설치됨) &f{latestVersion}&7 (최신)"
 entry = "&a[&8Bile&a]: &7{plugin} &f{latestVersion}&7 (최신)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (최신)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &a게임 내 전체 구성 편집기를 열었습니다.&r"
-save_failed = "&a[&8Bile&a]: &c&f{setting}&r&c적용할 수 없습니다:{reason}&r"
+opened = "&a[&8Bile&a]: &7게임 내 전체 설정 편집기를 열었습니다."
+save_failed = "&a[&8Bile&a]: &c설정 &f{setting}&c을(를) 적용할 수 없습니다: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7을(를) &f{new}&7(으)로 변경했습니다. 이전 값: &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 값을 &f{new}&7(으)로 변경했습니다. 이전 값: &f{old}&7."
 
 [gui.title]
 root = "&2BileTools 설정"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&d일반&r"
+general = "&a일반"
 metrics = "&a통계"
 remote_slave = "&a원격 수신기"
 remote_master = "&a원격 배포"
 network = "&a네트워크 제한"
 watcher = "&a플러그인 감시"
 lifecycle = "&a수명 주기"
-languages = "&d언어&r"
+languages = "&a언어"
 
 [gui.navigation]
-back = "&e뒤로&r"
-close = "&c닫기&r"
+back = "&e뒤로"
+close = "&c닫기"
 
 [gui.lore]
-state = "&7현재:&r{value}"
-toggle = "&8클릭하여 전환.&r"
-number = "&8왼쪽 +1, 오른쪽 -1, 시프트 ×10, 형식에 드롭.&r"
-text = "&8채팅에서 새 값을 입력하려면 클릭하세요.&r"
-language = "&8사용 가능한 언어를 선택하거나 로케일을 입력하려면 클릭하세요.&r"
-category = "&8이 카테고리의 모든 설정을 편집하려면 클릭하세요.&r"
+state = "&7현재: {value}"
+toggle = "&8클릭하여 전환합니다."
+number = "&8왼쪽 클릭 +1, 오른쪽 클릭 -1, Shift ×10, 버리기로 직접 입력."
+text = "&8클릭하여 채팅에 새 값을 입력합니다."
+language = "&8클릭하여 사용 가능한 언어를 선택하거나 로케일을 입력합니다."
+category = "&8클릭하여 이 카테고리의 모든 설정을 편집합니다."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &e채팅에서&f{setting}&r&e의 새 값을 입력하세요.&r"
-list = "&a[&8Bile&a]: &7목록 항목을 쉼표로 구분하세요. 빈 목록의 경우&fnone&r&7을 입력하세요.&r"
-cancel = "&a[&8Bile&a]: &7중지하려면&fcancel&r&7을 입력하세요. 이 프롬프트는 60초 후 만료됩니다.&r"
-cancelled = "&a[&8Bile&a]: &e설정 편집을 취소했습니다.&r"
-timeout = "&a[&8Bile&a]: &e변경 없이 구성 편집이 만료되었습니다.&r"
+request = "&a[&8Bile&a]: &e채팅에 &f{setting}&e의 새 값을 입력하세요."
+list = "&a[&8Bile&a]: &7목록 항목은 쉼표로 구분하세요. 빈 목록으로 하려면 &fnone&7을 입력하세요."
+cancel = "&a[&8Bile&a]: &7중지하려면 &fcancel&7을 입력하세요. 이 입력 요청은 60초 후에 만료됩니다."
+cancelled = "&a[&8Bile&a]: &e설정 편집을 취소했습니다."
+timeout = "&a[&8Bile&a]: &e아무것도 변경하지 않은 채 설정 편집이 만료되었습니다."
 
 [gui.setting.general]
-language = "&d활성 언어 로케일&r"
+language = "&a사용 중인 언어 로케일"
 archive_plugins = "&a교체 전에 플러그인 JAR 보관"
 
 [gui.setting.metrics]
-enabled = "&d익명 bStats 통계&r"
+enabled = "&a익명 bStats 통계"
 
 [gui.setting.remote_slave]
 enabled = "&a원격 수신기"
@@ -193,19 +195,19 @@ enabled = "&a원격 배포"
 signatures = "&a원격 배포할 플러그인 이름"
 
 [gui.setting.network]
-socket_timeout = "&a원격 연결 제한 시간(밀리초)"
+socket_timeout = "&a원격 소켓 제한 시간(밀리초)"
 max_transfer = "&a최대 전송 크기(바이트)"
 
 [gui.setting.watcher]
-idle = "&a유휴 상태 확인 간격(틱)"
-active = "&a활성 상태 확인 간격(틱)"
-debounce = "&a파일 지문 안정화 대기 시간(틱)"
+idle = "&a유휴 폴링 간격(틱)"
+active = "&a활성 폴링 간격(틱)"
+debounce = "&a파일 지문 디바운스 시간(틱)"
 ignore = "&a무시할 플러그인 이름"
 only = "&a허용할 플러그인 이름"
 
 [gui.setting.lifecycle]
 log_timings = "&a수명 주기 소요 시간 로그"
-health_check = "&a불러온 후 정상 작동 검사"
+health_check = "&a로드 후 상태 검사"
 
 [director.help]
 no_subcommands = "이 페이지에는 하위 명령어가 없습니다."
@@ -238,10 +240,10 @@ type = "이 매개변수의 유형은 {type}입니다."
 invalid_origin = "이 실행 위치에서는 이 명령어를 실행할 수 없습니다."
 unknown_parameter = "알 수 없는 매개변수 키: {key}"
 unexpected_argument = "예상하지 못한 인수 \"{argument}\". 선택적 매개변수는 키와 함께 지정해야 합니다. 예: seed=123"
-unclosed_group = "매개변수 {key}의 닫는 \"]\"가 누락되었습니다"
-conversion_failed = "\"{value}\" 값을 {parameter}용 {type} 형식으로 변환할 수 없습니다"
+unclosed_group = "매개변수 {key}의 닫는 \"]\"가 없습니다"
+conversion_failed = "{parameter}의 \"{value}\" 값을 {type} 유형으로 변환할 수 없습니다"
 default_parse_failed = "매개변수 {parameter}의 기본값을 분석할 수 없습니다"
-missing_argument = "인수 \"{parameter}\" ({type})가 필요합니다"
+missing_argument = "인수 \"{parameter}\" ({type})이(가) 없습니다"
 execution_failed = "명령어 {command} 실행에 실패했습니다: {reason}"
 
 [language.menu]
@@ -254,7 +256,7 @@ current = "현재: {locale}"
 current_with_personal = "현재: {locale} (내 언어: {personal})"
 your_description = "나에게 표시되는 메시지만 변경합니다."
 reset_description = "서버 기본 언어를 사용합니다."
-server_description = "서버 기본 언어를 변경합니다."
+server_description = "서버 기본 언어를 변경합니다"
 edit_description = "언어별 메시지 편집기를 엽니다."
 select_description = "클릭하여 이 언어를 선택합니다."
 remove_personal_description = "개인 언어 선택을 제거합니다."
@@ -265,28 +267,37 @@ all-volmit-plugins = "모든 Volmit 플러그인"
 
 [language.error]
 stopping = "플러그인이 중지되는 동안에는 언어를 선택할 수 없습니다."
-editor-player-only = "게임 안에서 언어 편집기를 여세요."
+editor-player-only = "언어 편집기는 게임 안에서 여세요."
 no-providers = "사용 가능한 Volmit 언어 제공자가 없습니다."
-numeric-page = "페이지 번호를 숫자로 입력하세요."
-personal-player-only = "개인 언어는 게임 안에서 선택해야 합니다."
-personal-permission = "개인 언어를 선택할 권한이 없습니다."
-plugin-personal-permission = "{plugin}의 개인 언어를 선택할 권한이 없습니다."
+numeric-page = "언어 페이지는 숫자로 입력하세요."
+personal-player-only = "플레이어 언어 설정은 게임 안에서 선택해야 합니다."
+personal-permission = "내 언어를 선택할 권한이 없습니다."
+plugin-personal-permission = "{plugin}에서 내 언어를 선택할 권한이 없습니다."
 plugin-server-permission = "{plugin}의 서버 언어를 변경할 권한이 없습니다."
-server-locale-required = "서버 기본 언어로 en_US 같은 언어 코드를 선택하세요."
-unavailable-for-all = "{locale} 언어는 선택한 모든 플러그인에서 지원되는 것은 아닙니다."
+server-locale-required = "서버 기본값으로 en_US 같은 로케일을 선택하세요."
+unavailable-for-all = "{locale} 언어는 선택한 일부 플러그인에서 사용할 수 없습니다."
 
 [language.usage]
 editor = "사용법: /{command} language server edit [locale]"
-selection = "사용법: /{command} language self [locale|reset] or server [locale]"
+selection = "사용법: /{command} language self [locale|reset] 또는 server [locale]"
 volmit-selection = "사용법: /volmit plugins languages [locale]"
+update = "사용법: /{command} language update"
 
 [language.selection]
-preparing = "{target}의 {locale} 언어를 준비하는 중..."
+preparing = "{target}용 {locale} 언어를 준비하는 중..."
 save-failed = "{plugin}: 언어 선택을 저장하지 못했습니다. 서버 콘솔을 확인하세요."
-english-fallback = "{plugin}: {locale}을 사용할 수 없어 영어(en_US)를 사용합니다."
-personal-selected = "{plugin}: 개인 언어를 {locale}으로 변경했습니다."
-server-selected = "{plugin}: 서버 언어를 {locale}으로 변경했습니다."
-server-default-selected = "{plugin}: 개인 언어가 이제 서버 기본 언어를 따릅니다."
+english-fallback = "{plugin}: {locale} 언어를 사용할 수 없어 영어(en_US)를 사용합니다."
+personal-selected = "{plugin}: 내 언어가 {locale}(으)로 변경되었습니다."
+server-selected = "{plugin}: 서버 언어가 {locale}(으)로 변경되었습니다."
+server-default-selected = "{plugin}: 내 언어가 이제 서버 기본값을 따릅니다."
+
+[language.update]
+checking = "{plugin}: 언어 저장소의 변경 사항을 확인하는 중..."
+unchanged = "{plugin}: 설치된 언어가 이미 저장소와 일치합니다."
+applied = "{plugin}: {locale} 언어를 업데이트했습니다 (추가 {added}, 변경 {updated}, 유지된 로컬 편집 {kept})."
+cooldown = "{plugin}: 언어 저장소를 최근에 확인했습니다. {remaining} 후에 다시 시도하세요."
+locale-failed = "{plugin}: {locale} 언어를 업데이트하지 못했습니다: {reason}"
+failed = "{plugin}: 언어 업데이트에 실패했습니다: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -299,15 +310,15 @@ search-title = "{locale} / 검색"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "메시지 키 또는 내용을 검색하세요. 돌아가려면 cancel을 입력하세요."
+search = "메시지 키 또는 텍스트를 검색하세요. 돌아가려면 cancel을 입력하세요."
 value = "채팅에 {key}의 새 값을 입력하세요."
 current = "현재 값: {value}"
 variables = "변수: {variables}"
-guidance = "줄바꿈에는 \\n, 역슬래시에는 \\\\를 사용하세요. 돌아가려면 cancel을 입력하세요."
+guidance = "줄바꿈에는 \\n, 백슬래시에는 \\\\를 사용하거나, 돌아가려면 cancel을 입력하세요."
 
 [language.editor.input]
-expired = "언어 편집기의 입력 시간이 만료되었습니다."
-too-long = "입력은 최대 {maximum}자까지 가능합니다."
+expired = "언어 편집기 입력 시간이 만료되었습니다."
+too-long = "편집기 입력은 최대 {maximum}자까지 가능합니다."
 unable-to-save = "저장하지 못했습니다: {reason}"
 
 [language.editor.navigation]
@@ -333,15 +344,15 @@ open = "&8클릭하여 이 언어를 엽니다.&r"
 
 [language.editor.category]
 message-count = "&7메시지 {count}개&r"
-open = "&8클릭하여 이 그룹을 엽니다.&r"
+open = "&8클릭하여 이 카테고리를 엽니다.&r"
 
 [language.editor.error]
 no-permission = "{plugin}의 언어를 편집할 권한이 없습니다."
 unable-to-edit = "편집하지 못했습니다: {reason}"
 
 [language.editor.saved]
-summary = "{locale}을 저장했습니다. 언어 선택은 변경되지 않았습니다."
-change = "{key}: “{before}”에서 “{after}”로 변경했습니다."
+summary = "{locale} 언어를 저장했습니다. 언어 선택은 변경되지 않았습니다."
+change = "{key}: “{before}”에서 “{after}”(으)로 변경했습니다."
 
 [language.editor.part]
 line = "{line}번째 줄"
@@ -351,7 +362,7 @@ none = "없음"
 empty = "(비어 있음)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: 활성={enabled}, 복구={recovery}, 협력 지원={cooperative}, 종속 플러그인={dependents}, 언로드={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: 활성={enabled}, 복구={recovery}, 협력={cooperative}, 종속=[{dependents}], 종료 처리={capability}"
 
 [gui.setting]
 update-notifications = "&a업데이트 알림"

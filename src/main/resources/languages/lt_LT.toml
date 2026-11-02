@@ -2,89 +2,95 @@
 #
 # === Failo redagavimas ===
 # plugins/BileTools/languages/lt_LT.toml
-# Šį failą galima redaguoti tiesiogiai. Vietiniai pakeitimai išsaugomi; trūkstamiems ar netinkamiems įrašams naudojama integruota anglų kalba.
+# Redaguokite šį failą tiesiogiai. Vietiniai pakeitimai išsaugomi; trūkstamiems arba netinkamiems įrašams naudojama integruota anglų kalba.
 # /biletools language server edit lt_LT
 #
 # === Priešdėlis ===
-# Priešdėlis &a[&8Bile&a]: įrašytas tiesiogiai kiekviename pranešime; keiskite jį atitinkamuose pranešimuose.
+# Priešdėlis &a[&8Bile&a]: yra kiekvieno pokalbio pranešimo dalis; redaguokite jį ten.
+# Atskiro priešdėlio nustatymo ar priešdėlio kintamojo nėra.
 #
 # === Formatavimas ===
-# Spalvos: &0-&f, &k-&r, &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B ir [RRGGBB]. Pasirinktiniam formatavimui galima naudoti MiniMessage.
+# Spalvos ir stiliai: &0-&f, &k-&r.
+# RGB spalvos: &#RRGGBB, &xRRGGBB, &x&R&R&G&G&B&B, [RRGGBB].
+# MiniMessage palaiko pasirinktinį formatavimą. Kad & arba [ būtų rodomi pažodžiui, prieš juos parašykite atvirkštinį pasvirąjį brūkšnį.
 #
 # === Kintamieji ===
-# Nekeiskite kintamųjų pavadinimų ir naudokite tik konkrečiame pranešime esančius kintamuosius.
-#   {after}  Vertė po pakeitimo
-#   {argument}  netikėtas argumentas
-#   {before}  Vertė prieš pakeitimą
-#   {category}  kategorija
-#   {command}  komandos kelias
-#   {context}  Papildinio pakartotinio įkėlimo priežastis
-#   {count}  Nuotolinių tikslų skaičius ir daugiskaitos parinkiklis; Pranešimų skaičius
+# Nekeiskite kintamųjų pavadinimų ir naudokite tik tam pranešimui priklausančius kintamuosius.
+#   {added}  Kalbos atnaujinimo pridėti pranešimai
+#   {after}  Pranešimo reikšmė po redagavimo
+#   {argument}  Netikėtas komandos argumentas
+#   {before}  Pranešimo reikšmė prieš redagavimą
+#   {capability}  Reikiamų uždarymo galimybių prieinamumas
+#   {category}  Konfigūracijos rengyklės kategorija
+#   {command}  Komandos kelias arba pateikta komanda
+#   {context}  Papildinio įkėlimo iš naujo priežastis arba paleidiklis
+#   {cooperative}  Ar papildinys palaiko kooperatinį įkėlimą iš naujo
+#   {count}  Sukonfigūruotų nuotolinio diegimo tikslų skaičius ir daugiskaitos formos parinkiklis
+#   {dependents}  Į įkėlimo iš naujo grupę įtraukti papildiniai
+#   {enabled}  Ar tikrinamas papildinys įjungtas
 #   {file}  Papildinio JAR failo pavadinimas
-#   {group}  kategorija
-#   {host}  Siuntėjo IP adresas
+#   {group}  Kalbų rengyklės pranešimų grupė
+#   {host}  Gaunamo siuntėjo IP adresas
 #   {installedVersion}  Šiuo metu įdiegta papildinio versija
-#   {key}  Pranešimo arba parametro raktas
+#   {kept}  Kalbos atnaujinimo išsaugoti vietiniai pakeitimai
+#   {key}  Komandos parametro arba pranešimo raktas
 #   {latestVersion}  Naujausia bibliotekoje prieinama versija
-#   {line}  Pradinės eilutės arba eilutės numeris
-#   {locale}  lokalė
-#   {maximum}  Didžiausia leidžiama vertė
-#   {milliseconds}  Įkėlimo, iškėlimo arba pakartotinio įkėlimo trukmė milisekundėmis
-#   {new}  nauja reikšmė
-#   {old}  ankstesnė reikšmė
-#   {parameter}  parametro vardas
-#   {permission}  Reikalingas leidimas
-#   {personal}  asmeninė lokalė
-#   {plugin}  Įskiepio pavadinimas
-#   {reason}  klaidos priežastis
-#   {section}  Kalbų redaktoriaus skiltis
-#   {setting}  nuostatos vardas
-#   {target}  Įskiepio pavadinimas
-#   {type}  tipas
-#   {value}  dabartinė, numatytoji arba neapdorota reikšmė
-#   {variables}  galimi vietos žymekliai
-#   {version}  Prašoma arba rodoma bibliotekos papildinio versija
-
-#   {enabled}  įjungtas
-#   {recovery}  atkūrimas
-#   {cooperative}  bendradarbiavimas
-#   {dependents}  priklausomi
-#   {capability}  iškėlimas
+#   {line}  Eilutės numeris sąrašo pranešime
+#   {locale}  Lokalės identifikatorius
+#   {maximum}  Didžiausias rengyklės įvesties ilgis
+#   {milliseconds}  Įkėlimo, iškėlimo arba įkėlimo iš naujo trukmė milisekundėmis
+#   {new}  Nauja nustatymo arba pranešimo reikšmė
+#   {old}  Ankstesnė nustatymo arba pranešimo reikšmė
+#   {parameter}  Komandos parametro pavadinimas
+#   {permission}  Reikalingas leidimo mazgas
+#   {personal}  Asmeninė lokalė, jei ji skiriasi nuo numatytosios serverio lokalės
+#   {plugin}  Papildinio pavadinimas
+#   {reason}  Nesėkmės priežastis
+#   {recovery}  Ar yra veikiančios versijos atkūrimo JAR failas
+#   {remaining}  Laikas, kol bus leidžiama vėl tikrinti kalbas
+#   {section}  Kalbų rengyklės skiltis
+#   {setting}  Nustatymo pavadinimas arba pranešimo raktas
+#   {target}  Kalbos pasirinkimo tikslas
+#   {type}  Komandos parametro tipas
+#   {updated}  Kalbos atnaujinimo pakeisti pranešimai
+#   {value}  Dabartinė, numatytoji arba pateikta reikšmė
+#   {variables}  Reikalingų pranešimo kintamųjų pavadinimai
+#   {version}  Prašoma arba išvardyta bibliotekos papildinio versija
 
 [command]
 inspect = "Patikrinti papildinio pasirengimą įkelti iš naujo"
 version = "Rodyti įdiegto papildinio versiją"
-root = "BileTools komandų grupė"
-load = "Įkelti įskiepio JAR failą iš plugins katalogo"
-unload = "Iškelti įdiegtą įskiepį iš atminties"
-reload = "Iš naujo įkelti įdiegtą įskiepį"
-uninstall = "Ištrinti įskiepio JAR failą iš plugins katalogo"
-install = "Įdiegti įskiepį iš Bile bibliotekos"
-library = "Rodyti bibliotekos įskiepius arba įskiepio versijas"
-debug_dump = "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
+root = "BileTools pagrindinė komanda"
+load = "Įkelti papildinio JAR failą iš plugins katalogo"
+unload = "Iškelti įdiegtą papildinį iš atminties"
+reload = "Iš naujo įkelti įdiegtą papildinį"
+uninstall = "Ištrinti papildinio JAR failą iš plugins katalogo"
+install = "Įdiegti papildinį iš Bile bibliotekos"
+library = "Išvardyti bibliotekos papildinius arba vieno papildinio versijas"
+debug_dump = "Sukurti išsamią BileTools diagnostikos ataskaitą"
 debug = "BileTools diagnostikos įrankiai"
-config = "Atverti visą konfigūracijos rengyklę žaidime"
+config = "Atverti visą žaidimo konfigūracijos rengyklę"
 language = "Pasirinkti savo arba serverio kalbą"
 
 [parameter]
-installed_plugin = "Įdiegto įskiepio pavadinimas"
-library_plugin = "Bibliotekos įskiepio pavadinimas"
-version = "Bibliotekos įskiepio versija"
+installed_plugin = "Įdiegto papildinio pavadinimas"
+library_plugin = "Bibliotekos papildinio pavadinimas"
+version = "Bibliotekos papildinio versija"
 sender = "Komandos siuntėjas"
 debug_upload = "Įkelti ataskaitą į mclo.gs"
 
 [error]
-plugin_name_required = "Įskiepio pavadinimas negali būti tuščias"
-library_plugin_name_required = "Bibliotekos įskiepio pavadinimas negali būti tuščias"
+plugin_name_required = "Papildinio pavadinimas negali būti tuščias"
+library_plugin_name_required = "Bibliotekos papildinio pavadinimas negali būti tuščias"
 version_required = "Versija negali būti tuščia"
 
 [message]
 permission_denied = "&a[&8Bile&a]: &7Reikia &f{permission}&7 leidimo arba OP teisių."
 unknown_command = "&a[&8Bile&a]: &7Nežinoma komanda \"&f{command}&7\"."
-restart_required = "&a[&8Bile&a]: &e{plugin}&7 reikalauja visiškai iš naujo paleisti serverį."
-dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 pažymėtas kaip sugedęs po gyvavimo ciklo klaidos. Automatinis šio įskiepio įkėlimas iš naujo pristabdytas."
+restart_required = "&a[&8Bile&a]: &e{plugin}&7 reikalauja visiškai paleisti serverį iš naujo."
+dirty_plugin_paused = "&a[&8Bile&a]: &c{plugin}&7 pažymėtas kaip sugedęs po gyvavimo ciklo klaidos. Automatinis šio papildinio įkėlimas iš naujo pristabdytas."
 reloading_context = "&a[&8Bile&a]: &7Įkeliama iš naujo: &f{plugin}&7 (&f{context}&7)."
-plugin_not_found = "&a[&8Bile&a]: &7Įskiepis nerastas: \"&f{plugin}&7\"."
+plugin_not_found = "&a[&8Bile&a]: &7Papildinys nerastas: \"&f{plugin}&7\"."
 reloading = "&a[&8Bile&a]: &7Įkeliama iš naujo: &f{plugin}&7."
 player_only = "&a[&8Bile&a]: &cŠią komandą gali naudoti tik žaidėjas."
 
@@ -92,17 +98,13 @@ player_only = "&a[&8Bile&a]: &cŠią komandą gali naudoti tik žaidėjas."
 receiving = "&a[&8Bile&a]: &7Gaunamas &f{file}&7 iš &f{host}&7."
 
 [message.remote.deployed]
-other = "&a[&8Bile&a]: &7&f{plugin}&7 įdiegtas &f{count}&7 nuotoliniuose serveriuose."
+other = "&a[&8Bile&a]: &7&f{plugin}&7 įdiegtas nuotoliniuose serveriuose: &f{count}&7."
 one = "&a[&8Bile&a]: &7&f{plugin}&7 įdiegtas &f{count}&7 nuotoliniame serveryje."
-
-[message.hot_drop]
-success = "&a[&8Bile&a]: &7Tiesioginis diegimas baigtas: &f{file}&7."
-failed = "&a[&8Bile&a]: &7Tiesioginis diegimas nepavyko: &c{file}&7."
 
 [message.reload]
 success = "&a[&8Bile&a]: &7Įkelta iš naujo: &f{plugin}&7 (&f{milliseconds}&7ms)."
 failed = "&a[&8Bile&a]: &7Nepavyko įkelti iš naujo: &c{plugin}&7."
-queued = "&a[&8Bile&a]: &7Pakartotinis įkėlimas įtrauktas į eilę: &f{plugin}&7."
+queued = "&a[&8Bile&a]: &7Įkėlimas iš naujo įtrauktas į eilę: &f{plugin}&7."
 command_success = "&a[&8Bile&a]: &7Įkelta iš naujo: &f{plugin}&7 (&f{file}&7, &f{milliseconds}&7ms)."
 command_failed = "&a[&8Bile&a]: &7Nepavyko įkelti iš naujo: \"&f{plugin}&7\"."
 
@@ -120,16 +122,16 @@ failed = "&a[&8Bile&a]: &7Nepavyko įkelti: \"&f{plugin}&7\"."
 
 [message.uninstall]
 queued = "&a[&8Bile&a]: &7Šalinimas įtrauktas į eilę: &f{plugin}&7."
-success = "&a[&8Bile&a]: &7&f{plugin}&7 pašalintas iš &f{file}&7."
-delete_failed = "&a[&8Bile&a]: &7Įskiepis iškeltas iš atminties, bet &c{file}&7 nepavyko ištrinti. Ištrinkite failą prieš diegdami įskiepį dar kartą."
+success = "&a[&8Bile&a]: &7&f{plugin}&7 pašalintas, ištrintas failas &f{file}&7."
+delete_failed = "&a[&8Bile&a]: &7Papildinys iškeltas iš atminties, bet &c{file}&7 nepavyko ištrinti. Ištrinkite failą prieš vėl diegdami papildinį."
 failed = "&a[&8Bile&a]: &7Nepavyko pašalinti: \"&f{plugin}&7\"."
 
 [message.library]
-plugin_not_found = "&a[&8Bile&a]: &7Įskiepis bibliotekoje nerastas: \"&f{plugin}&7\"."
-version_not_found = "&a[&8Bile&a]: &7Versija \"&f{version}&7\" įskiepiui \"&f{plugin}&7\" nerasta."
+plugin_not_found = "&a[&8Bile&a]: &7Papildinys bibliotekoje nerastas: \"&f{plugin}&7\"."
+version_not_found = "&a[&8Bile&a]: &7Versija \"&f{version}&7\" papildiniui \"&f{plugin}&7\" nerasta."
 install_queued = "&a[&8Bile&a]: &7Diegimas iš bibliotekos įtrauktas į eilę: &f{plugin}&7."
 install_success = "&a[&8Bile&a]: &7Įdiegta iš bibliotekos: &f{file}&7."
-install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 įdiegtas ir reikalauja visiškai iš naujo paleisti serverį."
+install_restart_required = "&a[&8Bile&a]: &e{plugin}&7 įdiegtas ir reikalauja visiškai paleisti serverį iš naujo."
 install_failed = "&a[&8Bile&a]: &7Nepavyko įdiegti: \"&f{plugin}&7\"."
 empty = "&a[&8Bile&a]: &7Biblioteka tuščia."
 installed_entry = "&a[&8Bile&a]: &7{plugin} &a({installedVersion} įdiegta) &f{latestVersion}&7 (naujausia)"
@@ -138,51 +140,51 @@ version_entry = "&a[&8Bile&a]: &7{version}"
 latest_entry = "&a[&8Bile&a]: &7{plugin} &f{version}&7 (naujausia)"
 
 [message.config]
-opened = "&a[&8Bile&a]: &aAtidarytas visas žaidimo konfigūracijos redaktorius.&r"
-save_failed = "&a[&8Bile&a]: &cNepavyko pritaikyti &f{setting}&r&c: {reason}&r"
+opened = "&a[&8Bile&a]: &7Atverta visa žaidimo konfigūracijos rengyklė."
+save_failed = "&a[&8Bile&a]: &cNepavyko pritaikyti &f{setting}&c: {reason}"
 
 [message.change]
-saved = "&a[&8Bile&a]: &f{setting}&7 pakeista į &f{new}&7; anksčiau &f{old}&7."
+saved = "&a[&8Bile&a]: &f{setting}&7 pakeista iš &f{old}&7 į &f{new}&7."
 
 [gui.title]
 root = "&2BileTools konfigūracija"
 category = "&2BileTools &8› {category}"
 
 [gui.category]
-general = "&dBendrieji&r"
+general = "&aBendrieji"
 metrics = "&aStatistika"
 remote_slave = "&aNuotolinis imtuvas"
 remote_master = "&aNuotolinis diegimas"
 network = "&aTinklo ribos"
 watcher = "&aPapildinių stebėjimas"
 lifecycle = "&aGyvavimo ciklas"
-languages = "&dKalbos&r"
+languages = "&aKalbos"
 
 [gui.navigation]
-back = "&eAtgal&r"
-close = "&cUždaryti&r"
+back = "&eAtgal"
+close = "&cUždaryti"
 
 [gui.lore]
-state = "&7Dabartinė reikšmė:&r {value}"
-toggle = "&8Spustelėkite, kad perjungtumėte.&r"
-number = "&8Kairysis +1, dešinysis -1, Shift ×10, išmeskite norėdami įvesti.&r"
-text = "&8Spustelėkite ir pokalbyje įveskite naują reikšmę.&r"
-language = "&8Spustelėkite norėdami pasirinkti prieinamą kalbą arba įveskite lokalę.&r"
-category = "&8Spustelėkite norėdami redaguoti kiekvieną šios kategorijos nustatymą.&r"
+state = "&7Dabartinė reikšmė: {value}"
+toggle = "&8Spustelėkite, kad perjungtumėte."
+number = "&8Kairysis spustelėjimas +1, dešinysis -1, Shift ×10, išmetimo klavišas – įvesti reikšmę."
+text = "&8Spustelėkite ir pokalbyje įveskite naują reikšmę."
+language = "&8Spustelėkite, kad pasirinktumėte prieinamą kalbą arba įvestumėte lokalę."
+category = "&8Spustelėkite, kad redaguotumėte visus šios kategorijos nustatymus."
 
 [gui.prompt]
-request = "&a[&8Bile&a]: &ePokalbyje įveskite naują &f{setting}&r&e reikšmę.&r"
-list = "&a[&8Bile&a]: &7Sąrašo elementus atskirkite kableliais. Jei norite tuščio sąrašo, įveskite &fnone&r&7.&r"
-cancel = "&a[&8Bile&a]: &7Norėdami sustabdyti, įveskite &fcancel&r&7. Ši užklausa baigsis po 60 sekundžių.&r"
-cancelled = "&a[&8Bile&a]: &eKonfigūracijos redagavimas atšauktas.&r"
-timeout = "&a[&8Bile&a]: &eKonfigūracijos redagavimo laikas baigėsi nieko nepakeitus.&r"
+request = "&a[&8Bile&a]: &ePokalbyje įveskite naują &f{setting}&e reikšmę."
+list = "&a[&8Bile&a]: &7Sąrašo elementus atskirkite kableliais. Jei norite tuščio sąrašo, įveskite &fnone&7."
+cancel = "&a[&8Bile&a]: &7Norėdami sustabdyti, įveskite &fcancel&7. Ši užklausa nustos galioti po 60 sekundžių."
+cancelled = "&a[&8Bile&a]: &eKonfigūracijos redagavimas atšauktas."
+timeout = "&a[&8Bile&a]: &eKonfigūracijos redagavimo laikas baigėsi nieko nepakeitus."
 
 [gui.setting.general]
-language = "&dAktyvi kalbos lokalė&r"
-archive_plugins = "&aArchyvuoti papildinių JAR prieš pakeičiant"
+language = "&aAktyvi kalbos lokalė"
+archive_plugins = "&aArchyvuoti papildinių JAR failus prieš pakeičiant"
 
 [gui.setting.metrics]
-enabled = "&dAnoniminė bStats statistika&r"
+enabled = "&aAnoniminė bStats statistika"
 
 [gui.setting.remote_slave]
 enabled = "&aNuotolinis imtuvas"
@@ -190,27 +192,27 @@ port = "&aNuotolinio imtuvo prievadas"
 
 [gui.setting.remote_master]
 enabled = "&aNuotolinis diegimas"
-signatures = "&aNuotoliniu būdu diegiamų papildinių pavadinimai"
+signatures = "&aNuotolinio diegimo papildinių pavadinimai"
 
 [gui.setting.network]
-socket_timeout = "&aNuotolinių jungčių laukimo laikas milisekundėmis"
+socket_timeout = "&aNuotolinio lizdo laukimo laikas milisekundėmis"
 max_transfer = "&aDidžiausias perdavimo dydis baitais"
 
 [gui.setting.watcher]
-idle = "&aTikrinimo intervalas neveikiant taktais"
-active = "&aTikrinimo intervalas veikiant taktais"
-debounce = "&aFailų atspaudų nusistovėjimo delsa taktais"
+idle = "&aTikrinimo intervalas ramybės būsenoje taktais"
+active = "&aTikrinimo intervalas aktyvioje būsenoje taktais"
+debounce = "&aAtspaudų nusistovėjimo delsa taktais"
 ignore = "&aIgnoruojamų papildinių pavadinimai"
 only = "&aLeidžiamų papildinių pavadinimai"
 
 [gui.setting.lifecycle]
 log_timings = "&aGyvavimo ciklo trukmės žurnalai"
-health_check = "&aVeikimo patikros po įkėlimo"
+health_check = "&aBūklės patikros po įkėlimo"
 
 [director.help]
 no_subcommands = "Šiame puslapyje nėra antrinių komandų."
 no_description = "Aprašymas nepateiktas"
-command_group = "Komandų grupė. Spustelėkite, kad atidarytumėte."
+command_group = "Komandų grupė. Spustelėkite, kad atvertumėte."
 category = "Komandų kategorija"
 no_parameters = "Parametrų nėra. Spustelėkite, kad iš anksto užpildytumėte komandą."
 parameters_hover = "Užveskite pelės žymeklį ant parametrų, kad sužinotumėte daugiau."
@@ -237,8 +239,8 @@ type = "Šio parametro tipas yra {type}."
 [director.runtime.error]
 invalid_origin = "Šios komandos negalima vykdyti iš šio šaltinio."
 unknown_parameter = "Nežinomas parametro raktas: {key}"
-unexpected_argument = "Netikėtas argumentas \"{argument}\". Pasirenkami parametrai turi būti nurodyti su raktu, pvz. seed=123"
-unclosed_group = "Trūksta uždarančio \"]\" parametrui {key}"
+unexpected_argument = "Netikėtas argumentas \"{argument}\". Neprivalomi parametrai turi būti nurodyti su raktu, pvz., seed=123"
+unclosed_group = "Trūksta uždarančiojo \"]\" parametrui {key}"
 conversion_failed = "Reikšmės \"{value}\" nepavyko konvertuoti į {type} parametrui {parameter}"
 default_parse_failed = "Nepavyko nuskaityti parametro {parameter} numatytosios reikšmės"
 missing_argument = "Trūksta argumento \"{parameter}\" ({type})"
@@ -246,47 +248,56 @@ execution_failed = "Nepavyko įvykdyti komandos {command}: {reason}"
 
 [language.menu]
 your_language = "Jūsų kalba"
-reset_your_language = "Atkurti jūsų kalbą"
+reset_your_language = "Atkurti savo kalbą"
 server_default = "Numatytoji serverio kalba"
 edit_messages = "Redaguoti kalbos pranešimus"
 use_server_default = "Naudoti numatytąją serverio kalbą"
 current = "Dabartinė: {locale}"
-current_with_personal = "Dabartinė: {locale} (Jūsų: {personal})"
+current_with_personal = "Dabartinė: {locale} (jūsų: {personal})"
 your_description = "Keiskite tik jums rodomus pranešimus."
 reset_description = "Naudokite numatytąją serverio kalbą."
 server_description = "Keiskite numatytąją serverio kalbą."
-edit_description = "Atverkite kiekvienos kalbos pranešimų redaktorių."
+edit_description = "Atverkite atskirų kalbų pranešimų rengyklę."
 select_description = "Spustelėkite, kad pasirinktumėte šią kalbą."
 remove_personal_description = "Pašalinkite asmeninį kalbos pasirinkimą."
-no_controls = "Jums nepasiekiami kalbos nustatymai."
+no_controls = "Jums nepasiekiami jokie kalbos valdikliai."
 command = "Komanda: {command}"
 selected = "pasirinkta"
-all-volmit-plugins = "Visi Volmit papildiniai"
+all-volmit-plugins = "visi Volmit papildiniai"
 
 [language.error]
 stopping = "Stabdant papildinį kalbos pasirinkimas nepasiekiamas."
-editor-player-only = "Atverti kalbos rengyklę žaidime."
+editor-player-only = "Kalbų rengyklę atverkite žaidime."
 no-providers = "Nėra prieinamų Volmit kalbų teikėjų."
-numeric-page = "Įveskite puslapio numerį."
-personal-player-only = "Žaidžiant turi būti pasirinkti žaidėjų kalbos nustatymai."
-personal-permission = "Jūs neturite leidimo pasirinkti savo kalbą."
+numeric-page = "Nurodykite kalbų puslapio numerį."
+personal-player-only = "Žaidėjo kalbos nuostatas reikia pasirinkti žaidime."
+personal-permission = "Neturite leidimo pasirinkti savo kalbos."
 plugin-personal-permission = "Neturite leidimo pasirinkti savo kalbos papildiniui {plugin}."
 plugin-server-permission = "Neturite leidimo keisti papildinio {plugin} serverio kalbos."
-server-locale-required = "Pasirinkite numatytosios serverio kalbos kodą, pavyzdžiui, en_US."
+server-locale-required = "Numatytajai serverio kalbai pasirinkite lokalę, pavyzdžiui, en_US."
 unavailable-for-all = "Kalba {locale} prieinama ne visiems pasirinktiems papildiniams."
 
 [language.usage]
 editor = "Naudojimas: /{command} language server edit [locale]"
-selection = "Naudojimas: /{command} language self [locale|reset] or server [locale]"
+selection = "Naudojimas: /{command} language self [locale|reset] arba server [locale]"
 volmit-selection = "Naudojimas: /volmit plugins languages [locale]"
+update = "Naudojimas: /{command} language update"
 
 [language.selection]
-preparing = "Ruošiama kalba {locale} papildiniui {target}..."
+preparing = "Ruošiama kalba {locale} ({target})..."
 save-failed = "{plugin}: nepavyko išsaugoti kalbos pasirinkimo; patikrinkite serverio konsolę."
 english-fallback = "{plugin}: {locale} neprieinama; naudojama anglų kalba (en_US)."
-personal-selected = "{plugin}: dabar jūsų kalba {locale}."
-server-selected = "{plugin}: serverio kalba yra dabar {locale}."
+personal-selected = "{plugin}: dabar jūsų kalba yra {locale}."
+server-selected = "{plugin}: dabar serverio kalba yra {locale}."
 server-default-selected = "{plugin}: jūsų kalba dabar atitinka numatytąją serverio kalbą."
+
+[language.update]
+checking = "{plugin}: tikrinami kalbų saugyklos pakeitimai..."
+unchanged = "{plugin}: įdiegtos kalbos jau atitinka saugyklą."
+applied = "{plugin}: kalba {locale} atnaujinta (pridėta: {added}, pakeista: {updated}, išsaugota vietinių pakeitimų: {kept})."
+cooldown = "{plugin}: kalbų saugykla neseniai tikrinta; bandykite dar kartą po {remaining}."
+locale-failed = "{plugin}: kalba {locale} neatnaujinta: {reason}"
+failed = "{plugin}: kalbų atnaujinti nepavyko: {reason}"
 
 [language.editor]
 title = "{plugin} › {section}"
@@ -294,20 +305,20 @@ loading = "Įkeliami kalbos {locale} pranešimai..."
 
 [language.editor.section]
 languages = "Kalbos"
-search = "Ieškoti"
-search-title = "{locale} / Ieškoti"
+search = "Paieška"
+search-title = "{locale} / Paieška"
 group-title = "{locale} / {group}"
 
 [language.editor.prompt]
-search = "Ieškokite pranešimo rakto arba teksto. Norėdami grįžti, įveskite cancel."
+search = "Ieškokite pranešimų raktų arba teksto. Norėdami grįžti, įveskite cancel."
 value = "Pokalbyje įveskite naują rakto {key} reikšmę."
 current = "Dabartinė reikšmė: {value}"
 variables = "Kintamieji: {variables}"
 guidance = "Naudokite \\n naujai eilutei, \\\\ atvirkštiniam pasvirajam brūkšniui arba įveskite cancel, kad grįžtumėte."
 
 [language.editor.input]
-expired = "Baigėsi kalbos rengyklės įvesties laikas."
-too-long = "Įvestyje gali būti ne daugiau kaip {maximum} simbolių."
+expired = "Baigėsi kalbų rengyklės įvesties laikas."
+too-long = "Rengyklės įvestis per ilga. Didžiausias simbolių skaičius: {maximum}."
 unable-to-save = "Nepavyko išsaugoti: {reason}"
 
 [language.editor.navigation]
@@ -318,22 +329,22 @@ next-page = "&eKitas puslapis&r"
 
 [language.editor.search]
 messages = "Ieškoti pranešimų"
-messages-lore = "Spustelėkite norėdami ieškoti visuose pranešimuose."
+messages-lore = "Spustelėkite, kad ieškotumėte visuose pranešimuose."
 clear = "Išvalyti paiešką"
 
 [language.editor.message]
 current-value = "&7Dabartinė reikšmė:&r"
 variables = "&8{variables}&r"
-edit-plural = "&7Spustelėkite norėdami redaguoti daugiskaitos formą.&r"
-edit-lines = "&7Spustelėkite norėdami redaguoti atskiras eilutes.&r"
-edit-chat = "&7Spustelėkite norėdami redaguoti pokalbyje.&r"
+edit-plural = "&7Spustelėkite, kad redaguotumėte daugiskaitos formą.&r"
+edit-lines = "&7Spustelėkite, kad redaguotumėte atskiras eilutes.&r"
+edit-chat = "&7Spustelėkite, kad redaguotumėte pokalbyje.&r"
 
 [language.editor.locale]
-open = "&8Spauskite norėdami atverti šią kalbą.&r"
+open = "&8Spustelėkite, kad atvertumėte šią kalbą.&r"
 
 [language.editor.category]
-message-count = "&7{count} pranešimai&r"
-open = "&8Spustelėkite norėdami atverti šią kategoriją.&r"
+message-count = "&7Pranešimų: {count}&r"
+open = "&8Spustelėkite, kad atvertumėte šią kategoriją.&r"
 
 [language.editor.error]
 no-permission = "Neturite leidimo redaguoti papildinio {plugin} kalbų."
@@ -351,7 +362,7 @@ none = "Nėra"
 empty = "(tuščia)"
 
 [message.inspect]
-result = "&a[&8Bile&a]: &f{plugin}&7: įjungtas={enabled}, atkūrimas={recovery}, bendradarbiavimas={cooperative}, priklausomi={dependents}, iškėlimas={capability}"
+result = "&a[&8Bile&a]: &f{plugin}&7: įjungtas={enabled}, atkūrimas={recovery}, kooperatinis={cooperative}, priklausomi=[{dependents}], uždarymas={capability}"
 
 [gui.setting]
 update-notifications = "&aPranešimai apie atnaujinimus"
