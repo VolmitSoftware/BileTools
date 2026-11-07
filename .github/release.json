@@ -1,7 +1,0 @@
-{
-  "name": "BileTools",
-  "platform": "bukkit",
-  "versionProperty": "biletoolsVersion",
-  "betaTag": "beta",
-  "volmlibRef": "master"
-}
